@@ -27,9 +27,11 @@ async function loadAllData() {
         
         const csvText = await csvRes.text();
         const tsvText = await tsvRes.text();
+        let gatyaTsvText = null;
         
         if (gatyaRes.ok) {
-            loadedTsvContent = await gatyaRes.text();
+            gatyaTsvText = await gatyaRes.text();
+            loadedTsvContent = gatyaTsvText;
             console.log("gatya.tsv loaded successfully.");
         } else {
             console.warn("gatya.tsv not found.");
@@ -37,6 +39,12 @@ async function loadAllData() {
 
         // マスタデータの構築
         const gachasMaster = buildGachaMaster(gachaMasterData.cats, csvText, tsvText);
+        
+        // gatya.tsv から正確なレート情報を反映
+        if (gatyaTsvText) {
+            applyTsvRates(gachasMaster, gatyaTsvText);
+        }
+
         gachaMasterData.gachas = gachasMaster;
         
         console.log("Master Data Built:", Object.keys(gachasMaster).length, "gachas loaded.");
@@ -141,4 +149,32 @@ function buildGachaMaster(catsMaster, csvText, tsvText) {
     });
 
     return gachasMaster;
+}
+
+// gatya.tsv からレート情報を抽出してマスタデータに適用する
+function applyTsvRates(gachasMaster, tsvContent) {
+    const lines = tsvContent.split('\n');
+    lines.forEach(line => {
+        if (line.trim().startsWith('[') || !line.trim()) return;
+        const cols = line.split('\t');
+        if (cols.length < 23) return;
+
+        const gachaId = cols[10];
+        
+        // TSVの列定義に基づくレート取得
+        // Index 16: Rare, 18: Super, 20: Uber, 22: Legend
+        const rateRare = parseInt(cols[16]) || 0;
+        const rateSupa = parseInt(cols[18]) || 0;
+        const rateUber = parseInt(cols[20]) || 0;
+        const rateLegend = parseInt(cols[22]) || 0;
+
+        if (gachasMaster[gachaId]) {
+            gachasMaster[gachaId].rarity_rates = {
+                rare: rateRare,
+                super: rateSupa,
+                uber: rateUber,
+                legend: rateLegend
+            };
+        }
+    });
 }
