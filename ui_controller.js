@@ -21,20 +21,61 @@ let uberAdditionCounts = {};
 
 function initializeDefaultGachas() {
     if (tableGachaIds.length === 0) {
-        // getGachaSelectorOptions は gacha_selector.js へ移動
-        const options = getGachaSelectorOptions(null);
-        if (options.length > 0) {
-            tableGachaIds.push(options[0].value);
-            if (options.length > 1) {
-                tableGachaIds.push(options[1].value);
+        let scheduleFound = false;
+
+        // 1. スケジュールロジックを利用して「現在開催中」かつ「プラチナ・レジェンド以外」のガチャを探す
+        if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
+            typeof parseGachaTSV === 'function' && typeof isPlatinumOrLegend === 'function' && typeof parseDateTime === 'function') {
+            
+            try {
+                const scheduleData = parseGachaTSV(loadedTsvContent);
+                const now = new Date();
+
+                // フィルタリング: 現在開催中 かつ プラチナ/レジェンド以外
+                const activeGachas = scheduleData.filter(item => {
+                    // 除外判定
+                    if (isPlatinumOrLegend(item)) return false;
+
+                    // 期間判定 (開始日時 <= 現在 <= 終了日時)
+                    const startDt = parseDateTime(item.rawStart, item.startTime);
+                    const endDt = parseDateTime(item.rawEnd, item.endTime);
+                    
+                    return now >= startDt && now <= endDt;
+                });
+
+                if (activeGachas.length > 0) {
+                    activeGachas.forEach(gacha => {
+                        let newId = gacha.id.toString();
+                        // 確定フラグがあれば 'g' (11連確定) をデフォルトにする
+                        if (gacha.guaranteed) {
+                            newId += 'g';
+                        }
+                        tableGachaIds.push(newId);
+                    });
+                    scheduleFound = true;
+                }
+            } catch (e) {
+                console.warn("Auto-select from schedule failed:", e);
             }
-        } else {
-            // データがない場合のフォールバック
-            const sortedGachas = Object.values(gachaMasterData.gachas)
-                .filter(gacha => gacha.sort < 800)
-                .sort((a, b) => a.sort - b.sort);
-            if (sortedGachas.length > 0) tableGachaIds.push(sortedGachas[0].id);
-            if (sortedGachas.length > 1) tableGachaIds.push(sortedGachas[1].id);
+        }
+
+        // 2. スケジュールから特定できなかった場合のフォールバック（既存ロジック）
+        if (!scheduleFound || tableGachaIds.length === 0) {
+            // getGachaSelectorOptions は gacha_selector.js へ移動
+            const options = getGachaSelectorOptions(null);
+            if (options.length > 0) {
+                tableGachaIds.push(options[0].value);
+                if (options.length > 1) {
+                    tableGachaIds.push(options[1].value);
+                }
+            } else {
+                // データがない場合のフォールバック
+                const sortedGachas = Object.values(gachaMasterData.gachas)
+                    .filter(gacha => gacha.sort < 800)
+                    .sort((a, b) => a.sort - b.sort);
+                if (sortedGachas.length > 0) tableGachaIds.push(sortedGachas[0].id);
+                if (sortedGachas.length > 1) tableGachaIds.push(sortedGachas[1].id);
+            }
         }
     }
 }
