@@ -470,10 +470,11 @@ function generateRollsTable() {
                     if (!hlClass) {
                         const sv = seeds[seedIndex] % 10000;
                         if(sv >= 9970) style = 'background-color: #DDA0DD;';
+                        else if(sv >= 9940) style = 'background-color: #de59de;';
                         else if(sv >= 9500) style = 'background-color: #FF4C4C;';
-                        else if(sv >= 9070) style = 'background-color: #FFB6C1;';
-                        else if(sv >= 6970) style = 'background-color: #FFDAB9;';
-                        else if(sv >= 6470) style = 'background-color: #FFFFE0;';
+                        else if(sv >= 9100) style = 'background-color: #FFB6C1;';
+                        else if(sv >= 6970) style = 'background-color: #ffff33;';
+                        else if(sv >= 6470) style = 'background-color: #FFFFcc;';
                     }
                 }
             }

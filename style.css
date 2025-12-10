@@ -54,18 +54,11 @@ button {
     color: white;
     border: none;
     border-radius: 4px;
-    margin-right: 5px;
     font-size: 14px;
-    transition: background-color 0.2s;
 }
 
 button:hover {
     background: #0056b3;
-}
-
-button.active {
-    background: #004494;
-    box-shadow: inset 0 3px 5px rgba(0,0,0,0.2);
 }
 
 button.secondary {
@@ -73,119 +66,127 @@ button.secondary {
 }
 
 button.secondary:hover {
-    background: #5a6268;
+    background: #545b62;
 }
 
-button.remove-btn {
-    background: #dc3545;
-    padding: 2px 6px;
-    font-size: 0.8em;
-    margin-left: 5px;
-}
-
-button.remove-btn:hover {
-    background: #c82333;
-}
-
-button.add-gacha-btn {
-    font-size: 0.9em;
-    padding: 4px 8px;
-    background-color: #28a745;
-}
-
-button.add-gacha-btn:hover {
-    background-color: #218838;
+button.active {
+    background: #28a745;
 }
 
 /* =========================================
-   共通ユーティリティ
+   ユーティリティ
    ========================================= */
 .hidden {
     display: none !important;
 }
 
 .description-box {
-    background: #fff3cd;
+    background: #e9ecef;
     padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ffeeba;
     border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
 }
 
-#result {
+.result-box {
     margin-bottom: 10px;
-    font-family: monospace;
     font-weight: bold;
+    color: #d9534f;
 }
 
-p.error {
-    color: #dc3545;
+.error {
+    color: red;
     font-weight: bold;
 }
 
 /* =========================================
-   シミュレーター結果テーブル (A/B Track)
+   テーブルスタイル (Gacha Rolls)
    ========================================= */
+#rolls-table-container {
+    overflow-x: auto;
+}
+
 table {
-    width: 100%;
     border-collapse: collapse;
+    width: 100%;
     margin-top: 10px;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 th, td {
     border: 1px solid #ddd;
     padding: 6px;
     text-align: center;
+    white-space: nowrap;
 }
 
-/* ヘッダー固定 */
-thead th {
-    background-color: #eee;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.col-no {
-    background: #e9ecef;
-    width: 40px;
+th {
+    background-color: #f8f9fa;
     font-weight: bold;
 }
 
-.gacha-column {
-    min-width: 100px;
+/* 列ごとのスタイル */
+.col-no {
+    background-color: #eee;
+    width: 30px;
 }
 
 .calc-column {
-    background-color: #fdfdfd;
+    background-color: #f0f8ff; /* 薄い青 */
     font-size: 0.9em;
     color: #555;
 }
 
-.gacha-select-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+/* ガチャ選択列 */
+.gacha-column {
+    min-width: 120px;
 }
 
-.gacha-select-header select {
-    max-width: 100%;
+/* セル内のハイライト */
+.gacha-cell {
+    position: relative;
 }
 
-/* シミュレーション時のハイライト */
+/* ハイライト（シミュレーションルート） */
 .highlight {
+    /* 枠線は削除し、背景色のみ table_renderer.js で制御 */
     position: relative;
 }
 
 .highlight-uber {
+    /* 枠線と影の設定を削除、文字色のみ強調 */
     font-weight: bold;
     color: #c2185b;
 }
 
+/* リンク */
+.char-link:hover {
+    color: #0056b3;
+}
+
+/* ヘッダー内のボタンなど */
+.remove-btn {
+    background: #dc3545;
+    padding: 2px 6px;
+    font-size: 10px;
+    margin-left: 5px;
+}
+
+.add-gacha-btn {
+    background: #28a745;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.uber-add-select {
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #fff;
+}
+
 /* =========================================
-   スケジュール表 (新規追加分)
+   スケジュール表
    ========================================= */
 #schedule-container {
     padding: 20px;
@@ -218,33 +219,163 @@ thead th {
 .schedule-table td:nth-child(3) {
     white-space: normal;
     text-align: left;
-    min-width: 200px;
+    min-width: 250px;
 }
 
 .schedule-table th {
-    background-color: #343a40;
-    color: #fff;
+    background-color: #eee;
     position: sticky;
     top: 0;
     z-index: 10;
 }
 
-.schedule-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+/* =========================================
+   ガントチャート
+   ========================================= */
+/* ガントチャート全体を囲むラッパー (shrink-to-fit) */
+.gantt-outer-wrapper {
+    display: inline-block; /* コンテンツ幅に合わせて縮む */
+    max-width: 100%;       /* 画面幅を超えたらスクロール */
+    vertical-align: top;
 }
 
-.schedule-table tr:hover {
-    background-color: #f1f1f1;
+.gantt-chart-container {
+    border: 1px solid #ccc;
+    background: #fff;
+    overflow: hidden; 
+    font-size: 12px;
+    margin-bottom: 20px;
 }
 
-/* 本日・昨日該当行のハイライト */
-.schedule-table tr.highlight-row {
-    background-color: #fff9c4 !important; /* 薄い黄色 */
-    border: 2px solid #fbc02d;
+.gantt-scroll-wrapper {
+    overflow-x: auto;
+    position: relative;
+    padding-bottom: 10px;
 }
 
-.schedule-table tr.highlight-row td {
-    border-top: 1px solid #fbc02d;
-    border-bottom: 1px solid #fbc02d;
-    color: #000;
+/* ヘッダー（日付行） */
+.gantt-header {
+    display: flex;
+    border-bottom: 1px solid #ccc;
+    background: #f9f9f9;
+    position: sticky;
+    left: 0;
+    z-index: 6; 
+}
+
+.gantt-label-col {
+    width: 160px; /* 幅を縮小 */
+    min-width: 160px;
+    padding: 5px;
+    border-right: 1px solid #ccc;
+    background: #f9f9f9;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 中央揃え */
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+}
+
+.gantt-date-cell {
+    border-right: 1px solid #eee;
+    text-align: center;
+    padding: 5px 0;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.gantt-date-cell.today {
+    background-color: #ffeb3b;
+}
+
+.gantt-date-cell.weekend {
+    background-color: #e0f7fa;
+}
+
+/* ボディ（行） */
+.gantt-body {
+    position: relative;
+}
+
+.gantt-row {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    height: 30px; 
+}
+
+.gantt-row:hover {
+    background-color: #f0f0f0;
+}
+
+.gantt-row .gantt-label-col {
+    background: #fff; 
+    font-weight: normal;
+    text-align: center; /* 中央揃え */
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    line-height: 20px; 
+}
+
+.gantt-bar-area {
+    position: relative;
+    height: 100%;
+    flex-grow: 1;
+}
+
+/* ガントバー */
+.gantt-bar {
+    position: absolute;
+    top: 5px;
+    height: 20px;
+    background-color: #4caf50;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    z-index: 2; 
+}
+
+.gantt-bar.g-kyoku { background-color: #e91e63; }
+.gantt-bar.g-cho { background-color: #9c27b0; } 
+.gantt-bar.g-fest { background-color: #ff9800; }
+.gantt-bar.g-collab { background-color: #2196f3; }
+
+.gantt-bar-text {
+    padding: 0 4px;
+}
+
+/* 縦グリッド線 */
+.gantt-grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid #f5f5f5;
+    z-index: 0;
+}
+
+.gantt-grid-line.weekend {
+    background-color: rgba(224, 247, 250, 0.3);
+}
+
+/* ガントチャート現在時刻線 */
+.gantt-current-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #ff0000;
+    z-index: 1; 
+    opacity: 0.7;
+    pointer-events: none;
 }
