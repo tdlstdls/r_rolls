@@ -12,34 +12,75 @@ let showResultDisplay = false;
 let finalSeedForUpdate = null;
 let isSimulationMode = false;
 let isScheduleMode = false;
+let activeGuaranteedIds = new Set(); // 現在開催中で確定のガチャIDを保持
+let isScheduleAnalyzed = false; // 解析済みフラグ
 
 // 超激レア追加シミュレーション用 (index -> 追加数)
 let uberAdditionCounts = {};
 
+// --- スケジュール解析とデータ反映の共通関数 ---
+// gacha_selector.js や initializeDefaultGachas から呼ばれる
+function prepareScheduleInfo() {
+    if (isScheduleAnalyzed) return; // すでに実行済みならスキップ
+
+    if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
+        typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
+        
+        try {
+            const scheduleData = parseGachaTSV(loadedTsvContent);
+            const now = new Date();
+            activeGuaranteedIds.clear();
+
+            scheduleData.forEach(item => {
+                const startDt = parseDateTime(item.rawStart, item.startTime);
+                const endDt = parseDateTime(item.rawEnd, item.endTime);
+                
+                // 現在開催中かどうか
+                if (now >= startDt && now <= endDt) {
+                    // 確定ガチャの場合の処理
+                    if (item.guaranteed) {
+                        const gId = parseInt(item.id);
+                        activeGuaranteedIds.add(gId);
+
+                        // マスタデータの名称に [確定] を追加表示 (未追加の場合のみ)
+                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                            const currentName = gachaMasterData.gachas[gId].name;
+                            if (!currentName.includes('[確定]')) {
+                                gachaMasterData.gachas[gId].name += " [確定]";
+                            }
+                        }
+                    }
+                }
+            });
+            isScheduleAnalyzed = true;
+            console.log("Schedule Analyzed. Active Guaranteed IDs:", Array.from(activeGuaranteedIds));
+
+        } catch (e) {
+            console.warn("Schedule analysis failed:", e);
+        }
+    }
+}
+
 // --- 初期化関連 ---
-// processUrlParamsは url_manager.js へ移動
 
 function initializeDefaultGachas() {
+    // まずスケジュール情報を整理
+    prepareScheduleInfo();
+
     if (tableGachaIds.length === 0) {
         let scheduleFound = false;
 
-        // 1. スケジュールロジックを利用して「現在開催中」かつ「プラチナ・レジェンド以外」のガチャを探す
-        if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
-            typeof parseGachaTSV === 'function' && typeof isPlatinumOrLegend === 'function' && typeof parseDateTime === 'function') {
-            
+        // 1. スケジュールロジックを利用して「現在開催中」の情報を解析
+        if (isScheduleAnalyzed && typeof parseGachaTSV === 'function') {
             try {
                 const scheduleData = parseGachaTSV(loadedTsvContent);
                 const now = new Date();
 
-                // フィルタリング: 現在開催中 かつ プラチナ/レジェンド以外
+                // デフォルト表示用のガチャ選択 (プラチナ・レジェンド以外)
                 const activeGachas = scheduleData.filter(item => {
-                    // 除外判定
-                    if (isPlatinumOrLegend(item)) return false;
-
-                    // 期間判定 (開始日時 <= 現在 <= 終了日時)
+                    if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
-                    
                     return now >= startDt && now <= endDt;
                 });
 
@@ -59,17 +100,15 @@ function initializeDefaultGachas() {
             }
         }
 
-        // 2. スケジュールから特定できなかった場合のフォールバック（既存ロジック）
+        // 2. スケジュールから特定できなかった場合のフォールバック
         if (!scheduleFound || tableGachaIds.length === 0) {
-            // getGachaSelectorOptions は gacha_selector.js へ移動
-            const options = getGachaSelectorOptions(null);
+            const options = getGachaSelectorOptions(null); 
             if (options.length > 0) {
                 tableGachaIds.push(options[0].value);
                 if (options.length > 1) {
                     tableGachaIds.push(options[1].value);
                 }
             } else {
-                // データがない場合のフォールバック
                 const sortedGachas = Object.values(gachaMasterData.gachas)
                     .filter(gacha => gacha.sort < 800)
                     .sort((a, b) => a.sort - b.sort);
@@ -108,28 +147,22 @@ function resetAndGenerateTable() {
     if (simConf && simConf.value.trim() === '') {
          currentRolls = 100;
     }
-    // generateRollsTable は table_renderer.js へ移動
     generateRollsTable();
-    // updateUrlParams は url_manager.js へ移動
     updateUrlParams();
 }
 
-// 100行追加ボタン用
 function addMoreRolls() {
     currentRolls += 100;
     generateRollsTable();
 }
 
-// キャラ名クリック時のSEED更新＆リフレッシュ用
 function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
         seedInput.value = newSeed;
-        currentRolls = 100; // 続きから100行表示するためリセット
+        currentRolls = 100; 
         generateRollsTable();
         updateUrlParams();
-        
-        // 画面上部へスクロール（任意）
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
@@ -151,7 +184,12 @@ function updateSeedFromSim() {
 function addGachaColumn() {
     const options = getGachaSelectorOptions(null);
     if (options.length > 0) {
-        tableGachaIds.push(options[0].value);
+        // 追加時も、そのガチャが確定中なら最初から 'g' をつける
+        let val = options[0].value;
+        if (activeGuaranteedIds.has(parseInt(val))) {
+            val += 'g';
+        }
+        tableGachaIds.push(val);
         generateRollsTable();
     }
 }
@@ -164,23 +202,28 @@ function removeGachaColumn(index) {
 
 function updateGachaSelection(selectElement, index) {
     const originalIdWithSuffix = tableGachaIds[index];
+    const newBaseId = selectElement.value;
     
-    // IDのサフィックス判定 (f=15, s=7, g=11)
-    let suffix = '';
-    if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
-    else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
-    else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
+    // 選択されたガチャが現在「確定」かどうかチェック
+    if (activeGuaranteedIds.has(parseInt(newBaseId))) {
+        // 確定ガチャなら強制的に 11g (11連確定) モードにする
+        tableGachaIds[index] = newBaseId + 'g';
+    } else {
+        // 確定でない場合は、元のサフィックスを引き継ぐ
+        let suffix = '';
+        if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
+        else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
+        else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
+        
+        tableGachaIds[index] = newBaseId + suffix;
+    }
     
-    let newId = selectElement.value;
-    if (suffix) newId += suffix;
-    tableGachaIds[index] = newId;
     generateRollsTable();
 }
 
 function toggleGuaranteedColumn(index) {
     const currentVal = tableGachaIds[index];
     
-    // IDとサフィックスを分離
     let baseId = currentVal;
     let suffix = '';
     
@@ -206,7 +249,6 @@ function toggleGuaranteedColumn(index) {
     generateRollsTable();
 }
 
-// 超激レア追加シミュレーション用イベントハンドラ
 function updateUberAddition(selectElement, index) {
     const val = parseInt(selectElement.value, 10);
     if (!isNaN(val)) {
