@@ -186,7 +186,7 @@ th {
 }
 
 /* =========================================
-   スケジュール表
+   スケジュール表 & ガントチャート共通
    ========================================= */
 #schedule-container {
     padding: 20px;
@@ -229,9 +229,29 @@ th {
     z-index: 10;
 }
 
+/* --- 追加: スケジュール行の背景色 --- */
+.row-ended {
+    background-color: #e0e0e0 !important; /* 終了: グレー */
+    color: #666;
+}
+
+/* 終了した行のガントバーは彩度を落とす */
+.row-ended .gantt-bar {
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+.row-guaranteed {
+    background-color: #ffffe0 !important; /* 確定: 薄い黄色 */
+}
+
 /* =========================================
    ガントチャート
    ========================================= */
+.gantt-outer-wrapper * {
+    box-sizing: border-box;
+}
+
 /* ガントチャート全体を囲むラッパー (shrink-to-fit) */
 .gantt-outer-wrapper {
     display: inline-block; /* コンテンツ幅に合わせて縮む */
@@ -268,7 +288,8 @@ th {
     min-width: 160px;
     padding: 5px;
     border-right: 1px solid #ccc;
-    background: #f9f9f9;
+    /* 親要素(row)の色を透過させるためinheritまたはtransparentに変更 */
+    background-color: inherit; 
     position: sticky;
     left: 0;
     z-index: 5;
@@ -277,6 +298,11 @@ th {
     justify-content: center; /* 中央揃え */
     font-weight: bold;
     border-bottom: 1px solid #eee;
+}
+
+/* ヘッダーのみ背景色を固定 */
+.gantt-header .gantt-label-col {
+    background-color: #f9f9f9;
 }
 
 .gantt-date-cell {
@@ -303,15 +329,15 @@ th {
 .gantt-row {
     display: flex;
     border-bottom: 1px solid #eee;
-    height: 30px; 
+    height: 30px;
+    background-color: #fff; /* デフォルト背景 */
 }
 
 .gantt-row:hover {
-    background-color: #f0f0f0;
+    filter: brightness(0.95); /* ホバー時は少し暗くする（背景色維持のため） */
 }
 
 .gantt-row .gantt-label-col {
-    background: #fff; 
     font-weight: normal;
     text-align: center; /* 中央揃え */
     justify-content: center;
@@ -334,6 +360,7 @@ th {
     top: 5px;
     height: 20px;
     background-color: #4caf50;
+    border: 1px solid #4caf50; /* 枠線を背景色と同じにする */
     border-radius: 3px;
     color: #fff;
     font-size: 10px;
@@ -346,10 +373,23 @@ th {
     z-index: 2; 
 }
 
-.gantt-bar.g-kyoku { background-color: #e91e63; }
-.gantt-bar.g-cho { background-color: #9c27b0; } 
-.gantt-bar.g-fest { background-color: #ff9800; }
-.gantt-bar.g-collab { background-color: #2196f3; }
+/* 各色設定（枠線色も合わせる） */
+.gantt-bar.g-kyoku { 
+    background-color: #e91e63;
+    border-color: #e91e63;
+}
+.gantt-bar.g-cho { 
+    background-color: #9c27b0;
+    border-color: #9c27b0;
+} 
+.gantt-bar.g-fest { 
+    background-color: #ff9800;
+    border-color: #ff9800;
+}
+.gantt-bar.g-collab { 
+    background-color: #2196f3;
+    border-color: #2196f3;
+}
 
 .gantt-bar-text {
     padding: 0 4px;
