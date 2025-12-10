@@ -3,26 +3,6 @@
  * データの読み込み、解析、マスタデータの構築を担当
  */
 
-/**
- * [gatya.tsv Data Structure Memo]
- * * ■ 基本構造
- * ・1-10列目 (Idx 0-9): 年月日・時刻情報
- * Idx 0: 開始年月日 (YYYYMMDD)
- * Idx 1: 開始時刻 (HHMM)
- * Idx 2: 終了年月日 (YYYYMMDD)
- * Idx 3: 終了時刻 (HHMM)
- * Idx 8: レアロールズ対象フラグ (1以外は除外)
- * * ・11列目以降 (Idx 10~): ガチャ情報ブロック (15列/ブロック の繰り返し)
- * ブロック開始インデックスを i (10, 25, 40...) とすると:
- * i+0  : ガチャID (Gacha ID)
- * i+6  : レアレート (Rare Rate)
- * i+8  : 激レアレート (Super Rare Rate)
- * i+10 : 超激レアレート (Uber Rare Rate)
- * i+11 : 超激レア確定フラグ (Guaranteed Flag, 1=確定)
- * i+12 : 伝説レアレート (Legend Rare Rate)
- * i+14 : 日本語説明文 (Description)
- */
-
 // グローバル変数 (データ保持用)
 let gachaMasterData = { cats: {}, gachas: {} };
 let loadedTsvContent = null; // スケジュールデータ (gatya.tsv)
@@ -164,54 +144,37 @@ function buildGachaMaster(catsMaster, csvText, tsvText) {
             },
             pool: pool,
             sort: seriesInfo.sort || 999,
-            series_id: seriesID,
-            guaranteed: false // デフォルトはfalse
+            series_id: seriesID
         };
     });
 
     return gachasMaster;
 }
 
-// gatya.tsv からレート情報と確定情報を抽出してマスタデータに適用する
+// gatya.tsv からレート情報を抽出してマスタデータに適用する
 function applyTsvRates(gachasMaster, tsvContent) {
     const lines = tsvContent.split('\n');
     lines.forEach(line => {
         if (line.trim().startsWith('[') || !line.trim()) return;
         const cols = line.split('\t');
-        if (cols.length < 15) return; // 最小カラム数チェック
+        if (cols.length < 23) return;
 
-        // 9列目(Idx 8)が「1」以外の行は除外（レアロールズ対象外）
-        if (cols[8] !== '1') return;
+        const gachaId = cols[10];
+        
+        // TSVの列定義に基づくレート取得
+        // Index 16: Rare, 18: Super, 20: Uber, 22: Legend
+        const rateRare = parseInt(cols[16]) || 0;
+        const rateSupa = parseInt(cols[18]) || 0;
+        const rateUber = parseInt(cols[20]) || 0;
+        const rateLegend = parseInt(cols[22]) || 0;
 
-        // 11列目(Idx 10)から15列ごとにブロックが存在する
-        for (let i = 10; i < cols.length; i += 15) {
-            // ブロックの必須カラムが存在するか確認
-            if (i + 14 >= cols.length) break;
-
-            const gachaIdStr = cols[i];
-            const gachaId = parseInt(gachaIdStr);
-            
-            // IDが無効、または-1の場合はスキップ
-            if (isNaN(gachaId) || gachaId < 0) continue;
-
-            // 定義に基づきレート情報を取得
-            // i+6: Rare, i+8: Super, i+10: Uber, i+11: Guaranteed, i+12: Legend
-            const rateRare = parseInt(cols[i + 6]) || 0;
-            const rateSupa = parseInt(cols[i + 8]) || 0;
-            const rateUber = parseInt(cols[i + 10]) || 0;
-            const isGuaranteed = cols[i + 11] === '1';
-            const rateLegend = parseInt(cols[i + 12]) || 0;
-
-            if (gachasMaster[gachaId]) {
-                gachasMaster[gachaId].rarity_rates = {
-                    rare: rateRare,
-                    super: rateSupa,
-                    uber: rateUber,
-                    legend: rateLegend
-                };
-                // 確定フラグを保存
-                gachasMaster[gachaId].guaranteed = isGuaranteed;
-            }
+        if (gachasMaster[gachaId]) {
+            gachasMaster[gachaId].rarity_rates = {
+                rare: rateRare,
+                super: rateSupa,
+                uber: rateUber,
+                legend: rateLegend
+            };
         }
     });
 }
