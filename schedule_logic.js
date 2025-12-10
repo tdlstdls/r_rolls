@@ -59,6 +59,22 @@ function isPlatinumOrLegend(item) {
     return name.includes("プラチナガチャ") || name.includes("レジェンドガチャ");
 }
 
+// 文字列の表示幅を概算する関数 (動的幅調整用)
+function calcTextWidth(text) {
+    let width = 0;
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        // 半角文字(ASCII範囲)は約8px、それ以外(全角)は約13pxと仮定
+        // ※CSSのフォントサイズや種類に依存するため概算です
+        if ((code >= 0x00 && code < 0x81) || (code === 0xf8f0) || (code >= 0xff61 && code < 0xffa0) || (code >= 0xf8f1 && code < 0xf8f4)) {
+            width += 8;
+        } else {
+            width += 13;
+        }
+    }
+    return width;
+}
+
 // TSVデータのパース処理
 function parseGachaTSV(tsv) {
     const lines = tsv.split('\n');
@@ -206,13 +222,30 @@ function renderGanttChart(data) {
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
 
+    // 動的幅計算用の最大幅変数
+    let maxLabelTextWidth = 0;
+
     activeData.forEach(item => {
         const s = parseInt(item.rawStart);
         if (s < minDateInt) minDateInt = s;
         
         const eDt = parseDateTime(item.rawEnd, item.endTime);
         if (eDt > maxEndDateTime) maxEndDateTime = eDt;
+
+        // --- 幅計算ロジック追加 ---
+        let displayName = item.seriesName;
+        if (item.guaranteed) displayName += " [確定]";
+        // 表示名の長さを計算
+        const textW = calcTextWidth(displayName);
+        if (textW > maxLabelTextWidth) {
+            maxLabelTextWidth = textW;
+        }
     });
+
+    // 幅の設定
+    // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
+    let labelWidth = Math.max(160, maxLabelTextWidth + 20);
+    if (labelWidth > 320) labelWidth = 320; // 上限設定（広がりすぎ防止）
 
     let minDate = parseDateStr(String(minDateInt));
     
@@ -240,12 +273,10 @@ function renderGanttChart(data) {
     
     if (totalDays <= 0) return '';
 
-    // 幅の設定
-    const labelWidth = 160; 
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
     
-    // 全体幅計算 (ラベル幅 + 日数分 + 0.5日分の余白[復活])
+    // 全体幅計算 (ラベル幅[動的] + 日数分 + 0.5日分の余白[復活])
     const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
 
     // 現在時刻線の位置計算
@@ -299,6 +330,11 @@ function renderGanttChart(data) {
         if (widthPx <= 0) return;
 
         let displayName = item.seriesName;
+        // 確定なら表記追加
+        if (item.guaranteed) {
+            displayName += " [確定]";
+        }
+
         let barClass = 'gantt-bar';
         if (displayName.includes("極選抜")) barClass += ' g-kyoku';
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
@@ -307,8 +343,16 @@ function renderGanttChart(data) {
 
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
 
+        // 行のスタイル判定
+        let rowClass = 'gantt-row';
+        if (now > endDateTime) {
+            rowClass += ' row-ended';
+        } else if (item.guaranteed) {
+            rowClass += ' row-guaranteed';
+        }
+
         bodyHtml += `
-            <div class="gantt-row" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
                 <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;" title="${displayName} (ID:${item.id})">${displayName}</div>
                 <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
                     ${generateGridLines(totalDays, dayWidth, minDate)}
@@ -401,13 +445,50 @@ function renderScheduleTable(tsvContent, containerId) {
         <tbody>
     `;
 
+    const now = new Date();
+
     filteredData.forEach(item => {
-        const seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
+        let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
+        
+        // 確定なら[確定]を付与
+        if (item.guaranteed) {
+            seriesDisplay += " [確定]";
+        }
+
         const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
         const endStr = `${formatDateJP(item.rawEnd)}<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
         
+        // プラチナ・レジェンドガチャかどうか
+        const isPlatLeg = isPlatinumOrLegend(item);
+
+        // 超激: 5%(500)以外なら赤太字 (プラチナ系は除外)
+        const uberRateVal = parseInt(item.uber);
+        let uberStyle = '';
+        if (!isPlatLeg && uberRateVal !== 500) {
+            uberStyle = 'color:red; font-weight:bold;';
+        }
+
+        // 伝説: 0.3%(30)超えなら赤太字 (プラチナ系は除外)
+        const legendRateVal = parseInt(item.legend);
+        let legendStyle = '';
+        if (!isPlatLeg && legendRateVal > 30) {
+            legendStyle = 'color:red; font-weight:bold;';
+        }
+
+        // 行の背景色決定
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+        let rowClass = "";
+        
+        if (now > endDateTime) {
+            // 現在時刻を過ぎている -> グレー
+            rowClass = "row-ended";
+        } else if (item.guaranteed) {
+            // 確定 -> 薄い黄色
+            rowClass = "row-guaranteed";
+        }
+
         html += `
-            <tr>
+            <tr class="${rowClass}">
                 <td>${startStr}</td>
                 <td>${endStr}</td>
                 <td style="text-align:left; vertical-align: middle;">
@@ -416,8 +497,8 @@ function renderScheduleTable(tsvContent, containerId) {
                 </td>
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
-                <td style="color:red; font-weight:bold;">${fmtRate(item.uber)}</td>
-                <td>${fmtRate(item.legend)}</td>
+                <td style="${uberStyle}">${fmtRate(item.uber)}</td>
+                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
                     ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
                 </td>
