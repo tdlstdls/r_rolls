@@ -72,5 +72,7 @@ const gacha_series = [
     {"series_id":70,"name":"億DL記念選抜", "rare":6930, "supa":2500, "uber":500, "legend":70,"sort":108},
     {"series_id":71,"name":"アウトレット", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":705},
     {"series_id":72,"name":"範馬刃牙", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":615},
-    {"series_id":73,"name":"ソニック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":616}
+    {"series_id":73,"name":"ソニック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":616},
+    {"series_id":74,"name":"仮2026新年超極(956add8)", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":101}
+
 ];
