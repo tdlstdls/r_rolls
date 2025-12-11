@@ -122,8 +122,7 @@ function updateModeButtonState() {
             btn.textContent = "表示モードへ";
             btn.classList.add('active');
         } else {
-            // ここを変更: ボタンテキストを更新
-            btn.textContent = "シミュレーションモードへ（未実装）";
+            btn.textContent = "SIMモードへ（未実装）"; // 修正
             btn.classList.remove('active');
         }
     }
@@ -149,7 +148,7 @@ function resetAndGenerateTable() {
          currentRolls = 300;
     }
     generateRollsTable();
-    updateMasterInfoView();
+    updateMasterInfoView(); // テーブル更新時にマスタ情報も更新
     updateUrlParams();
 }
 

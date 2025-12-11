@@ -16,7 +16,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    flex-wrap: wrap; /* モバイル対応 */
+    flex-wrap: wrap;
 }
 
 h1 {
@@ -119,12 +119,16 @@ button.active {
    ========================================= */
 #rolls-table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 80vh;
+    border: 1px solid #ddd;
 }
 
 table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 0;
     font-size: 12px;
 }
 
@@ -138,6 +142,15 @@ th, td {
 th {
     background-color: #f8f9fa;
     font-weight: bold;
+    /* ヘッダー固定設定 */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    /* 修正: 上部の罫線を復活 */
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    /* sticky時の境界線を綺麗に見せるための微調整 */
+    box-shadow: 0 1px 0 #ddd; 
 }
 
 /* 列ごとのスタイル */
@@ -215,7 +228,8 @@ th {
 
 .schedule-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin-top: 0; 
     font-size: 14px;
 }
@@ -239,6 +253,9 @@ th {
     position: sticky;
     top: 0;
     z-index: 10;
+    /* 修正: 上部の罫線を復活 */
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ccc;
 }
 
 .row-ended {
@@ -495,17 +512,14 @@ th {
     /* ガチャヘッダー内の調整 */
     .gacha-header-wrapper {
         gap: 2px;
-        /* モバイルで左側が見切れるのを防ぐため強制的に左寄せ */
         justify-content: flex-start !important;
         width: 100%;
     }
     
-    /* セレクトボックスの縮小解除（タップしやすくする） */
     .gacha-header-wrapper select {
         transform: none !important;
     }
     
-    /* ヘッダー下のボタンエリア (Gボタン/削除ボタン等) */
     th div[style*="margin-top"] {
         transform: scale(0.85);
         transform-origin: center top;
