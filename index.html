@@ -9,7 +9,14 @@
 </head>
 <body>
     <div class="container">
-        <h1>Rare Gacha Rolls</h1>
+        <div class="header-row">
+            <h1>Rare Gacha Rolls</h1>
+            <div class="header-actions">
+                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
+                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">シミュレーションモードへ</button>
+                <button id="toggle-schedule-btn" class="secondary" onclick="toggleSchedule()">スケジュールを表示</button>
+            </div>
+        </div>
         
         <div class="controls">
             <div class="control-group">
@@ -17,29 +24,25 @@
                 <input type="number" id="seed" placeholder="Enter Seed" value="12345" onchange="updateUrlParams(); resetAndGenerateTable();">
             </div>
             
-            <div class="control-group" id="sim-control-wrapper" class="hidden">
+            <div class="control-group hidden" id="sim-control-wrapper">
                 <label for="sim-config">Simulation Config:</label>
                 <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();">
                 <button onclick="clearSimConfig()">Clear Config</button>
             </div>
 
-            <div class="mode-select">
-                <label><input type="radio" name="appMode" value="display" checked onchange="onModeChange()"> 表示モード</label>
-                <label><input type="radio" name="appMode" value="simulation" onchange="onModeChange()"> シミュレーションモード（未実装）</label>
-            </div>
-
             <div style="margin-top: 5px;">
                 <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
-                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
+                <button id="toggle-master-info-btn" class="secondary" onclick="toggleMasterInfo()">ガチャマスター情報を表示</button>
             </div>
         </div>
 
         <div id="description-content" class="description-box hidden">
             <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
-            以下、未実装<br>
             <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
             数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
         </div>
+
+        <div id="master-info-container" class="description-box hidden" style="font-size: 0.85em; line-height: 1.4; word-break: break-all;"></div>
 
         <div id="result" class="result-box hidden"></div>
         
@@ -61,7 +64,6 @@
     <script src="simulation.js"></script>
     <script src="schedule_logic.js"></script>
     <script src="data_loader.js"></script> 
-
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
     <script src="table_renderer.js"></script>

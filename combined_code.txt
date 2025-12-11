@@ -1284,7 +1284,14 @@ FILE: index.html
 </head>
 <body>
     <div class="container">
-        <h1>Rare Gacha Rolls</h1>
+        <div class="header-row">
+            <h1>Rare Gacha Rolls</h1>
+            <div class="header-actions">
+                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
+                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">シミュレーションモードへ</button>
+                <button id="toggle-schedule-btn" class="secondary" onclick="toggleSchedule()">スケジュールを表示</button>
+            </div>
+        </div>
         
         <div class="controls">
             <div class="control-group">
@@ -1292,29 +1299,25 @@ FILE: index.html
                 <input type="number" id="seed" placeholder="Enter Seed" value="12345" onchange="updateUrlParams(); resetAndGenerateTable();">
             </div>
             
-            <div class="control-group" id="sim-control-wrapper" class="hidden">
+            <div class="control-group hidden" id="sim-control-wrapper">
                 <label for="sim-config">Simulation Config:</label>
                 <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();">
                 <button onclick="clearSimConfig()">Clear Config</button>
             </div>
 
-            <div class="mode-select">
-                <label><input type="radio" name="appMode" value="display" checked onchange="onModeChange()"> 表示モード</label>
-                <label><input type="radio" name="appMode" value="simulation" onchange="onModeChange()"> シミュレーションモード（未実装）</label>
-            </div>
-
             <div style="margin-top: 5px;">
                 <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
-                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
+                <button id="toggle-master-info-btn" class="secondary" onclick="toggleMasterInfo()">ガチャマスター情報を表示</button>
             </div>
         </div>
 
         <div id="description-content" class="description-box hidden">
             <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
-            以下、未実装<br>
             <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
             数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
         </div>
+
+        <div id="master-info-container" class="description-box hidden" style="font-size: 0.85em; line-height: 1.4; word-break: break-all;"></div>
 
         <div id="result" class="result-box hidden"></div>
         
@@ -1336,7 +1339,6 @@ FILE: index.html
     <script src="simulation.js"></script>
     <script src="schedule_logic.js"></script>
     <script src="data_loader.js"></script> 
-
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
     <script src="table_renderer.js"></script>
@@ -2369,8 +2371,23 @@ body {
     background-color: #fff;
 }
 
-h1 {
+/* ヘッダーレイアウト */
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
+    flex-wrap: wrap; /* モバイル対応 */
+}
+
+h1 {
+    margin: 0;
+    padding: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
 }
 
 /* =========================================
@@ -2508,12 +2525,10 @@ th {
 
 /* ハイライト（シミュレーションルート） */
 .highlight {
-    /* 枠線は削除し、背景色のみ table_renderer.js で制御 */
     position: relative;
 }
 
 .highlight-uber {
-    /* 枠線と影の設定を削除、文字色のみ強調 */
     font-weight: bold;
     color: #c2185b;
 }
@@ -2562,7 +2577,7 @@ th {
 .schedule-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 0; /* ラッパー内なのでマージン削除 */
+    margin-top: 0; 
     font-size: 14px;
 }
 
@@ -2574,7 +2589,6 @@ th {
     white-space: nowrap;
 }
 
-/* ガチャ名は折り返し許可 */
 .schedule-table td:nth-child(3) {
     white-space: normal;
     text-align: left;
@@ -2588,20 +2602,18 @@ th {
     z-index: 10;
 }
 
-/* --- 追加: スケジュール行の背景色 --- */
 .row-ended {
-    background-color: #e0e0e0 !important; /* 終了: グレー */
+    background-color: #e0e0e0 !important;
     color: #666;
 }
 
-/* 終了した行のガントバーは彩度を落とす */
 .row-ended .gantt-bar {
     filter: grayscale(100%);
     opacity: 0.6;
 }
 
 .row-guaranteed {
-    background-color: #ffffe0 !important; /* 確定: 薄い黄色 */
+    background-color: #ffffe0 !important;
 }
 
 /* =========================================
@@ -2611,10 +2623,9 @@ th {
     box-sizing: border-box;
 }
 
-/* ガントチャート全体を囲むラッパー (shrink-to-fit) */
 .gantt-outer-wrapper {
-    display: inline-block; /* コンテンツ幅に合わせて縮む */
-    max-width: 100%;       /* 画面幅を超えたらスクロール */
+    display: inline-block;
+    max-width: 100%;
     vertical-align: top;
 }
 
@@ -2632,7 +2643,6 @@ th {
     padding-bottom: 10px;
 }
 
-/* ヘッダー（日付行） */
 .gantt-header {
     display: flex;
     border-bottom: 1px solid #ccc;
@@ -2643,23 +2653,21 @@ th {
 }
 
 .gantt-label-col {
-    width: 160px; /* 幅を縮小 */
+    width: 160px;
     min-width: 160px;
     padding: 5px;
     border-right: 1px solid #ccc;
-    /* 親要素(row)の色を透過させるためinheritまたはtransparentに変更 */
     background-color: inherit; 
     position: sticky;
     left: 0;
     z-index: 5;
     display: flex;
     align-items: center;
-    justify-content: center; /* 中央揃え */
+    justify-content: center;
     font-weight: bold;
     border-bottom: 1px solid #eee;
 }
 
-/* ヘッダーのみ背景色を固定 */
 .gantt-header .gantt-label-col {
     background-color: #f9f9f9;
 }
@@ -2680,7 +2688,6 @@ th {
     background-color: #e0f7fa;
 }
 
-/* ボディ（行） */
 .gantt-body {
     position: relative;
 }
@@ -2689,22 +2696,22 @@ th {
     display: flex;
     border-bottom: 1px solid #eee;
     height: 30px;
-    background-color: #fff; /* デフォルト背景 */
+    background-color: #fff;
 }
 
 .gantt-row:hover {
-    filter: brightness(0.95); /* ホバー時は少し暗くする（背景色維持のため） */
+    filter: brightness(0.95);
 }
 
 .gantt-row .gantt-label-col {
     font-weight: normal;
-    text-align: center; /* 中央揃え */
+    text-align: center;
     justify-content: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     display: block;
-    line-height: 20px; 
+    line-height: 20px;
 }
 
 .gantt-bar-area {
@@ -2713,13 +2720,12 @@ th {
     flex-grow: 1;
 }
 
-/* ガントバー */
 .gantt-bar {
     position: absolute;
     top: 5px;
     height: 20px;
     background-color: #4caf50;
-    border: 1px solid #4caf50; /* 枠線を背景色と同じにする */
+    border: 1px solid #4caf50;
     border-radius: 3px;
     color: #fff;
     font-size: 10px;
@@ -2729,32 +2735,18 @@ th {
     overflow: hidden;
     white-space: nowrap;
     box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-    z-index: 2; 
+    z-index: 2;
 }
 
-/* 各色設定（枠線色も合わせる） */
-.gantt-bar.g-kyoku { 
-    background-color: #e91e63;
-    border-color: #e91e63;
-}
-.gantt-bar.g-cho { 
-    background-color: #9c27b0;
-    border-color: #9c27b0;
-} 
-.gantt-bar.g-fest { 
-    background-color: #ff9800;
-    border-color: #ff9800;
-}
-.gantt-bar.g-collab { 
-    background-color: #2196f3;
-    border-color: #2196f3;
-}
+.gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
+.gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; } 
+.gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
+.gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
 
 .gantt-bar-text {
     padding: 0 4px;
 }
 
-/* 縦グリッド線 */
 .gantt-grid-line {
     position: absolute;
     top: 0;
@@ -2767,7 +2759,6 @@ th {
     background-color: rgba(224, 247, 250, 0.3);
 }
 
-/* ガントチャート現在時刻線 */
 .gantt-current-line {
     position: absolute;
     top: 0;
@@ -2777,6 +2768,153 @@ th {
     z-index: 1; 
     opacity: 0.7;
     pointer-events: none;
+}
+
+/* =========================================
+   モバイル用・高密度表示レイアウト
+   ========================================= */
+@media (max-width: 768px) {
+    /* ヘッダーの調整 */
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .header-actions {
+        width: 100%;
+        gap: 5px;
+        flex-wrap: wrap; /* ボタンが多い場合は折り返し */
+    }
+
+    body {
+        padding: 4px;
+        font-size: 11px;
+    }
+
+    h1 {
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+
+    .controls {
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+
+    .control-group {
+        margin-bottom: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    label {
+        font-size: 10px;
+        margin-right: 5px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+        font-size: 11px;
+        padding: 2px 4px;
+        height: 24px;
+    }
+    
+    #seed, #sim-config {
+        max-width: 120px;
+    }
+
+    button {
+        padding: 3px 8px;
+        font-size: 11px;
+        height: 24px;
+        line-height: 1;
+    }
+
+    .bottom-controls button {
+        padding: 6px 10px;
+        height: auto;
+    }
+
+    table {
+        font-size: 10px;
+        margin-top: 5px;
+    }
+
+    th, td {
+        padding: 2px 3px;
+        height: auto;
+    }
+
+    .gacha-column {
+        min-width: 85px;
+        max-width: 100px;
+        overflow: hidden;
+    }
+    
+    .gacha-header-wrapper {
+        gap: 2px;
+    }
+    
+    .gacha-header-wrapper select,
+    .gacha-header-wrapper .uber-add-select {
+        transform: scale(0.9);
+        transform-origin: left center;
+    }
+    
+    th div[style*="margin-top"] {
+        transform: scale(0.85);
+        transform-origin: center top;
+        width: 115%;
+        margin-left: -7.5%;
+        white-space: nowrap;
+    }
+
+    .gacha-cell {
+        line-height: 1.1;
+    }
+
+    .calc-column {
+        font-size: 9px;
+        width: auto;
+    }
+
+    .schedule-table th, 
+    .schedule-table td {
+        padding: 2px 4px;
+        font-size: 10px;
+    }
+    
+    .schedule-table td:nth-child(3) {
+        min-width: 140px;
+    }
+
+    .gantt-row {
+        height: 24px !important;
+    }
+
+    .gantt-label-col {
+        width: 100px !important;
+        min-width: 100px !important;
+        font-size: 10px !important;
+        line-height: 24px !important;
+        padding: 0 2px !important;
+    }
+    
+    .gantt-bar {
+        height: 16px !important;
+        top: 4px !important;
+        font-size: 9px !important;
+    }
+    
+    .gantt-date-cell {
+        font-size: 9px !important;
+    }
+    
+    #result {
+        font-size: 10px;
+    }
 }
 
 ====================
@@ -3637,29 +3775,25 @@ FILE: ui_controller.js
 /**
  * ui_controller.js
  * 画面描画制御、イベントハンドラ、UI状態管理
- * (ロジック詳細は url_manager.js, gacha_selector.js, table_renderer.js に委譲)
  */
 
 // UI状態変数 (Global)
 let tableGachaIds = [];
-let currentRolls = 300; // 表示行数の初期値を設定
+let currentRolls = 300; 
 let showSeedColumns = false;
 let showResultDisplay = false;
+let showMasterInfo = false; // マスタ情報表示フラグ
 let finalSeedForUpdate = null;
 let isSimulationMode = false;
 let isScheduleMode = false;
-let activeGuaranteedIds = new Set(); // 現在開催中で確定のガチャIDを保持
+let activeGuaranteedIds = new Set();
 let isScheduleAnalyzed = false;
-// 解析済みフラグ
 
-// 超激レア追加シミュレーション用 (index -> 追加数)
+// 超激レア追加シミュレーション用
 let uberAdditionCounts = {};
 
-// --- スケジュール解析とデータ反映の共通関数 ---
-// gacha_selector.js や initializeDefaultGachas から呼ばれる
 function prepareScheduleInfo() {
     if (isScheduleAnalyzed) return;
-// すでに実行済みならスキップ
 
     if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
         typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
@@ -3673,14 +3807,10 @@ function prepareScheduleInfo() {
                 const startDt = parseDateTime(item.rawStart, item.startTime);
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
-                // 現在開催中かどうか
                 if (now >= startDt && now <= endDt) {
-                    // 確定ガチャの場合の処理
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-
-                        // マスタデータの名称に [確定] を追加表示 (未追加の場合のみ)
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
@@ -3699,31 +3829,24 @@ function prepareScheduleInfo() {
     }
 }
 
-// --- 初期化関連 ---
-
 function initializeDefaultGachas() {
-    // まずスケジュール情報を整理
     prepareScheduleInfo();
     if (tableGachaIds.length === 0) {
         let scheduleFound = false;
-        // 1. スケジュールロジックを利用して「現在開催中」の情報を解析
         if (isScheduleAnalyzed && typeof parseGachaTSV === 'function') {
             try {
                 const scheduleData = parseGachaTSV(loadedTsvContent);
                 const now = new Date();
 
-                // デフォルト表示用のガチャ選択 (プラチナ・レジェンド以外)
                 const activeGachas = scheduleData.filter(item => {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
-                    
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
-                        // 確定フラグがあれば 'g' (11連確定) をデフォルトにする
                         if (gacha.guaranteed) {
                             newId += 'g';
                         }
@@ -3736,7 +3859,6 @@ function initializeDefaultGachas() {
             }
         }
 
-        // 2. スケジュールから特定できなかった場合のフォールバック
         if (!scheduleFound || tableGachaIds.length === 0) {
             const options = getGachaSelectorOptions(null);
             if (options.length > 0) {
@@ -3755,16 +3877,32 @@ function initializeDefaultGachas() {
     }
 }
 
-// --- イベントハンドラ ---
+// --- モード切替ロジック (トグルボタン) ---
 
 function onModeChange() {
-    const radios = document.getElementsByName('appMode');
-    for (const radio of radios) {
-        if (radio.checked) {
-            isSimulationMode = (radio.value === 'simulation');
-            break;
+    updateModeButtonState();
+    refreshModeView();
+}
+
+function toggleAppMode() {
+    isSimulationMode = !isSimulationMode;
+    onModeChange();
+}
+
+function updateModeButtonState() {
+    const btn = document.getElementById('mode-toggle-btn');
+    if (btn) {
+        if (isSimulationMode) {
+            btn.textContent = "表示モードへ";
+            btn.classList.add('active');
+        } else {
+            btn.textContent = "シミュレーションモードへ";
+            btn.classList.remove('active');
         }
     }
+}
+
+function refreshModeView() {
     const simWrapper = document.getElementById('sim-control-wrapper');
     if (simWrapper) {
         if (isSimulationMode && !isScheduleMode) {
@@ -3781,10 +3919,10 @@ function resetAndGenerateTable() {
     finalSeedForUpdate = null;
     const simConf = document.getElementById('sim-config');
     if (simConf && simConf.value.trim() === '') {
-         // ★ここで強制的に100に戻されるので留意
-         currentRolls = 300; 
+         currentRolls = 300;
     }
     generateRollsTable();
+    updateMasterInfoView(); // テーブル更新時にマスタ情報も更新
     updateUrlParams();
 }
 
@@ -3797,8 +3935,9 @@ function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
         seedInput.value = newSeed;
-        currentRolls = 300; // ★ここも念のため留意しておきます
+        currentRolls = 300;
         generateRollsTable();
+        updateMasterInfoView();
         updateUrlParams();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3821,13 +3960,13 @@ function updateSeedFromSim() {
 function addGachaColumn() {
     const options = getGachaSelectorOptions(null);
     if (options.length > 0) {
-        // 追加時も、そのガチャが確定中なら最初から 'g' をつける
         let val = options[0].value;
         if (activeGuaranteedIds.has(parseInt(val))) {
             val += 'g';
         }
         tableGachaIds.push(val);
         generateRollsTable();
+        updateMasterInfoView();
     }
 }
 
@@ -3835,30 +3974,27 @@ function removeGachaColumn(index) {
     tableGachaIds.splice(index, 1);
     delete uberAdditionCounts[index];
     generateRollsTable();
+    updateMasterInfoView();
 }
 
 function updateGachaSelection(selectElement, index) {
     const originalIdWithSuffix = tableGachaIds[index];
     const newBaseId = selectElement.value;
-    // 選択されたガチャが現在「確定」かどうかチェック
     if (activeGuaranteedIds.has(parseInt(newBaseId))) {
-        // 確定ガチャなら強制的に 11g (11連確定) モードにする
         tableGachaIds[index] = newBaseId + 'g';
     } else {
-        // 確定でない場合は、元のサフィックスを引き継ぐ
         let suffix = '';
         if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
         else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
         else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
         tableGachaIds[index] = newBaseId + suffix;
     }
-    
     generateRollsTable();
+    updateMasterInfoView();
 }
 
 function toggleGuaranteedColumn(index) {
     const currentVal = tableGachaIds[index];
-    
     let baseId = currentVal;
     let suffix = '';
     if (currentVal.endsWith('f')) {
@@ -3873,7 +4009,6 @@ function toggleGuaranteedColumn(index) {
     }
 
     let nextSuffix = '';
-    // サイクル: ''(通常) -> 'g'(11連) -> 'f'(15連) -> 's'(7連) -> ''(通常)
     if (suffix === '') nextSuffix = 'g';
     else if (suffix === 'g') nextSuffix = 'f';
     else if (suffix === 'f') nextSuffix = 's';
@@ -3918,9 +4053,94 @@ function toggleDescription() {
     const toggle = document.getElementById('toggle-description');
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ?
-        '概要を表示' : '概要を非表示';
+        toggle.textContent = isHidden ? '概要を表示' : '概要を非表示';
     }
+}
+
+// --- ガチャマスター情報表示機能 ---
+
+function toggleMasterInfo() {
+    showMasterInfo = !showMasterInfo;
+    const container = document.getElementById('master-info-container');
+    const btn = document.getElementById('toggle-master-info-btn');
+    
+    if (showMasterInfo) {
+        if (container) {
+            container.innerHTML = generateMasterInfoHtml();
+            container.classList.remove('hidden');
+        }
+        if (btn) btn.textContent = 'ガチャマスター情報を非表示';
+    } else {
+        if (container) container.classList.add('hidden');
+        if (btn) btn.textContent = 'ガチャマスター情報を表示';
+    }
+}
+
+function updateMasterInfoView() {
+    if (showMasterInfo) {
+        const container = document.getElementById('master-info-container');
+        if (container) {
+            container.innerHTML = generateMasterInfoHtml();
+        }
+    }
+}
+
+function generateMasterInfoHtml() {
+    if (!gachaMasterData || !gachaMasterData.gachas) return '<p>データがありません</p>';
+    
+    // 現在選択中のユニークなガチャIDを抽出 (suffix除去)
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) {
+            id = id.slice(0, -1);
+        }
+        return id;
+    }))];
+
+    if (uniqueIds.length === 0) return '<p>ガチャが選択されていません</p>';
+
+    let html = '';
+    
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config) return;
+
+        html += `<div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">`;
+        html += `<h4 style="margin: 0 0 5px 0;">${config.name} (ID: ${id})</h4>`;
+
+        const rates = config.rarity_rates || {};
+        const pool = config.pool || {};
+
+        // レアリティの表示順 (Legendary -> Uber -> Super -> Rare)
+        const rarities = [
+            { key: 'legend', label: 'Legendary' },
+            { key: 'uber', label: 'Uber' },
+            { key: 'super', label: 'Super' },
+            { key: 'rare', label: 'Rare' }
+        ];
+
+        rarities.forEach(r => {
+            const rateVal = rates[r.key] || 0;
+            const rateStr = (rateVal / 100) + '%';
+            const charList = pool[r.key] || [];
+            const count = charList.length;
+
+            // 確率もリストも空なら表示しない
+            if (count === 0 && rateVal === 0) return;
+
+            // キャラリスト: "0 名前, 1 名前..."
+            const listStr = charList.map((c, idx) => `${idx}&nbsp;${c.name}`).join(', ');
+
+            html += `<div style="margin-bottom: 3px;">`;
+            html += `<strong>${r.label}:</strong> ${rateStr} (${count} cats) `;
+            html += `<span style="color: #555;">${listStr}</span>`;
+            html += `</div>`;
+        });
+
+        html += `</div>`;
+    });
+
+    return html;
 }
 
 // --- スケジュール表示関連 ---
@@ -3938,22 +4158,6 @@ function setupScheduleUI() {
             document.body.appendChild(scheduleContainer);
         }
     }
-
-    if (!document.getElementById('toggle-schedule-btn')) {
-        const btn = document.createElement('button');
-        btn.id = 'toggle-schedule-btn';
-        btn.textContent = 'スケジュールを表示';
-        btn.onclick = toggleSchedule;
-        btn.className = 'secondary';
-        
-        const refBtn = document.getElementById('toggle-description');
-        if (refBtn && refBtn.parentNode) {
-            refBtn.parentNode.insertBefore(btn, refBtn.nextSibling);
-        } else {
-            const controls = document.querySelector('.controls');
-            if(controls) controls.appendChild(btn);
-        }
-    }
 }
 
 function toggleSchedule() {
@@ -3969,6 +4173,7 @@ function toggleSchedule() {
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const bottomControls = document.getElementById('bottom-controls');
+    
     if (isScheduleMode) {
         scheduleBtn.textContent = 'ロールズに戻る';
         scheduleBtn.classList.add('active');

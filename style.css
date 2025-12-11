@@ -10,8 +10,23 @@ body {
     background-color: #fff;
 }
 
-h1 {
+/* ヘッダーレイアウト */
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
+    flex-wrap: wrap; /* モバイル対応 */
+}
+
+h1 {
+    margin: 0;
+    padding: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
 }
 
 /* =========================================
@@ -149,12 +164,10 @@ th {
 
 /* ハイライト（シミュレーションルート） */
 .highlight {
-    /* 枠線は削除し、背景色のみ table_renderer.js で制御 */
     position: relative;
 }
 
 .highlight-uber {
-    /* 枠線と影の設定を削除、文字色のみ強調 */
     font-weight: bold;
     color: #c2185b;
 }
@@ -203,7 +216,7 @@ th {
 .schedule-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 0; /* ラッパー内なのでマージン削除 */
+    margin-top: 0; 
     font-size: 14px;
 }
 
@@ -215,7 +228,6 @@ th {
     white-space: nowrap;
 }
 
-/* ガチャ名は折り返し許可 */
 .schedule-table td:nth-child(3) {
     white-space: normal;
     text-align: left;
@@ -229,20 +241,18 @@ th {
     z-index: 10;
 }
 
-/* --- 追加: スケジュール行の背景色 --- */
 .row-ended {
-    background-color: #e0e0e0 !important; /* 終了: グレー */
+    background-color: #e0e0e0 !important;
     color: #666;
 }
 
-/* 終了した行のガントバーは彩度を落とす */
 .row-ended .gantt-bar {
     filter: grayscale(100%);
     opacity: 0.6;
 }
 
 .row-guaranteed {
-    background-color: #ffffe0 !important; /* 確定: 薄い黄色 */
+    background-color: #ffffe0 !important;
 }
 
 /* =========================================
@@ -252,10 +262,9 @@ th {
     box-sizing: border-box;
 }
 
-/* ガントチャート全体を囲むラッパー (shrink-to-fit) */
 .gantt-outer-wrapper {
-    display: inline-block; /* コンテンツ幅に合わせて縮む */
-    max-width: 100%;       /* 画面幅を超えたらスクロール */
+    display: inline-block;
+    max-width: 100%;
     vertical-align: top;
 }
 
@@ -273,7 +282,6 @@ th {
     padding-bottom: 10px;
 }
 
-/* ヘッダー（日付行） */
 .gantt-header {
     display: flex;
     border-bottom: 1px solid #ccc;
@@ -284,23 +292,21 @@ th {
 }
 
 .gantt-label-col {
-    width: 160px; /* 幅を縮小 */
+    width: 160px;
     min-width: 160px;
     padding: 5px;
     border-right: 1px solid #ccc;
-    /* 親要素(row)の色を透過させるためinheritまたはtransparentに変更 */
     background-color: inherit; 
     position: sticky;
     left: 0;
     z-index: 5;
     display: flex;
     align-items: center;
-    justify-content: center; /* 中央揃え */
+    justify-content: center;
     font-weight: bold;
     border-bottom: 1px solid #eee;
 }
 
-/* ヘッダーのみ背景色を固定 */
 .gantt-header .gantt-label-col {
     background-color: #f9f9f9;
 }
@@ -321,7 +327,6 @@ th {
     background-color: #e0f7fa;
 }
 
-/* ボディ（行） */
 .gantt-body {
     position: relative;
 }
@@ -330,22 +335,22 @@ th {
     display: flex;
     border-bottom: 1px solid #eee;
     height: 30px;
-    background-color: #fff; /* デフォルト背景 */
+    background-color: #fff;
 }
 
 .gantt-row:hover {
-    filter: brightness(0.95); /* ホバー時は少し暗くする（背景色維持のため） */
+    filter: brightness(0.95);
 }
 
 .gantt-row .gantt-label-col {
     font-weight: normal;
-    text-align: center; /* 中央揃え */
+    text-align: center;
     justify-content: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     display: block;
-    line-height: 20px; 
+    line-height: 20px;
 }
 
 .gantt-bar-area {
@@ -354,13 +359,12 @@ th {
     flex-grow: 1;
 }
 
-/* ガントバー */
 .gantt-bar {
     position: absolute;
     top: 5px;
     height: 20px;
     background-color: #4caf50;
-    border: 1px solid #4caf50; /* 枠線を背景色と同じにする */
+    border: 1px solid #4caf50;
     border-radius: 3px;
     color: #fff;
     font-size: 10px;
@@ -370,32 +374,18 @@ th {
     overflow: hidden;
     white-space: nowrap;
     box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-    z-index: 2; 
+    z-index: 2;
 }
 
-/* 各色設定（枠線色も合わせる） */
-.gantt-bar.g-kyoku { 
-    background-color: #e91e63;
-    border-color: #e91e63;
-}
-.gantt-bar.g-cho { 
-    background-color: #9c27b0;
-    border-color: #9c27b0;
-} 
-.gantt-bar.g-fest { 
-    background-color: #ff9800;
-    border-color: #ff9800;
-}
-.gantt-bar.g-collab { 
-    background-color: #2196f3;
-    border-color: #2196f3;
-}
+.gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
+.gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; } 
+.gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
+.gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
 
 .gantt-bar-text {
     padding: 0 4px;
 }
 
-/* 縦グリッド線 */
 .gantt-grid-line {
     position: absolute;
     top: 0;
@@ -408,7 +398,6 @@ th {
     background-color: rgba(224, 247, 250, 0.3);
 }
 
-/* ガントチャート現在時刻線 */
 .gantt-current-line {
     position: absolute;
     top: 0;
@@ -418,4 +407,151 @@ th {
     z-index: 1; 
     opacity: 0.7;
     pointer-events: none;
+}
+
+/* =========================================
+   モバイル用・高密度表示レイアウト
+   ========================================= */
+@media (max-width: 768px) {
+    /* ヘッダーの調整 */
+    .header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .header-actions {
+        width: 100%;
+        gap: 5px;
+        flex-wrap: wrap; /* ボタンが多い場合は折り返し */
+    }
+
+    body {
+        padding: 4px;
+        font-size: 11px;
+    }
+
+    h1 {
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+
+    .controls {
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+
+    .control-group {
+        margin-bottom: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    label {
+        font-size: 10px;
+        margin-right: 5px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+        font-size: 11px;
+        padding: 2px 4px;
+        height: 24px;
+    }
+    
+    #seed, #sim-config {
+        max-width: 120px;
+    }
+
+    button {
+        padding: 3px 8px;
+        font-size: 11px;
+        height: 24px;
+        line-height: 1;
+    }
+
+    .bottom-controls button {
+        padding: 6px 10px;
+        height: auto;
+    }
+
+    table {
+        font-size: 10px;
+        margin-top: 5px;
+    }
+
+    th, td {
+        padding: 2px 3px;
+        height: auto;
+    }
+
+    .gacha-column {
+        min-width: 85px;
+        max-width: 100px;
+        overflow: hidden;
+    }
+    
+    .gacha-header-wrapper {
+        gap: 2px;
+    }
+    
+    .gacha-header-wrapper select,
+    .gacha-header-wrapper .uber-add-select {
+        transform: scale(0.9);
+        transform-origin: left center;
+    }
+    
+    th div[style*="margin-top"] {
+        transform: scale(0.85);
+        transform-origin: center top;
+        width: 115%;
+        margin-left: -7.5%;
+        white-space: nowrap;
+    }
+
+    .gacha-cell {
+        line-height: 1.1;
+    }
+
+    .calc-column {
+        font-size: 9px;
+        width: auto;
+    }
+
+    .schedule-table th, 
+    .schedule-table td {
+        padding: 2px 4px;
+        font-size: 10px;
+    }
+    
+    .schedule-table td:nth-child(3) {
+        min-width: 140px;
+    }
+
+    .gantt-row {
+        height: 24px !important;
+    }
+
+    .gantt-label-col {
+        width: 100px !important;
+        min-width: 100px !important;
+        font-size: 10px !important;
+        line-height: 24px !important;
+        padding: 0 2px !important;
+    }
+    
+    .gantt-bar {
+        height: 16px !important;
+        top: 4px !important;
+        font-size: 9px !important;
+    }
+    
+    .gantt-date-cell {
+        font-size: 9px !important;
+    }
+    
+    #result {
+        font-size: 10px;
+    }
 }

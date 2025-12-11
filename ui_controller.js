@@ -1,29 +1,25 @@
 /**
  * ui_controller.js
  * 画面描画制御、イベントハンドラ、UI状態管理
- * (ロジック詳細は url_manager.js, gacha_selector.js, table_renderer.js に委譲)
  */
 
 // UI状態変数 (Global)
 let tableGachaIds = [];
-let currentRolls = 300; // 表示行数の初期値を設定
+let currentRolls = 300; 
 let showSeedColumns = false;
 let showResultDisplay = false;
+let showMasterInfo = false; // マスタ情報表示フラグ
 let finalSeedForUpdate = null;
 let isSimulationMode = false;
 let isScheduleMode = false;
-let activeGuaranteedIds = new Set(); // 現在開催中で確定のガチャIDを保持
+let activeGuaranteedIds = new Set();
 let isScheduleAnalyzed = false;
-// 解析済みフラグ
 
-// 超激レア追加シミュレーション用 (index -> 追加数)
+// 超激レア追加シミュレーション用
 let uberAdditionCounts = {};
 
-// --- スケジュール解析とデータ反映の共通関数 ---
-// gacha_selector.js や initializeDefaultGachas から呼ばれる
 function prepareScheduleInfo() {
     if (isScheduleAnalyzed) return;
-// すでに実行済みならスキップ
 
     if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
         typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
@@ -37,14 +33,10 @@ function prepareScheduleInfo() {
                 const startDt = parseDateTime(item.rawStart, item.startTime);
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
-                // 現在開催中かどうか
                 if (now >= startDt && now <= endDt) {
-                    // 確定ガチャの場合の処理
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-
-                        // マスタデータの名称に [確定] を追加表示 (未追加の場合のみ)
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
@@ -63,31 +55,24 @@ function prepareScheduleInfo() {
     }
 }
 
-// --- 初期化関連 ---
-
 function initializeDefaultGachas() {
-    // まずスケジュール情報を整理
     prepareScheduleInfo();
     if (tableGachaIds.length === 0) {
         let scheduleFound = false;
-        // 1. スケジュールロジックを利用して「現在開催中」の情報を解析
         if (isScheduleAnalyzed && typeof parseGachaTSV === 'function') {
             try {
                 const scheduleData = parseGachaTSV(loadedTsvContent);
                 const now = new Date();
 
-                // デフォルト表示用のガチャ選択 (プラチナ・レジェンド以外)
                 const activeGachas = scheduleData.filter(item => {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
-                    
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
-                        // 確定フラグがあれば 'g' (11連確定) をデフォルトにする
                         if (gacha.guaranteed) {
                             newId += 'g';
                         }
@@ -100,7 +85,6 @@ function initializeDefaultGachas() {
             }
         }
 
-        // 2. スケジュールから特定できなかった場合のフォールバック
         if (!scheduleFound || tableGachaIds.length === 0) {
             const options = getGachaSelectorOptions(null);
             if (options.length > 0) {
@@ -119,16 +103,32 @@ function initializeDefaultGachas() {
     }
 }
 
-// --- イベントハンドラ ---
+// --- モード切替ロジック (トグルボタン) ---
 
 function onModeChange() {
-    const radios = document.getElementsByName('appMode');
-    for (const radio of radios) {
-        if (radio.checked) {
-            isSimulationMode = (radio.value === 'simulation');
-            break;
+    updateModeButtonState();
+    refreshModeView();
+}
+
+function toggleAppMode() {
+    isSimulationMode = !isSimulationMode;
+    onModeChange();
+}
+
+function updateModeButtonState() {
+    const btn = document.getElementById('mode-toggle-btn');
+    if (btn) {
+        if (isSimulationMode) {
+            btn.textContent = "表示モードへ";
+            btn.classList.add('active');
+        } else {
+            btn.textContent = "シミュレーションモードへ";
+            btn.classList.remove('active');
         }
     }
+}
+
+function refreshModeView() {
     const simWrapper = document.getElementById('sim-control-wrapper');
     if (simWrapper) {
         if (isSimulationMode && !isScheduleMode) {
@@ -145,10 +145,10 @@ function resetAndGenerateTable() {
     finalSeedForUpdate = null;
     const simConf = document.getElementById('sim-config');
     if (simConf && simConf.value.trim() === '') {
-         // ★ここで強制的に100に戻されるので留意
-         currentRolls = 300; 
+         currentRolls = 300;
     }
     generateRollsTable();
+    updateMasterInfoView(); // テーブル更新時にマスタ情報も更新
     updateUrlParams();
 }
 
@@ -161,8 +161,9 @@ function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
         seedInput.value = newSeed;
-        currentRolls = 300; // ★ここも念のため留意しておきます
+        currentRolls = 300;
         generateRollsTable();
+        updateMasterInfoView();
         updateUrlParams();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -185,13 +186,13 @@ function updateSeedFromSim() {
 function addGachaColumn() {
     const options = getGachaSelectorOptions(null);
     if (options.length > 0) {
-        // 追加時も、そのガチャが確定中なら最初から 'g' をつける
         let val = options[0].value;
         if (activeGuaranteedIds.has(parseInt(val))) {
             val += 'g';
         }
         tableGachaIds.push(val);
         generateRollsTable();
+        updateMasterInfoView();
     }
 }
 
@@ -199,30 +200,27 @@ function removeGachaColumn(index) {
     tableGachaIds.splice(index, 1);
     delete uberAdditionCounts[index];
     generateRollsTable();
+    updateMasterInfoView();
 }
 
 function updateGachaSelection(selectElement, index) {
     const originalIdWithSuffix = tableGachaIds[index];
     const newBaseId = selectElement.value;
-    // 選択されたガチャが現在「確定」かどうかチェック
     if (activeGuaranteedIds.has(parseInt(newBaseId))) {
-        // 確定ガチャなら強制的に 11g (11連確定) モードにする
         tableGachaIds[index] = newBaseId + 'g';
     } else {
-        // 確定でない場合は、元のサフィックスを引き継ぐ
         let suffix = '';
         if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
         else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
         else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
         tableGachaIds[index] = newBaseId + suffix;
     }
-    
     generateRollsTable();
+    updateMasterInfoView();
 }
 
 function toggleGuaranteedColumn(index) {
     const currentVal = tableGachaIds[index];
-    
     let baseId = currentVal;
     let suffix = '';
     if (currentVal.endsWith('f')) {
@@ -237,7 +235,6 @@ function toggleGuaranteedColumn(index) {
     }
 
     let nextSuffix = '';
-    // サイクル: ''(通常) -> 'g'(11連) -> 'f'(15連) -> 's'(7連) -> ''(通常)
     if (suffix === '') nextSuffix = 'g';
     else if (suffix === 'g') nextSuffix = 'f';
     else if (suffix === 'f') nextSuffix = 's';
@@ -282,9 +279,94 @@ function toggleDescription() {
     const toggle = document.getElementById('toggle-description');
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ?
-        '概要を表示' : '概要を非表示';
+        toggle.textContent = isHidden ? '概要を表示' : '概要を非表示';
     }
+}
+
+// --- ガチャマスター情報表示機能 ---
+
+function toggleMasterInfo() {
+    showMasterInfo = !showMasterInfo;
+    const container = document.getElementById('master-info-container');
+    const btn = document.getElementById('toggle-master-info-btn');
+    
+    if (showMasterInfo) {
+        if (container) {
+            container.innerHTML = generateMasterInfoHtml();
+            container.classList.remove('hidden');
+        }
+        if (btn) btn.textContent = 'ガチャマスター情報を非表示';
+    } else {
+        if (container) container.classList.add('hidden');
+        if (btn) btn.textContent = 'ガチャマスター情報を表示';
+    }
+}
+
+function updateMasterInfoView() {
+    if (showMasterInfo) {
+        const container = document.getElementById('master-info-container');
+        if (container) {
+            container.innerHTML = generateMasterInfoHtml();
+        }
+    }
+}
+
+function generateMasterInfoHtml() {
+    if (!gachaMasterData || !gachaMasterData.gachas) return '<p>データがありません</p>';
+    
+    // 現在選択中のユニークなガチャIDを抽出 (suffix除去)
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) {
+            id = id.slice(0, -1);
+        }
+        return id;
+    }))];
+
+    if (uniqueIds.length === 0) return '<p>ガチャが選択されていません</p>';
+
+    let html = '';
+    
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config) return;
+
+        html += `<div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">`;
+        html += `<h4 style="margin: 0 0 5px 0;">${config.name} (ID: ${id})</h4>`;
+
+        const rates = config.rarity_rates || {};
+        const pool = config.pool || {};
+
+        // レアリティの表示順 (Legendary -> Uber -> Super -> Rare)
+        const rarities = [
+            { key: 'legend', label: 'Legendary' },
+            { key: 'uber', label: 'Uber' },
+            { key: 'super', label: 'Super' },
+            { key: 'rare', label: 'Rare' }
+        ];
+
+        rarities.forEach(r => {
+            const rateVal = rates[r.key] || 0;
+            const rateStr = (rateVal / 100) + '%';
+            const charList = pool[r.key] || [];
+            const count = charList.length;
+
+            // 確率もリストも空なら表示しない
+            if (count === 0 && rateVal === 0) return;
+
+            // キャラリスト: "0 名前, 1 名前..."
+            const listStr = charList.map((c, idx) => `${idx}&nbsp;${c.name}`).join(', ');
+
+            html += `<div style="margin-bottom: 3px;">`;
+            html += `<strong>${r.label}:</strong> ${rateStr} (${count} cats) `;
+            html += `<span style="color: #555;">${listStr}</span>`;
+            html += `</div>`;
+        });
+
+        html += `</div>`;
+    });
+
+    return html;
 }
 
 // --- スケジュール表示関連 ---
@@ -302,22 +384,6 @@ function setupScheduleUI() {
             document.body.appendChild(scheduleContainer);
         }
     }
-
-    if (!document.getElementById('toggle-schedule-btn')) {
-        const btn = document.createElement('button');
-        btn.id = 'toggle-schedule-btn';
-        btn.textContent = 'スケジュールを表示';
-        btn.onclick = toggleSchedule;
-        btn.className = 'secondary';
-        
-        const refBtn = document.getElementById('toggle-description');
-        if (refBtn && refBtn.parentNode) {
-            refBtn.parentNode.insertBefore(btn, refBtn.nextSibling);
-        } else {
-            const controls = document.querySelector('.controls');
-            if(controls) controls.appendChild(btn);
-        }
-    }
 }
 
 function toggleSchedule() {
@@ -333,6 +399,7 @@ function toggleSchedule() {
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const bottomControls = document.getElementById('bottom-controls');
+    
     if (isScheduleMode) {
         scheduleBtn.textContent = 'ロールズに戻る';
         scheduleBtn.classList.add('active');
