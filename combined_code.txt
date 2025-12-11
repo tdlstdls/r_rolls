@@ -1,0 +1,3867 @@
+﻿====================
+FILE: cats.js
+====================
+const cats = [
+  { "id": 0, "name": "ネコ", "rarity": 0 },
+  { "id": 1, "name": "タンクネコ", "rarity": 0 },
+  { "id": 2, "name": "バトルネコ", "rarity": 0 },
+  { "id": 3, "name": "キモネコ", "rarity": 0 },
+  { "id": 4, "name": "ウシネコ", "rarity": 0 },
+  { "id": 5, "name": "ネコノトリ", "rarity": 0 },
+  { "id": 6, "name": "ネコフィッシュ", "rarity": 0 },
+  { "id": 7, "name": "ネコトカゲ", "rarity": 0 },
+  { "id": 8, "name": "巨神ネコ", "rarity": 0 },
+  { "id": 9, "name": "ネコ女優", "rarity": 1 },
+  { "id": 10, "name": "カンフーにゃんこ", "rarity": 1 },
+  { "id": 11, "name": "Mr.", "rarity": 1 },
+  { "id": 12, "name": "猫縛り", "rarity": 1 },
+  { "id": 13, "name": "女王猫", "rarity": 1 },
+  { "id": 14, "name": "ネコの箱詰め", "rarity": 1 },
+  { "id": 15, "name": "ネコパンツ", "rarity": 1 },
+  { "id": 16, "name": "もねこ", "rarity": 1 },
+  { "id": 17, "name": "ネコリンリン", "rarity": 1 },
+  { "id": 18, "name": "ネコ忍者", "rarity": 1 },
+  { "id": 19, "name": "ネコゾンビ", "rarity": 1 },
+  { "id": 20, "name": "ネコざむらい", "rarity": 1 },
+  { "id": 21, "name": "スモウネコ", "rarity": 1 },
+  { "id": 22, "name": "ネコフィーバー", "rarity": 1 },
+  { "id": 23, "name": "ネコスカート", "rarity": 1 },
+  { "id": 24, "name": "ネコヴァルキリー", "rarity": 1 },
+  { "id": 25, "name": "ネコムート", "rarity": 1 },
+  { "id": 26, "name": "ケリ姫", "rarity": 1 },
+  { "id": 27, "name": "ネコひめ", "rarity": 1 },
+  { "id": 28, "name": "ネコカプセル", "rarity": 1 },
+  { "id": 29, "name": "マスクオブネコ", "rarity": 1 },
+  { "id": 30, "name": "ネコぼさつ", "rarity": 3 },
+  { "id": 31, "name": "ネコ番長", "rarity": 3 },
+  { "id": 32, "name": "ネコザイル", "rarity": 3 },
+  { "id": 33, "name": "ねこタツ", "rarity": 3 },
+  { "id": 34, "name": "ネコルガ", "rarity": 4 },
+  { "id": 35, "name": "オタネコ", "rarity": 3 },
+  { "id": 36, "name": "ネコスイマー", "rarity": 3 },
+  { "id": 37, "name": "ネコホッピング", "rarity": 2 },
+  { "id": 38, "name": "ネコ車輪", "rarity": 2 },
+  { "id": 39, "name": "ネコリンゴ", "rarity": 3 },
+  { "id": 40, "name": "ネコバスたぶ", "rarity": 3 },
+  { "id": 41, "name": "ネコエステ", "rarity": 2 },
+  { "id": 42, "name": "ネコアイス", "rarity": 4 },
+  { "id": 43, "name": "ネコマシン", "rarity": 4 },
+  { "id": 44, "name": "鬼にゃんま", "rarity": 4 },
+  { "id": 45, "name": "芸者ねこ", "rarity": 1 },
+  { "id": 46, "name": "ねこジュラ", "rarity": 2 },
+  { "id": 47, "name": "ねこファイター", "rarity": 2 },
+  { "id": 48, "name": "ねこ海賊", "rarity": 2 },
+  { "id": 49, "name": "ねこ泥棒", "rarity": 2 },
+  { "id": 50, "name": "ねこ僧侶", "rarity": 2 },
+  { "id": 51, "name": "ねこ占い師", "rarity": 2 },
+  { "id": 52, "name": "ネコシャーマン", "rarity": 2 },
+  { "id": 53, "name": "エヴァンジェリスト", "rarity": 4 },
+  { "id": 54, "name": "10式戦車", "rarity": 1 },
+  { "id": 55, "name": "ネコ魔女", "rarity": 2 },
+  { "id": 56, "name": "ネコアーチャー", "rarity": 2 },
+  { "id": 57, "name": "ネコシュバリエ", "rarity": 4 },
+  { "id": 58, "name": "ネコ魔剣士", "rarity": 2 },
+  { "id": 59, "name": "ねこベビー", "rarity": 4 },
+  { "id": 60, "name": "ネコブ・ロンズ", "rarity": 2 },
+  { "id": 61, "name": "ねこ寿司", "rarity": 3 },
+  { "id": 62, "name": "ネコポン", "rarity": 1 },
+  { "id": 63, "name": "ネコ運動会", "rarity": 2 },
+  { "id": 64, "name": "剣士", "rarity": 2 },
+  { "id": 65, "name": "ウシ姫", "rarity": 2 },
+  { "id": 66, "name": "KHM48", "rarity": 4 },
+  { "id": 67, "name": "チビガウ", "rarity": 2 },
+  { "id": 68, "name": "執行者", "rarity": 3 },
+  { "id": 69, "name": "眠れるケリの美女", "rarity": 3 },
+  { "id": 70, "name": "ネコリーマン", "rarity": 2 },
+  { "id": 71, "name": "真田幸村", "rarity": 4 },
+  { "id": 72, "name": "前田慶次", "rarity": 4 },
+  { "id": 73, "name": "織田信長", "rarity": 4 },
+  { "id": 74, "name": "トナカイフィッシュ", "rarity": 2 },
+  { "id": 75, "name": "風神のウィンディ", "rarity": 4 },
+  { "id": 76, "name": "雷神のサンディア", "rarity": 4 },
+  { "id": 77, "name": "ドロイド", "rarity": 2 },
+  { "id": 78, "name": "ネコと宇宙", "rarity": 2 },
+  { "id": 79, "name": "にゃんこ成人", "rarity": 2 },
+  { "id": 80, "name": "吾輩は鬼である", "rarity": 2 },
+  { "id": 81, "name": "ひなにゃんこ", "rarity": 2 },
+  { "id": 82, "name": "ネコ忍者～青～", "rarity": 1 },
+  { "id": 83, "name": "地龍ソドム", "rarity": 4 },
+  { "id": 84, "name": "聖龍メギドラ", "rarity": 4 },
+  { "id": 85, "name": "竜騎士バルス", "rarity": 4 },
+  { "id": 86, "name": "神龍かむくら", "rarity": 4 },
+  { "id": 87, "name": "竜戦機ライデン", "rarity": 4 },
+  { "id": 88, "name": "ネコなわとび", "rarity": 2 },
+  { "id": 89, "name": "ニムエ", "rarity": 4 },
+  { "id": 90, "name": "猿王", "rarity": 4 },
+  { "id": 91, "name": "狂乱のネコ", "rarity": 3 },
+  { "id": 92, "name": "狂乱のタンクネコ", "rarity": 3 },
+  { "id": 93, "name": "狂乱のバトルネコ", "rarity": 3 },
+  { "id": 94, "name": "狂乱のキモネコ", "rarity": 3 },
+  { "id": 95, "name": "狂乱のウシネコ", "rarity": 3 },
+  { "id": 96, "name": "狂乱のネコノトリ", "rarity": 3 },
+  { "id": 97, "name": "狂乱のネコフィッシュ", "rarity": 3 },
+  { "id": 98, "name": "狂乱のネコトカゲ", "rarity": 3 },
+  { "id": 99, "name": "狂乱の巨神ネコ", "rarity": 3 },
+  { "id": 100, "name": "ネコ乙女", "rarity": 2 },
+  { "id": 101, "name": "弱酸性エル", "rarity": 1 },
+  { "id": 102, "name": "レッドマローン", "rarity": 1 },
+  { "id": 103, "name": "歌謡にゃんこ", "rarity": 1 },
+  { "id": 104, "name": "マジでコイしてる", "rarity": 2 },
+  { "id": 105, "name": "猿帝のクウ", "rarity": 4 },
+  { "id": 106, "name": "召し豚のカイ", "rarity": 4 },
+  { "id": 107, "name": "宝杖のカッパーマイン", "rarity": 4 },
+  { "id": 108, "name": "にゃんこ３兄弟", "rarity": 1 },
+  { "id": 109, "name": "マダム・ザ・花嫁", "rarity": 2 },
+  { "id": 110, "name": "セレス", "rarity": 2 },
+  { "id": 111, "name": "ノノ", "rarity": 2 },
+  { "id": 112, "name": "オルガ", "rarity": 2 },
+  { "id": 113, "name": "ノルン", "rarity": 2 },
+  { "id": 114, "name": "よいち", "rarity": 2 },
+  { "id": 115, "name": "セラム", "rarity": 2 },
+  { "id": 116, "name": "フウ", "rarity": 2 },
+  { "id": 117, "name": "アウラ", "rarity": 3 },
+  { "id": 118, "name": "レイ", "rarity": 3 },
+  { "id": 119, "name": "ワイバーン", "rarity": 4 },
+  { "id": 120, "name": "癒術士", "rarity": 1 },
+  { "id": 121, "name": "メルク", "rarity": 1 },
+  { "id": 122, "name": "女王様の休日", "rarity": 2 },
+  { "id": 123, "name": "マメマメにゃんこ", "rarity": 1 },
+  { "id": 124, "name": "伊達政宗", "rarity": 4 },
+  { "id": 125, "name": "武田信玄", "rarity": 4 },
+  { "id": 126, "name": "カラクリにゃんこ", "rarity": 2 },
+  { "id": 127, "name": "ネコフラワー", "rarity": 1 },
+  { "id": 128, "name": "うらめしにゃん", "rarity": 2 },
+  { "id": 129, "name": "金ネコ", "rarity": 3 },
+  { "id": 130, "name": "ウルフとウルルン", "rarity": 1 },
+  { "id": 131, "name": "ねねこ", "rarity": 3 },
+  { "id": 132, "name": "カンフーにゃんこＧ", "rarity": 2 },
+  { "id": 133, "name": "ヒカキン", "rarity": 1 },
+  { "id": 134, "name": "うらしまタロウ", "rarity": 4 },
+  { "id": 135, "name": "ツルの恩返し", "rarity": 4 },
+  { "id": 136, "name": "ももたろう", "rarity": 4 },
+  { "id": 137, "name": "かさじぞう", "rarity": 4 },
+  { "id": 138, "name": "かぐやひめ", "rarity": 4 },
+  { "id": 139, "name": "ネコンドー", "rarity": 1 },
+  { "id": 140, "name": "ふにゅふにゅネコ", "rarity": 1 },
+  { "id": 141, "name": "神様", "rarity": 1 },
+  { "id": 142, "name": "ネコチュートリアル", "rarity": 1 },
+  { "id": 143, "name": "ねこナース", "rarity": 4 },
+  { "id": 144, "name": "にゃんこ城Mini", "rarity": 3 },
+  { "id": 145, "name": "ねこガンマン", "rarity": 2 },
+  { "id": 146, "name": "たけうまねこ", "rarity": 2 },
+  { "id": 147, "name": "ブリキネコ", "rarity": 2 },
+  { "id": 148, "name": "ねこロッカー", "rarity": 2 },
+  { "id": 149, "name": "ねこ人魚", "rarity": 2 },
+  { "id": 150, "name": "窓辺の乙女ネコ", "rarity": 3 },
+  { "id": 151, "name": "ネコバーベル", "rarity": 3 },
+  { "id": 152, "name": "ネコスケート", "rarity": 3 },
+  { "id": 153, "name": "ネコトースター", "rarity": 3 },
+  { "id": 154, "name": "ねこフープ", "rarity": 2 },
+  { "id": 155, "name": "156-1", "rarity": 4 },
+  { "id": 156, "name": "ドラリー剣士", "rarity": 2 },
+  { "id": 157, "name": "ヌボボ", "rarity": 1 },
+  { "id": 158, "name": "上杉謙信", "rarity": 4 },
+  { "id": 159, "name": "冥界のカリファ", "rarity": 4 },
+  { "id": 160, "name": "ユーリンチー", "rarity": 3 },
+  { "id": 161, "name": "狂乱のケリ姫", "rarity": 4 },
+  { "id": 162, "name": "綾小路 翔", "rarity": 1 },
+  { "id": 163, "name": "早乙女 光", "rarity": 1 },
+  { "id": 164, "name": "西園寺 瞳", "rarity": 1 },
+  { "id": 165, "name": "星グランマニエ", "rarity": 1 },
+  { "id": 166, "name": "白鳥松竹梅", "rarity": 1 },
+  { "id": 167, "name": "ネコヤンキー", "rarity": 2 },
+  { "id": 168, "name": "アシルガ", "rarity": 4 },
+  { "id": 169, "name": "クビルガ", "rarity": 4 },
+  { "id": 170, "name": "テコルガ", "rarity": 4 },
+  { "id": 171, "name": "バララガ", "rarity": 4 },
+  { "id": 172, "name": "コニャンダム", "rarity": 1 },
+  { "id": 173, "name": "厨房マンボウ", "rarity": 3 },
+  { "id": 174, "name": "マンボ王", "rarity": 4 },
+  { "id": 175, "name": "にゃんぼう", "rarity": 1 },
+  { "id": 176, "name": "マシュマロにゃん", "rarity": 2 },
+  { "id": 177, "name": "覇龍ディオラムス", "rarity": 4 },
+  { "id": 178, "name": "極道にゃんこ", "rarity": 1 },
+  { "id": 179, "name": "タクヤとユキ", "rarity": 2 },
+  { "id": 180, "name": "謎の少女ユキ", "rarity": 4 },
+  { "id": 181, "name": "ゆきにゃん", "rarity": 1 },
+  { "id": 183, "name": "にゃんこカートR", "rarity": 2 },
+  { "id": 184, "name": "ミスターニンジャ", "rarity": 1 },
+  { "id": 185, "name": "ハルシュト", "rarity": 4 },
+  { "id": 186, "name": "コーネリア", "rarity": 4 },
+  { "id": 187, "name": "ユーヴェンス", "rarity": 4 },
+  { "id": 188, "name": "ミスティカ", "rarity": 4 },
+  { "id": 189, "name": "アロイス", "rarity": 3 },
+  { "id": 190, "name": "シトルイユ", "rarity": 3 },
+  { "id": 191, "name": "ティティ", "rarity": 1 },
+  { "id": 192, "name": "山岡実乃里", "rarity": 1 },
+  { "id": 193, "name": "中村奏絵", "rarity": 1 },
+  { "id": 194, "name": "アキラ", "rarity": 4 },
+  { "id": 195, "name": "西園寺メカ子", "rarity": 4 },
+  { "id": 196, "name": "キャットマンダディ", "rarity": 4 },
+  { "id": 197, "name": "サイキックネコ", "rarity": 2 },
+  { "id": 198, "name": "ねこ陰陽師", "rarity": 2 },
+  { "id": 199, "name": "ネコサーファー", "rarity": 3 },
+  { "id": 200, "name": "メタルネコ", "rarity": 3 },
+  { "id": 201, "name": "ドラムメニャー", "rarity": 2 },
+  { "id": 202, "name": "ネコ小籠包", "rarity": 1 },
+  { "id": 203, "name": "カチカチヤマンズ", "rarity": 4 },
+  { "id": 204, "name": "アイルー", "rarity": 1 },
+  { "id": 205, "name": "シェリア【キリン】", "rarity": 1 },
+  { "id": 206, "name": "リオレウス", "rarity": 1 },
+  { "id": 207, "name": "リオレイア", "rarity": 1 },
+  { "id": 208, "name": "キリンネコ", "rarity": 1 },
+  { "id": 209, "name": "ちびネコ", "rarity": 1 },
+  { "id": 210, "name": "ちびタンクネコ", "rarity": 1 },
+  { "id": 211, "name": "ちびバトルネコ", "rarity": 1 },
+  { "id": 212, "name": "ホワイトラビット", "rarity": 4 },
+  { "id": 213, "name": "にゃんこバーガー", "rarity": 1 },
+  { "id": 214, "name": "百太郎", "rarity": 2 },
+  { "id": 215, "name": "マルコ", "rarity": 2 },
+  { "id": 216, "name": "ターマ", "rarity": 2 },
+  { "id": 217, "name": "エリ", "rarity": 2 },
+  { "id": 218, "name": "フィオ", "rarity": 2 },
+  { "id": 219, "name": "SV-001", "rarity": 3 },
+  { "id": 220, "name": "アレン・オニール", "rarity": 3 },
+  { "id": 221, "name": "マーズピープル", "rarity": 2 },
+  { "id": 222, "name": "ヒュージハーミット", "rarity": 4 },
+  { "id": 223, "name": "ジュピターキング", "rarity": 4 },
+  { "id": 224, "name": "モーデン元帥", "rarity": 4 },
+  { "id": 225, "name": "ハイ・ドゥ", "rarity": 4 },
+  { "id": 226, "name": "呪術師デスピエロ", "rarity": 4 },
+  { "id": 227, "name": "にゃんぷきん", "rarity": 2 },
+  { "id": 228, "name": "ハロウィンねねこ", "rarity": 3 },
+  { "id": 229, "name": "ウィンディスイート", "rarity": 4 },
+  { "id": 230, "name": "デビルサンディア", "rarity": 4 },
+  { "id": 231, "name": "おでん", "rarity": 1 },
+  { "id": 232, "name": "光の神徒ヴァルキリー", "rarity": 2 },
+  { "id": 233, "name": "神徒ブリュンヒルデ", "rarity": 2 },
+  { "id": 234, "name": "神徒スルズ", "rarity": 2 },
+  { "id": 235, "name": "豊穣の女神フレイヤ", "rarity": 3 },
+  { "id": 236, "name": "軍神オーディン", "rarity": 4 },
+  { "id": 237, "name": "おかめはちもくネコ", "rarity": 3 },
+  { "id": 238, "name": "ボンボンネコ", "rarity": 3 },
+  { "id": 239, "name": "見習いスニャイパー", "rarity": 3 },
+  { "id": 240, "name": "トゲルガ", "rarity": 4 },
+  { "id": 241, "name": "雪だるまのスノーカイ", "rarity": 4 },
+  { "id": 242, "name": "サンタのメリークウ", "rarity": 4 },
+  { "id": 243, "name": "聖夜のシスターカッパー", "rarity": 4 },
+  { "id": 244, "name": "ネコのプレゼント", "rarity": 2 },
+  { "id": 245, "name": "ちびキモネコ", "rarity": 1 },
+  { "id": 246, "name": "ちびウシネコ", "rarity": 1 },
+  { "id": 247, "name": "ちびネコノトリ", "rarity": 1 },
+  { "id": 248, "name": "死にたてにゃんこ", "rarity": 1 },
+  { "id": 249, "name": "剣士", "rarity": 2 },
+  { "id": 250, "name": "騎馬兵", "rarity": 2 },
+  { "id": 251, "name": "アシュラ", "rarity": 2 },
+  { "id": 252, "name": "バトルバルーン", "rarity": 2 },
+  { "id": 253, "name": "ドラゴンライダー", "rarity": 2 },
+  { "id": 254, "name": "プリティキャット", "rarity": 2 },
+  { "id": 255, "name": "サイクロプス", "rarity": 2 },
+  { "id": 256, "name": "ゴーレム", "rarity": 1 },
+  { "id": 257, "name": "天空神ゼウス", "rarity": 4 },
+  { "id": 258, "name": "守護神アヌビス", "rarity": 4 },
+  { "id": 259, "name": "美女神アフロディーテ", "rarity": 4 },
+  { "id": 260, "name": "ネコウェイ", "rarity": 3 },
+  { "id": 261, "name": "天誅ハヤブサ", "rarity": 4 },
+  { "id": 262, "name": "ニャームス", "rarity": 1 },
+  { "id": 263, "name": "ポチ", "rarity": 1 },
+  { "id": 264, "name": "クロミ", "rarity": 1 },
+  { "id": 265, "name": "せつ子", "rarity": 1 },
+  { "id": 266, "name": "ねば～る君", "rarity": 1 },
+  { "id": 267, "name": "ネコタイフーン", "rarity": 3 },
+  { "id": 268, "name": "ネコずきんミーニャ", "rarity": 1 },
+  { "id": 269, "name": "幼獣ガオ", "rarity": 4 },
+  { "id": 270, "name": "狂乱のユキ", "rarity": 4 },
+  { "id": 271, "name": "太陽神アマテラス", "rarity": 4 },
+  { "id": 272, "name": "繁栄神ガネーシャ", "rarity": 4 },
+  { "id": 273, "name": "チアにゃんこ", "rarity": 3 },
+  { "id": 274, "name": "トロピカルカリファ", "rarity": 4 },
+  { "id": 275, "name": "真夏のホワイトラビット", "rarity": 4 },
+  { "id": 276, "name": "夏色ねねこ", "rarity": 3 },
+  { "id": 277, "name": "なめこ", "rarity": 2 },
+  { "id": 278, "name": "なめこタンク", "rarity": 1 },
+  { "id": 279, "name": "白ネコなめこ", "rarity": 1 },
+  { "id": 280, "name": "要塞なめこ", "rarity": 1 },
+  { "id": 281, "name": "ふてニャン", "rarity": 2 },
+  { "id": 282, "name": "ネコ阿波踊り", "rarity": 2 },
+  { "id": 283, "name": "猫飯拳パイパイ", "rarity": 4 },
+  { "id": 284, "name": "ネコ特急", "rarity": 3 },
+  { "id": 285, "name": "286-1", "rarity": 1 },
+  { "id": 286, "name": "閃雷機兵レイ", "rarity": 4 },
+  { "id": 287, "name": "ネコ球児", "rarity": 3 },
+  { "id": 288, "name": "鹿目まどか", "rarity": 4 },
+  { "id": 289, "name": "暁美ほむら", "rarity": 4 },
+  { "id": 290, "name": "美樹さやか", "rarity": 4 },
+  { "id": 291, "name": "巴マミ", "rarity": 4 },
+  { "id": 292, "name": "佐倉杏子", "rarity": 4 },
+  { "id": 293, "name": "キュゥべえ", "rarity": 3 },
+  { "id": 294, "name": "ネコまどか", "rarity": 2 },
+  { "id": 295, "name": "ネコほむら", "rarity": 2 },
+  { "id": 296, "name": "ネコさやか", "rarity": 2 },
+  { "id": 297, "name": "ネコマミ", "rarity": 2 },
+  { "id": 298, "name": "ネコ杏子", "rarity": 2 },
+  { "id": 299, "name": "ちびまどか", "rarity": 2 },
+  { "id": 300, "name": "ちびほむら", "rarity": 1 },
+  { "id": 301, "name": "ネコキュゥべえ", "rarity": 2 },
+  { "id": 302, "name": "ネコアイスゴースト", "rarity": 4 },
+  { "id": 303, "name": "ネコ屋台", "rarity": 2 },
+  { "id": 304, "name": "帝国陸軍カタパルズ", "rarity": 4 },
+  { "id": 305, "name": "古代軍船ガレーズ", "rarity": 4 },
+  { "id": 306, "name": "飛空襲撃ボンバーズ", "rarity": 4 },
+  { "id": 307, "name": "ネコジャンパー", "rarity": 3 },
+  { "id": 308, "name": "ネコバサミ", "rarity": 2 },
+  { "id": 309, "name": "ネコ博士", "rarity": 1 },
+  { "id": 310, "name": "ネコナースキャンドル", "rarity": 4 },
+  { "id": 311, "name": "ちびネコフィッシュ", "rarity": 1 },
+  { "id": 312, "name": "ちびネコトカゲ", "rarity": 1 },
+  { "id": 313, "name": "ちび巨神ネコ", "rarity": 1 },
+  { "id": 314, "name": "大掃除ねねこ", "rarity": 3 },
+  { "id": 315, "name": "ピコ太郎", "rarity": 2 },
+  { "id": 316, "name": "海王神ポセイドン", "rarity": 4 },
+  { "id": 317, "name": "CPAC", "rarity": 1 },
+  { "id": 318, "name": "巫女姫ミタマ", "rarity": 4 },
+  { "id": 319, "name": "殺意のネコ", "rarity": 2 },
+  { "id": 320, "name": "321_1", "rarity": 2 },
+  { "id": 321, "name": "ナゾウサギ", "rarity": 1 },
+  { "id": 322, "name": "さるかに合戦", "rarity": 4 },
+  { "id": 323, "name": "宮木武蔵", "rarity": 1 },
+  { "id": 324, "name": "ネコストーン", "rarity": 2 },
+  { "id": 325, "name": "ネコボクサー", "rarity": 2 },
+  { "id": 326, "name": "メビウス", "rarity": 4 },
+  { "id": 327, "name": "ベリアル", "rarity": 3 },
+  { "id": 328, "name": "ハッピー100", "rarity": 1 },
+  { "id": 329, "name": "ネコエッグ", "rarity": 2 },
+  { "id": 330, "name": "上杉謙信・春", "rarity": 4 },
+  { "id": 331, "name": "道化師エッグダック", "rarity": 4 },
+  { "id": 332, "name": "イースターねねこ", "rarity": 3 },
+  { "id": 333, "name": "黒獣ガオウ", "rarity": 4 },
+  { "id": 334, "name": "狐娘ヒメユリ", "rarity": 4 },
+  { "id": 335, "name": "人魚娘ルリィ", "rarity": 4 },
+  { "id": 336, "name": "ミイラ娘レイカ", "rarity": 4 },
+  { "id": 337, "name": "プリンセスケリ姫号", "rarity": 4 },
+  { "id": 338, "name": "今川義元", "rarity": 4 },
+  { "id": 339, "name": "340_1", "rarity": 1 },
+  { "id": 340, "name": "赤髪のゆきにゃん", "rarity": 2 },
+  { "id": 341, "name": "失われし世界のユキ", "rarity": 4 },
+  { "id": 342, "name": "ネコまねき", "rarity": 1 },
+  { "id": 343, "name": "なめネコ", "rarity": 2 },
+  { "id": 344, "name": "オルトス", "rarity": 3 },
+  { "id": 345, "name": "ミシェリア", "rarity": 4 },
+  { "id": 346, "name": "とどめき", "rarity": 4 },
+  { "id": 347, "name": "ぐでたまにゃんこ", "rarity": 1 },
+  { "id": 348, "name": "ぐでたまプレート", "rarity": 2 },
+  { "id": 349, "name": "ぐでぐでプリン", "rarity": 3 },
+  { "id": 350, "name": "ニセたま軍団", "rarity": 4 },
+  { "id": 351, "name": "双掌星のシシル＆コマリ", "rarity": 4 },
+  { "id": 352, "name": "ネコ仙人", "rarity": 1 },
+  { "id": 353, "name": "チョコレート", "rarity": 2 },
+  { "id": 354, "name": "常夏の果実カイ", "rarity": 4 },
+  { "id": 355, "name": "観測兵器ガリレオ", "rarity": 4 },
+  { "id": 356, "name": "ノラ", "rarity": 1 },
+  { "id": 357, "name": "狼娘ディル", "rarity": 4 },
+  { "id": 358, "name": "ゾンビ娘ヴェルヴェーヌ", "rarity": 4 },
+  { "id": 359, "name": "火の精霊メララ", "rarity": 4 },
+  { "id": 360, "name": "水の精霊ミズリィ", "rarity": 4 },
+  { "id": 361, "name": "風の精霊エアル", "rarity": 4 },
+  { "id": 362, "name": "セイバー", "rarity": 4 },
+  { "id": 363, "name": "遠坂 凛", "rarity": 4 },
+  { "id": 364, "name": "イリヤスフィール", "rarity": 4 },
+  { "id": 365, "name": "アーチャー", "rarity": 4 },
+  { "id": 366, "name": "ランサー", "rarity": 4 },
+  { "id": 367, "name": "ライダー", "rarity": 4 },
+  { "id": 368, "name": "ギルガメッシュ", "rarity": 4 },
+  { "id": 369, "name": "ネコセイバー", "rarity": 1 },
+  { "id": 370, "name": "ネコ桜", "rarity": 2 },
+  { "id": 371, "name": "ネコ凛", "rarity": 2 },
+  { "id": 372, "name": "ネコイリヤ", "rarity": 2 },
+  { "id": 373, "name": "ちび士郎", "rarity": 2 },
+  { "id": 374, "name": "ちび桜", "rarity": 1 },
+  { "id": 375, "name": "記念ネコ", "rarity": 1 },
+  { "id": 376, "name": "ネコ探査機", "rarity": 2 },
+  { "id": 377, "name": "ネコフェンシング", "rarity": 3 },
+  { "id": 378, "name": "黒無垢のミタマ", "rarity": 4 },
+  { "id": 379, "name": "ネコバレー", "rarity": 2 },
+  { "id": 380, "name": "幼傑ダルターニャ", "rarity": 4 },
+  { "id": 381, "name": "ねこ農家", "rarity": 1 },
+  { "id": 382, "name": "ガラスネコ", "rarity": 2 },
+  { "id": 383, "name": "謎仮面のウララー", "rarity": 1 },
+  { "id": 384, "name": "氷上聡里＆ネコ", "rarity": 1 },
+  { "id": 385, "name": "矢部明雄", "rarity": 2 },
+  { "id": 386, "name": "虹谷彩理", "rarity": 2 },
+  { "id": 387, "name": "紺野美崎", "rarity": 2 },
+  { "id": 388, "name": "片桐恋", "rarity": 2 },
+  { "id": 389, "name": "猫塚かりん", "rarity": 2 },
+  { "id": 390, "name": "早川あおい", "rarity": 3 },
+  { "id": 391, "name": "橘みずき", "rarity": 3 },
+  { "id": 392, "name": "六道聖", "rarity": 3 },
+  { "id": 393, "name": "新島早紀", "rarity": 4 },
+  { "id": 394, "name": "星井スバル", "rarity": 4 },
+  { "id": 395, "name": "小山雅", "rarity": 4 },
+  { "id": 396, "name": "古龍ガングリオン", "rarity": 4 },
+  { "id": 397, "name": "風隼さくら", "rarity": 4 },
+  { "id": 398, "name": "ハニトンくん", "rarity": 1 },
+  { "id": 399, "name": "めんトリ", "rarity": 2 },
+  { "id": 400, "name": "イモウト", "rarity": 1 },
+  { "id": 401, "name": "雷の精霊ボルト", "rarity": 4 },
+  { "id": 402, "name": "ちびシンジ", "rarity": 2 },
+  { "id": 403, "name": "ネコゲンドウ＆ネコ冬月", "rarity": 1 },
+  { "id": 404, "name": "ネコキリン初号機", "rarity": 2 },
+  { "id": 405, "name": "ちびカヲル", "rarity": 1 },
+  { "id": 406, "name": "ネコレイ", "rarity": 2 },
+  { "id": 407, "name": "ネコアスカ", "rarity": 2 },
+  { "id": 408, "name": "ネコマリ", "rarity": 2 },
+  { "id": 409, "name": "ちびレイ", "rarity": 3 },
+  { "id": 410, "name": "ちびアスカ", "rarity": 3 },
+  { "id": 411, "name": "ちびマリ", "rarity": 3 },
+  { "id": 412, "name": "エヴァ零号機", "rarity": 4 },
+  { "id": 413, "name": "エヴァ初号機", "rarity": 4 },
+  { "id": 414, "name": "エヴァ２号機", "rarity": 4 },
+  { "id": 415, "name": "ネコシンジ", "rarity": 4 },
+  { "id": 416, "name": "ゼロムーンオペレーターズ", "rarity": 4 },
+  { "id": 417, "name": "温泉天国テルマエ", "rarity": 4 },
+  { "id": 418, "name": "狂乱のもねこ", "rarity": 1 },
+  { "id": 419, "name": "ポコタ", "rarity": 2 },
+  { "id": 420, "name": "オビス", "rarity": 2 },
+  { "id": 421, "name": "ココ", "rarity": 2 },
+  { "id": 422, "name": "太秦萌＆ネコ", "rarity": 2 },
+  { "id": 423, "name": "松賀咲＆ネコ", "rarity": 2 },
+  { "id": 424, "name": "小野ミサ＆ネコ", "rarity": 2 },
+  { "id": 425, "name": "太秦麗＆ネコ", "rarity": 1 },
+  { "id": 426, "name": "ぶんぶんネコライダー", "rarity": 1 },
+  { "id": 427, "name": "ネコクエスト", "rarity": 4 },
+  { "id": 428, "name": "そうまにゃん", "rarity": 2 },
+  { "id": 429, "name": "オタネコギーク", "rarity": 3 },
+  { "id": 430, "name": "ぐでネコマシン", "rarity": 4 },
+  { "id": 431, "name": "亡者探偵ヴィグラー", "rarity": 4 },
+  { "id": 432, "name": "433_1", "rarity": 2 },
+  { "id": 433, "name": "434_1", "rarity": 1 },
+  { "id": 434, "name": "白にゃんこ剣士", "rarity": 1 },
+  { "id": 435, "name": "ちびネコヴァルキリー", "rarity": 4 },
+  { "id": 436, "name": "ノビルガ", "rarity": 4 },
+  { "id": 437, "name": "激・神さま", "rarity": 1 },
+  { "id": 438, "name": "灼熱のビーチクウ", "rarity": 4 },
+  { "id": 439, "name": "時空神クロノス", "rarity": 4 },
+  { "id": 440, "name": "ベベ", "rarity": 4 },
+  { "id": 441, "name": "影傑ダークダルターニャ", "rarity": 4 },
+  { "id": 442, "name": "子連れにゃんこ", "rarity": 2 },
+  { "id": 443, "name": "戦隊ドリラ", "rarity": 3 },
+  { "id": 444, "name": "戦隊ウチコンガ", "rarity": 3 },
+  { "id": 445, "name": "戦隊チョキンドス", "rarity": 3 },
+  { "id": 446, "name": "戦隊ショベリン", "rarity": 3 },
+  { "id": 447, "name": "戦隊チャッソ", "rarity": 3 },
+  { "id": 448, "name": "宮本武蔵", "rarity": 5 },
+  { "id": 449, "name": "聖会長ジャンヌダルク", "rarity": 5 },
+  { "id": 450, "name": "天城龍バベル", "rarity": 5 },
+  { "id": 451, "name": "うしわか丸", "rarity": 5 },
+  { "id": 452, "name": "古代ネコ", "rarity": 2 },
+  { "id": 453, "name": "きたろう", "rarity": 1 },
+  { "id": 454, "name": "目玉おやじ", "rarity": 1 },
+  { "id": 455, "name": "ワンダー・モモコ", "rarity": 5 },
+  { "id": 456, "name": "間桐 桜", "rarity": 4 },
+  { "id": 457, "name": "ネコ士郎", "rarity": 1 },
+  { "id": 458, "name": "アーチャーネコ", "rarity": 2 },
+  { "id": 459, "name": "ネコライダー", "rarity": 2 },
+  { "id": 460, "name": "ネコ言峰＆ネコギルガメッシュ", "rarity": 3 },
+  { "id": 461, "name": "レジェルガ", "rarity": 5 },
+  { "id": 462, "name": "フィリバスターX", "rarity": 1 },
+  { "id": 463, "name": "終末兵器ムー", "rarity": 5 },
+  { "id": 464, "name": "土偶戦士ドグ丸", "rarity": 1 },
+  { "id": 465, "name": "majimeow（仮）", "rarity": 2 },
+  { "id": 466, "name": "ブラックゼウス", "rarity": 5 },
+  { "id": 467, "name": "スーパーゼウス", "rarity": 4 },
+  { "id": 468, "name": "聖フェニックス", "rarity": 4 },
+  { "id": 469, "name": "スーパーデビル", "rarity": 4 },
+  { "id": 470, "name": "サタンマリア", "rarity": 4 },
+  { "id": 471, "name": "ヘラクライスト", "rarity": 4 },
+  { "id": 472, "name": "ネロ魔身", "rarity": 3 },
+  { "id": 473, "name": "ヤマト王子", "rarity": 2 },
+  { "id": 474, "name": "十字架天使", "rarity": 1 },
+  { "id": 475, "name": "ネコ若神子", "rarity": 1 },
+  { "id": 476, "name": "ネコデビル", "rarity": 1 },
+  { "id": 477, "name": "ネコの助", "rarity": 1 },
+  { "id": 478, "name": "幻の精霊ルミナ", "rarity": 5 },
+  { "id": 479, "name": "グミネコ", "rarity": 1 },
+  { "id": 480, "name": "ねこ娘", "rarity": 2 },
+  { "id": 481, "name": "超越科学者ヘヴン博士", "rarity": 5 },
+  { "id": 482, "name": "幸せを願った少年ソウマ", "rarity": 4 },
+  { "id": 483, "name": "カノとソウマ", "rarity": 2 },
+  { "id": 484, "name": "黒ちびネコヴァルキリー", "rarity": 4 },
+  { "id": 485, "name": "カレット", "rarity": 4 },
+  { "id": 486, "name": "ひな", "rarity": 3 },
+  { "id": 487, "name": "エヴァ８号機", "rarity": 4 },
+  { "id": 488, "name": "空中艦艇ネコヴンダー", "rarity": 4 },
+  { "id": 489, "name": "ちびミサト", "rarity": 3 },
+  { "id": 490, "name": "ちびリツコ", "rarity": 3 },
+  { "id": 491, "name": "ちびアヤナミレイ(仮称)", "rarity": 3 },
+  { "id": 492, "name": "493_1", "rarity": 2 },
+  { "id": 493, "name": "創造神ガイア", "rarity": 5 },
+  { "id": 494, "name": "潮風のセーラーカッパー", "rarity": 4 },
+  { "id": 495, "name": "ネコマタドール", "rarity": 2 },
+  { "id": 496, "name": "成田甲斐", "rarity": 4 },
+  { "id": 497, "name": "498_1", "rarity": 1 },
+  { "id": 498, "name": "499_1", "rarity": 1 },
+  { "id": 499, "name": "500_1", "rarity": 1 },
+  { "id": 500, "name": "501_1", "rarity": 1 },
+  { "id": 501, "name": "ネコ兄弟S", "rarity": 2 },
+  { "id": 502, "name": "英雄令嬢メルシュ", "rarity": 4 },
+  { "id": 503, "name": "ネコ２Ｄ", "rarity": 2 },
+  { "id": 504, "name": "おやじネコ(店主)", "rarity": 1 },
+  { "id": 505, "name": "角龍グラディオス", "rarity": 4 },
+  { "id": 506, "name": "アイウォルツ", "rarity": 4 },
+  { "id": 507, "name": "スーパーにゃん", "rarity": 2 },
+  { "id": 508, "name": "ネコリュウ", "rarity": 2 },
+  { "id": 509, "name": "ネコ春麗", "rarity": 1 },
+  { "id": 510, "name": "豪鬼", "rarity": 5 },
+  { "id": 511, "name": "リュウ", "rarity": 4 },
+  { "id": 512, "name": "春麗", "rarity": 4 },
+  { "id": 513, "name": "ガイル", "rarity": 4 },
+  { "id": 514, "name": "ザンギエフ", "rarity": 4 },
+  { "id": 515, "name": "ブランカ", "rarity": 4 },
+  { "id": 516, "name": "ダルシム", "rarity": 4 },
+  { "id": 517, "name": "ケン", "rarity": 4 },
+  { "id": 518, "name": "ゴウキリン", "rarity": 2 },
+  { "id": 519, "name": "ラスヴォース", "rarity": 4 },
+  { "id": 520, "name": "ネコ七福神", "rarity": 3 },
+  { "id": 521, "name": "ネコメデューサ", "rarity": 2 },
+  { "id": 522, "name": "泉のネコ女神", "rarity": 3 },
+  { "id": 523, "name": "ネコ武闘家", "rarity": 2 },
+  { "id": 524, "name": "ソラカラちゃん", "rarity": 2 },
+  { "id": 525, "name": "きんたろう", "rarity": 4 },
+  { "id": 526, "name": "冬天使のシシル＆コマリ", "rarity": 4 },
+  { "id": 527, "name": "ネコスライム", "rarity": 2 },
+  { "id": 528, "name": "ネコサック", "rarity": 2 },
+  { "id": 529, "name": "厄災の子キャスリィ", "rarity": 4 },
+  { "id": 530, "name": "エルメ", "rarity": 4 },
+  { "id": 531, "name": "ネコックマ", "rarity": 2 },
+  { "id": 532, "name": "フェンリルとウルス", "rarity": 1 },
+  { "id": 533, "name": "マッドシューター・サキ", "rarity": 4 },
+  { "id": 534, "name": "冥界神ハデス", "rarity": 4 },
+  { "id": 535, "name": "初音ミク", "rarity": 4 },
+  { "id": 536, "name": "桜ミク", "rarity": 4 },
+  { "id": 537, "name": "鏡音リン＆レン", "rarity": 4 },
+  { "id": 538, "name": "ネコミク", "rarity": 2 },
+  { "id": 539, "name": "ラガーにゃん", "rarity": 2 },
+  { "id": 540, "name": "ネコU.F.O.", "rarity": 2 },
+  { "id": 541, "name": "ネコヤキソバン", "rarity": 1 },
+  { "id": 542, "name": "ネコ少年", "rarity": 1 },
+  { "id": 543, "name": "禍根の魔女キャスリィ", "rarity": 4 },
+  { "id": 544, "name": "京坂七穂", "rarity": 5 },
+  { "id": 545, "name": "ネコファントム", "rarity": 2 },
+  { "id": 546, "name": "オイルガ", "rarity": 4 },
+  { "id": 547, "name": "白夜姫のレイ", "rarity": 4 },
+  { "id": 548, "name": "第４の使徒", "rarity": 4 },
+  { "id": 549, "name": "第６の使徒", "rarity": 4 },
+  { "id": 550, "name": "第１０の使徒", "rarity": 4 },
+  { "id": 551, "name": "第９の使徒", "rarity": 4 },
+  { "id": 552, "name": "ネコカヲル", "rarity": 2 },
+  { "id": 553, "name": "ネコベーカリー", "rarity": 2 },
+  { "id": 554, "name": "達人ウリル", "rarity": 1 },
+  { "id": 555, "name": "シャーマンカーン", "rarity": 4 },
+  { "id": 556, "name": "騎神アリババ", "rarity": 3 },
+  { "id": 557, "name": "天子男ジャック", "rarity": 1 },
+  { "id": 558, "name": "レアガチャネコ", "rarity": 1 },
+  { "id": 559, "name": "地獄警官エマ", "rarity": 4 },
+  { "id": 560, "name": "巡音ルカ", "rarity": 4 },
+  { "id": 561, "name": "MEIKO＆ネコ", "rarity": 3 },
+  { "id": 562, "name": "ネコルカ", "rarity": 2 },
+  { "id": 563, "name": "アクアシューター・サキ", "rarity": 4 },
+  { "id": 564, "name": "ネコルガの夏", "rarity": 4 },
+  { "id": 565, "name": "日焼けネコ", "rarity": 3 },
+  { "id": 566, "name": "救命にゃんこ", "rarity": 3 },
+  { "id": 567, "name": "チビクロプスネコタマゴ", "rarity": 1 },
+  { "id": 568, "name": "イディ:N", "rarity": 1 },
+  { "id": 569, "name": "石の精霊ゴロー", "rarity": 4 },
+  { "id": 570, "name": "竜騎士スカルバルス", "rarity": 4 },
+  { "id": 571, "name": "エドモンド本田", "rarity": 4 },
+  { "id": 572, "name": "バイソン", "rarity": 4 },
+  { "id": 573, "name": "バルログ", "rarity": 4 },
+  { "id": 574, "name": "サガット", "rarity": 4 },
+  { "id": 575, "name": "ベガ", "rarity": 4 },
+  { "id": 576, "name": "ネコモンド本田", "rarity": 3 },
+  { "id": 577, "name": "ネコバイソン", "rarity": 2 },
+  { "id": 578, "name": "ネコバルログ", "rarity": 2 },
+  { "id": 579, "name": "ネコサガット", "rarity": 2 },
+  { "id": 580, "name": "ネコベガ", "rarity": 2 },
+  { "id": 581, "name": "ごろにゃん", "rarity": 2 },
+  { "id": 582, "name": "初音ミク マジカルミライ2020大阪", "rarity": 4 },
+  { "id": 583, "name": "初音ミク マジカルミライ2020東京", "rarity": 4 },
+  { "id": 584, "name": "前田サンタ慶次", "rarity": 4 },
+  { "id": 585, "name": "幼獣ガル", "rarity": 4 },
+  { "id": 586, "name": "ネコ王子", "rarity": 5 },
+  { "id": 587, "name": "恋女神ショコラディーテ", "rarity": 4 },
+  { "id": 588, "name": "初恋令嬢メルシュ", "rarity": 4 },
+  { "id": 589, "name": "バレンタインねねこ", "rarity": 3 },
+  { "id": 590, "name": "雪ミク 2021", "rarity": 4 },
+  { "id": 591, "name": "KAITO＆ネコ", "rarity": 3 },
+  { "id": 592, "name": "ネコリン", "rarity": 2 },
+  { "id": 593, "name": "ネコレン", "rarity": 2 },
+  { "id": 594, "name": "空中商会コロンブス", "rarity": 4 },
+  { "id": 595, "name": "春龍かむくら", "rarity": 4 },
+  { "id": 596, "name": "早乙女乱馬(男)", "rarity": 4 },
+  { "id": 597, "name": "天道あかね", "rarity": 4 },
+  { "id": 598, "name": "響良牙(ブタ)", "rarity": 4 },
+  { "id": 599, "name": "シャンプー(猫)", "rarity": 4 },
+  { "id": 600, "name": "ムース(アヒル)", "rarity": 4 },
+  { "id": 601, "name": "八宝斉", "rarity": 3 },
+  { "id": 602, "name": "久遠寺右京(男装)", "rarity": 3 },
+  { "id": 603, "name": "九能帯刀(道着)", "rarity": 3 },
+  { "id": 604, "name": "ネコ乱馬(男)", "rarity": 2 },
+  { "id": 605, "name": "ネコあかね", "rarity": 2 },
+  { "id": 606, "name": "ネコパンダ", "rarity": 1 },
+  { "id": 607, "name": "冒険家カンナ", "rarity": 4 },
+  { "id": 608, "name": "ネコウエハース", "rarity": 1 },
+  { "id": 609, "name": "黒獣ガルディアン", "rarity": 4 },
+  { "id": 610, "name": "金塊ネコ", "rarity": 1 },
+  { "id": 611, "name": "ネコゴジラ", "rarity": 2 },
+  { "id": 612, "name": "ネコ王女", "rarity": 4 },
+  { "id": 613, "name": "古神面ドロン", "rarity": 1 },
+  { "id": 614, "name": "渚のかぐやひめ", "rarity": 4 },
+  { "id": 615, "name": "カブトネコ", "rarity": 1 },
+  { "id": 616, "name": "クワガタネコ", "rarity": 1 },
+  { "id": 617, "name": "召喚少年サトル", "rarity": 4 },
+  { "id": 618, "name": "天草四郎", "rarity": 4 },
+  { "id": 619, "name": "妖賢女リリン", "rarity": 4 },
+  { "id": 620, "name": "邪龍ヘヴィジャーク", "rarity": 4 },
+  { "id": 621, "name": "悪魔研究家", "rarity": 2 },
+  { "id": 622, "name": "ジャガンドーJr", "rarity": 1 },
+  { "id": 623, "name": "ネコハーメルン", "rarity": 2 },
+  { "id": 624, "name": "熱血硬派くにおくん", "rarity": 4 },
+  { "id": 625, "name": "オコルガ", "rarity": 4 },
+  { "id": 626, "name": "ネコキリンモドキ", "rarity": 1 },
+  { "id": 627, "name": "ネコノトリッキー", "rarity": 1 },
+  { "id": 628, "name": "ネコノドラゴーン", "rarity": 1 },
+  { "id": 629, "name": "洗脳されしネコ", "rarity": 3 },
+  { "id": 630, "name": "ネコ書道", "rarity": 2 },
+  { "id": 631, "name": "闇の精霊ヤミィ", "rarity": 4 },
+  { "id": 632, "name": "超竜戦機デス・トロイ", "rarity": 4 },
+  { "id": 633, "name": "舌切りすずめ", "rarity": 4 },
+  { "id": 634, "name": "白騎士キュクロプス", "rarity": 4 },
+  { "id": 635, "name": "100万ドルのネコ", "rarity": 1 },
+  { "id": 636, "name": "洗脳されしタンクネコ", "rarity": 3 },
+  { "id": 637, "name": "シャオチョン＆ネコ", "rarity": 1 },
+  { "id": 638, "name": "ナナ＆ネコ", "rarity": 2 },
+  { "id": 639, "name": "エミリア＆ネコ", "rarity": 2 },
+  { "id": 640, "name": "ジェアー＆ネコ", "rarity": 1 },
+  { "id": 641, "name": "踊り子イズ", "rarity": 4 },
+  { "id": 642, "name": "堕天神ルシファー", "rarity": 4 },
+  { "id": 643, "name": "ネコ超人", "rarity": 0 },
+  { "id": 644, "name": "白い恋人メカ子", "rarity": 4 },
+  { "id": 645, "name": "洗脳されしバトルネコ", "rarity": 3 },
+  { "id": 646, "name": "爆竹ネコ", "rarity": 1 },
+  { "id": 647, "name": "狩猟娘テルン", "rarity": 4 },
+  { "id": 648, "name": "恋番長・鬼にゃんま", "rarity": 4 },
+  { "id": 649, "name": "服部半蔵", "rarity": 4 },
+  { "id": 650, "name": "幼馴染にゃん子", "rarity": 1 },
+  { "id": 651, "name": "おてんばネコライオン", "rarity": 1 },
+  { "id": 652, "name": "ネコクバンケシ", "rarity": 1 },
+  { "id": 653, "name": "古獣ナーラ", "rarity": 1 },
+  { "id": 654, "name": "洗脳されしキモネコ", "rarity": 3 },
+  { "id": 655, "name": "氷の精霊フリズ", "rarity": 4 },
+  { "id": 656, "name": "古びたタマゴ:N001", "rarity": 1 },
+  { "id": 657, "name": "悲嘆の踊り子イズ", "rarity": 4 },
+  { "id": 658, "name": "古びたタマゴ:N101", "rarity": 2 },
+  { "id": 659, "name": "古びたタマゴ:N102", "rarity": 2 },
+  { "id": 660, "name": "海龍ダライアサン", "rarity": 4 },
+  { "id": 661, "name": "祝福神クロノス", "rarity": 4 },
+  { "id": 662, "name": "洗脳されしウシネコ", "rarity": 3 },
+  { "id": 663, "name": "古びたタマゴ:N103", "rarity": 2 },
+  { "id": 664, "name": "古びたタマゴ:N104", "rarity": 2 },
+  { "id": 665, "name": "古びたタマゴ:N201", "rarity": 1 },
+  { "id": 666, "name": "ナイトビーチリリン", "rarity": 4 },
+  { "id": 667, "name": "洗脳されしネコノトリ", "rarity": 3 },
+  { "id": 668, "name": "ネコ天狗", "rarity": 4 },
+  { "id": 669, "name": "古びたタマゴ:N003", "rarity": 1 },
+  { "id": 670, "name": "古びたタマゴ:N202", "rarity": 1 },
+  { "id": 671, "name": "早乙女らんま(レオタード)", "rarity": 4 },
+  { "id": 672, "name": "早乙女玄馬(パンダ)", "rarity": 3 },
+  { "id": 673, "name": "ネコチーター", "rarity": 4 },
+  { "id": 674, "name": "周遊芸団カルーセルズ", "rarity": 4 },
+  { "id": 675, "name": "古びたタマゴ:N105", "rarity": 2 },
+  { "id": 676, "name": "古びたタマゴ:N106", "rarity": 2 },
+  { "id": 677, "name": "三雲修＆ネコ", "rarity": 2 },
+  { "id": 678, "name": "空閑遊真＆ネコ", "rarity": 2 },
+  { "id": 679, "name": "雨取千佳＆ネコ", "rarity": 1 },
+  { "id": 680, "name": "さくら", "rarity": 4 },
+  { "id": 681, "name": "ルーク", "rarity": 4 },
+  { "id": 682, "name": "女神ベガ", "rarity": 4 },
+  { "id": 683, "name": "伯爵・真田幸村", "rarity": 4 },
+  { "id": 684, "name": "洗脳されしネコフィッシュ", "rarity": 3 },
+  { "id": 685, "name": "古びたタマゴ:N004", "rarity": 1 },
+  { "id": 686, "name": "光の女神シリウス", "rarity": 4 },
+  { "id": 687, "name": "トナカイ娘テルン", "rarity": 4 },
+  { "id": 688, "name": "洗脳されしネコトカゲ", "rarity": 3 },
+  { "id": 689, "name": "石の上にも10年ネコ", "rarity": 1 },
+  { "id": 690, "name": "運命の子フォノ", "rarity": 4 },
+  { "id": 691, "name": "古びたタマゴ:N000", "rarity": 1 },
+  { "id": 692, "name": "いっすん法師", "rarity": 4 },
+  { "id": 693, "name": "白執事探偵ヴィグラー", "rarity": 4 },
+  { "id": 694, "name": "洗脳されし巨神ネコ", "rarity": 3 },
+  { "id": 695, "name": "殺意のタンクネコ", "rarity": 2 },
+  { "id": 696, "name": "ネコ委員長", "rarity": 1 },
+  { "id": 697, "name": "古びたタマゴ:N107", "rarity": 2 },
+  { "id": 698, "name": "サンダージャック", "rarity": 4 },
+  { "id": 699, "name": "決闘少年ラビットサトル", "rarity": 4 },
+  { "id": 700, "name": "古びたタマゴ:N005", "rarity": 1 },
+  { "id": 701, "name": "にゃんこ仮面ライダー", "rarity": 2 },
+  { "id": 702, "name": "ゴジラにゃんこ", "rarity": 2 },
+  { "id": 703, "name": "エヴァンゲリオンにゃんこ", "rarity": 2 },
+  { "id": 704, "name": "ウルトラマンにゃんこ", "rarity": 2 },
+  { "id": 705, "name": "非命の王フォノウ", "rarity": 4 },
+  { "id": 706, "name": "古びたタマゴ:N108", "rarity": 3 },
+  { "id": 707, "name": "古びたタマゴ:N109", "rarity": 2 },
+  { "id": 708, "name": "ネコジェット", "rarity": 2 },
+  { "id": 709, "name": "隻眼の少女アスカ", "rarity": 4 },
+  { "id": 710, "name": "エヴァ第１３号機", "rarity": 4 },
+  { "id": 711, "name": "バララガの誓い", "rarity": 4 },
+  { "id": 712, "name": "カオルガ", "rarity": 4 },
+  { "id": 713, "name": "古びたタマゴ:N203", "rarity": 1 },
+  { "id": 714, "name": "波打ち際の冒険家カンナ", "rarity": 4 },
+  { "id": 715, "name": "建築兵団スフィンクス", "rarity": 4 },
+  { "id": 716, "name": "古びたタマゴ:N111", "rarity": 3 },
+  { "id": 717, "name": "古びたタマゴ:N110", "rarity": 2 },
+  { "id": 718, "name": "ネコもろこし", "rarity": 2 },
+  { "id": 719, "name": "鉄の精霊カッチン", "rarity": 4 },
+  { "id": 720, "name": "古びたタマゴ:N006", "rarity": 1 },
+  { "id": 721, "name": "花園高校番長りき", "rarity": 4 },
+  { "id": 722, "name": "初音ミク 16th", "rarity": 4 },
+  { "id": 723, "name": "光翼神イシス", "rarity": 4 },
+  { "id": 724, "name": "古びたタマゴ:N112", "rarity": 2 },
+  { "id": 725, "name": "忍者娘トモエ", "rarity": 4 },
+  { "id": 726, "name": "ネコメダル王", "rarity": 1 },
+  { "id": 727, "name": "ソル・デ・ロカ", "rarity": 4 },
+  { "id": 728, "name": "論の賢者ソラクティス", "rarity": 1 },
+  { "id": 729, "name": "730_1", "rarity": 1 },
+  { "id": 730, "name": "古びたタマゴ:N204", "rarity": 1 },
+  { "id": 731, "name": "暁のイザナギ", "rarity": 5 },
+  { "id": 732, "name": "733_1", "rarity": 5 },
+  { "id": 733, "name": "鉄籠のペガサ", "rarity": 4 },
+  { "id": 734, "name": "735_1", "rarity": 4 },
+  { "id": 735, "name": "ネコ校長", "rarity": 1 },
+  { "id": 736, "name": "ネコアイスホワイトスター", "rarity": 4 },
+  { "id": 737, "name": "スプリングカリファ", "rarity": 4 },
+  { "id": 738, "name": "宵のイザナミ", "rarity": 5 },
+  { "id": 739, "name": "740_1", "rarity": 5 },
+  { "id": 740, "name": "741-1", "rarity": 1 },
+  { "id": 741, "name": "742-1", "rarity": 4 },
+  { "id": 742, "name": "743-1", "rarity": 2 },
+  { "id": 743, "name": "744-1", "rarity": 2 },
+  { "id": 744, "name": "745-1", "rarity": 1 },
+  { "id": 745, "name": "746-1", "rarity": 1 },
+  { "id": 746, "name": "緋村剣心", "rarity": 4 },
+  { "id": 747, "name": "相楽左之助", "rarity": 4 },
+  { "id": 748, "name": "四乃森蒼紫", "rarity": 4 },
+  { "id": 749, "name": "斎藤一", "rarity": 4 },
+  { "id": 750, "name": "ちび薫", "rarity": 3 },
+  { "id": 751, "name": "ちび弥彦", "rarity": 3 },
+  { "id": 752, "name": "ネコ剣心", "rarity": 2 },
+  { "id": 753, "name": "ネコ薫", "rarity": 1 },
+  { "id": 754, "name": "明智光秀", "rarity": 4 },
+  { "id": 755, "name": "756_1", "rarity": 4 },
+  { "id": 756, "name": "ネコケーキマシン挙式", "rarity": 4 },
+  { "id": 757, "name": "古びたタマゴ:N205", "rarity": 1 },
+  { "id": 758, "name": "謎の傭兵トリクシー", "rarity": 4 },
+  { "id": 759, "name": "サマーフェスサンディア", "rarity": 4 },
+  { "id": 760, "name": "砲龍ガンドロス", "rarity": 4 },
+  { "id": 761, "name": "762_1", "rarity": 4 },
+  { "id": 762, "name": "天空神スーパーゼウス", "rarity": 4 },
+  { "id": 763, "name": "ネコダイナザウルス", "rarity": 4 },
+  { "id": 764, "name": "765_1", "rarity": 4 },
+  { "id": 765, "name": "古びたタマゴ:N206", "rarity": 1 },
+  { "id": 766, "name": "イワシ", "rarity": 1 },
+  { "id": 767, "name": "イカ", "rarity": 1 },
+  { "id": 768, "name": "たいてんき", "rarity": 4 },
+  { "id": 769, "name": "花咲かじいさん", "rarity": 4 },
+  { "id": 770, "name": "771-1", "rarity": 4 },
+  { "id": 771, "name": "生命の賢者Dr.ノーヴァ", "rarity": 1 },
+  { "id": 772, "name": "パンプキンソドム", "rarity": 4 },
+  { "id": 773, "name": "スモウ・ザ・ミイラ", "rarity": 3 },
+  { "id": 774, "name": "特命機動アクセル", "rarity": 4 },
+  { "id": 775, "name": "776-1", "rarity": 4 },
+  { "id": 776, "name": "見習い武者ネコ", "rarity": 1 },
+  { "id": 777, "name": "冬将軍・成田甲斐", "rarity": 4 },
+  { "id": 778, "name": "ネコまどか＆ほむら", "rarity": 4 },
+  { "id": 779, "name": "幼天女ルーナ", "rarity": 4 },
+  { "id": 780, "name": "ネコボウラー", "rarity": 2 },
+  { "id": 781, "name": "マモルガ", "rarity": 4 },
+  { "id": 782, "name": "783-1", "rarity": 4 },
+  { "id": 783, "name": "こねこ", "rarity": 4 },
+  { "id": 784, "name": "チョコサプネコC", "rarity": 1 },
+  { "id": 785, "name": "殺意のキモネコ", "rarity": 2 },
+  { "id": 786, "name": "マジシャンキャットマン", "rarity": 4 },
+  { "id": 787, "name": "冥護の天女ルナーシャ", "rarity": 4 },
+  { "id": 788, "name": "789-1", "rarity": 1 },
+  { "id": 789, "name": "範馬刃牙", "rarity": 4 },
+  { "id": 790, "name": "烈海王", "rarity": 4 },
+  { "id": 791, "name": "花山薫", "rarity": 4 },
+  { "id": 792, "name": "愚地克巳", "rarity": 4 },
+  { "id": 793, "name": "ジャック・ハンマー", "rarity": 4 },
+  { "id": 794, "name": "ネコオーガ", "rarity": 3 },
+  { "id": 795, "name": "ちび刃牙", "rarity": 1 },
+  { "id": 796, "name": "ネコ刃牙", "rarity": 1 },
+  { "id": 797, "name": "ネコ海王", "rarity": 1 },
+  { "id": 798, "name": "ネコ独歩", "rarity": 1 },
+  { "id": 799, "name": "曲射砲台ランチャーズ", "rarity": 4 },
+  { "id": 800, "name": "801-1", "rarity": 4 },
+  { "id": 801, "name": "理の賢者ニュトーン", "rarity": 1 },
+  { "id": 802, "name": "802-1", "rarity": 1 },
+  { "id": 803, "name": "ソニック", "rarity": 4 },
+  { "id": 804, "name": "テイルス", "rarity": 4 },
+  { "id": 805, "name": "ナックルズ", "rarity": 4 },
+  { "id": 806, "name": "シャドウ", "rarity": 4 },
+  { "id": 807, "name": "ネコソニック", "rarity": 2 },
+  { "id": 808, "name": "ネコテイルス", "rarity": 1 },
+  { "id": 809, "name": "ネコシャドウ", "rarity": 2 },
+  { "id": 810, "name": "エージェント・スタール", "rarity": 4 },
+  { "id": 811, "name": "韋駄天スカンダ", "rarity": 4 },
+  { "id": 812, "name": "812-1", "rarity": 4 },
+  { "id": 813, "name": "タスマニアオオガニ", "rarity": 1 },
+  { "id": 814, "name": "エヴァ量産機", "rarity": 4 },
+  { "id": 815, "name": "月影の少年カヲル", "rarity": 5 },
+  { "id": 816, "name": "817-1", "rarity": 5 },
+  { "id": 817, "name": "樹の精霊コモリ", "rarity": 4 },
+  { "id": 818, "name": "819-1", "rarity": 4 },
+  { "id": 819, "name": "ネコ大工", "rarity": 2 },
+  { "id": 820, "name": "シーサイドペガサ", "rarity": 4 },
+  { "id": 821, "name": "822_1", "rarity": 4 },
+  { "id": 822, "name": "ネココンサルタント", "rarity": 1 },
+  { "id": 823, "name": "ネコ店長＆ネコ店員", "rarity": 1 },
+  { "id": 824, "name": "魔導師シドミ", "rarity": 4 },
+  { "id": 825, "name": "826-1", "rarity": 4 },
+  { "id": 826, "name": "キャミィ", "rarity": 4 },
+  { "id": 827, "name": "ジュリ", "rarity": 4 },
+  { "id": 828, "name": "ネコザンギエフ", "rarity": 3 },
+  { "id": 829, "name": "ネコジェイミー", "rarity": 3 },
+  { "id": 830, "name": "獅子番長ラクレス", "rarity": 4 },
+  { "id": 831, "name": "スカーフにゃんこ", "rarity": 1 },
+  { "id": 832, "name": "ハットにゃんこ", "rarity": 1 },
+  { "id": 833, "name": "ヘルメットにゃんこ", "rarity": 1 },
+  { "id": 834, "name": "ゴーグルにゃんこ", "rarity": 1 },
+  { "id": 835, "name": "リボンにゃんこ", "rarity": 1 },
+  { "id": 836, "name": "ニャンコオー", "rarity": 4 },
+
+
+]
+
+====================
+FILE: data_loader.js
+====================
+/**
+ * data_loader.js
+ * データの読み込み、解析、マスタデータの構築を担当
+ */
+
+/**
+ * [gatya.tsv Data Structure Memo]
+ * * ■ 基本構造
+ * ・1-10列目 (Idx 0-9): 年月日・時刻情報
+ * Idx 0: 開始年月日 (YYYYMMDD)
+ * Idx 1: 開始時刻 (HHMM)
+ * Idx 2: 終了年月日 (YYYYMMDD)
+ * Idx 3: 終了時刻 (HHMM)
+ * Idx 8: レアロールズ対象フラグ (1以外は除外)
+ * * ・11列目以降 (Idx 10~): ガチャ情報ブロック (15列/ブロック の繰り返し)
+ * ブロック開始インデックスを i (10, 25, 40...) とすると:
+ * i+0  : ガチャID (Gacha ID)
+ * i+6  : レアレート (Rare Rate)
+ * i+8  : 激レアレート (Super Rare Rate)
+ * i+10 : 超激レアレート (Uber Rare Rate)
+ * i+11 : 超激レア確定フラグ (Guaranteed Flag, 1=確定)
+ * i+12 : 伝説レアレート (Legend Rare Rate)
+ * i+14 : 日本語説明文 (Description)
+ */
+
+// グローバル変数 (データ保持用)
+let gachaMasterData = { cats: {}, gachas: {} };
+let loadedTsvContent = null; // スケジュールデータ (gatya.tsv)
+
+// 全データのロードと構築を行うメイン関数
+async function loadAllData() {
+    console.log("Loading data...");
+    
+    // 1. キャラクターデータ (cats.js) の処理
+    processCatsData();
+
+    // 2. マスタデータ (CSV/TSV) の取得と構築
+    try {
+        const [csvRes, tsvRes, gatyaRes] = await Promise.all([
+            fetch('GatyaDataSetR1.csv'),
+            fetch('GatyaData_Option_SetR.tsv'),
+            fetch('gatya.tsv') // スケジュールデータもここで取得
+        ]);
+
+        if (!csvRes.ok) throw new Error("GatyaDataSetR1.csv fetch failed");
+        if (!tsvRes.ok) throw new Error("GatyaData_Option_SetR.tsv fetch failed");
+        
+        const csvText = await csvRes.text();
+        const tsvText = await tsvRes.text();
+        let gatyaTsvText = null;
+        
+        if (gatyaRes.ok) {
+            gatyaTsvText = await gatyaRes.text();
+            loadedTsvContent = gatyaTsvText;
+            console.log("gatya.tsv loaded successfully.");
+        } else {
+            console.warn("gatya.tsv not found.");
+        }
+
+        // マスタデータの構築
+        const gachasMaster = buildGachaMaster(gachaMasterData.cats, csvText, tsvText);
+        
+        // gatya.tsv から正確なレート情報を反映
+        if (gatyaTsvText) {
+            applyTsvRates(gachasMaster, gatyaTsvText);
+        }
+
+        gachaMasterData.gachas = gachasMaster;
+        
+        console.log("Master Data Built:", Object.keys(gachasMaster).length, "gachas loaded.");
+        return true;
+
+    } catch (e) {
+        console.error("Critical Data Load Error:", e);
+        return false;
+    }
+}
+
+// cats.js のデータを gachaMasterData.cats に変換
+function processCatsData() {
+    const fallbackCats = [{id:31, name:"ネコぼさつ", rarity:3}];
+    let catsData = (typeof cats !== 'undefined') ? cats : fallbackCats;
+
+    const rarityMap = { 0: "nomal", 1: "ex", 2: "rare", 3: "super", 4: "uber", 5: "legend" };
+    const catsMaster = {};
+    
+    for (const cat of catsData) {
+        catsMaster[cat.id] = { ...cat, rarity: rarityMap[cat.rarity] || "rare" };
+    }
+    gachaMasterData.cats = catsMaster;
+}
+
+// マスタデータ構築ロジック (CSV行番号 = ID)
+function buildGachaMaster(catsMaster, csvText, tsvText) {
+    const gachasMaster = {};
+
+    // 1. CSVを行ごとに分割 (1行目=ID:0, 2行目=ID:1...)
+    const gachaPools = csvText.split(/\r?\n/);
+
+    // 2. Option TSVをパースして GatyaSetID -> seriesID のマップを作成
+    const tsvLines = tsvText.split(/\r?\n/);
+    const headers = tsvLines[0].split('\t').map(h => h.trim());
+    const idIdx = headers.indexOf('GatyaSetID');
+    const seriesIdx = headers.indexOf('seriesID');
+
+    const gachaSeriesMap = {}; 
+    if (idIdx !== -1 && seriesIdx !== -1) {
+        for (let i = 1; i < tsvLines.length; i++) {
+            const line = tsvLines[i];
+            if (!line.trim()) continue;
+            const cols = line.split('\t');
+            const gID = parseInt(cols[idIdx]);
+            const sID = parseInt(cols[seriesIdx]);
+            if (!isNaN(gID) && !isNaN(sID)) {
+                gachaSeriesMap[gID] = sID;
+            }
+        }
+    }
+
+    // gacha_series.js のデータ
+    let seriesList = (typeof gacha_series !== 'undefined') ? gacha_series : [];
+
+    // 3. 全結合して gachasMaster を構築
+    gachaPools.forEach((line, index) => {
+        if (!line.trim()) return;
+
+        // CSVの行番号(index) = ガチャID
+        const gachaID = index;
+        const poolCats = line.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+        const seriesID = gachaSeriesMap[gachaID];
+
+        // デフォルト情報
+        let seriesInfo = { 
+            name: `Gacha ID: ${gachaID}`, 
+            rare: 0, supa: 0, uber: 0, legend: 0, sort: 999 
+        };
+        
+        // gacha_series.js から名前とレートを引く
+        if (seriesID !== undefined) {
+            const found = seriesList.find(s => s.series_id === seriesID);
+            if (found) {
+                seriesInfo = found;
+            }
+        }
+
+        // キャラクタープール構築
+        const pool = { rare: [], super: [], uber: [], legend: [], nomal: [], ex: [] };
+        for (const catId of poolCats) {
+            const catInfo = catsMaster[catId];
+            if (catInfo && pool[catInfo.rarity] !== undefined) {
+                pool[catInfo.rarity].push({ id: catInfo.id, name: catInfo.name });
+            }
+        }
+
+        gachasMaster[gachaID] = {
+            id: gachaID.toString(),
+            name: seriesInfo.name, // ガチャ名称
+            rarity_rates: { 
+                rare: seriesInfo.rare || 0, 
+                super: seriesInfo.supa || 0,
+                uber: seriesInfo.uber || 0, 
+                legend: seriesInfo.legend || 0 
+            },
+            pool: pool,
+            sort: seriesInfo.sort || 999,
+            series_id: seriesID,
+            guaranteed: false // デフォルトはfalse
+        };
+    });
+
+    return gachasMaster;
+}
+
+// gatya.tsv からレート情報と確定情報を抽出してマスタデータに適用する
+function applyTsvRates(gachasMaster, tsvContent) {
+    const lines = tsvContent.split('\n');
+    lines.forEach(line => {
+        if (line.trim().startsWith('[') || !line.trim()) return;
+        const cols = line.split('\t');
+        if (cols.length < 15) return; // 最小カラム数チェック
+
+        // 9列目(Idx 8)が「1」以外の行は除外（レアロールズ対象外）
+        if (cols[8] !== '1') return;
+
+        // 11列目(Idx 10)から15列ごとにブロックが存在する
+        for (let i = 10; i < cols.length; i += 15) {
+            // ブロックの必須カラムが存在するか確認
+            if (i + 14 >= cols.length) break;
+
+            const gachaIdStr = cols[i];
+            const gachaId = parseInt(gachaIdStr);
+            
+            // IDが無効、または-1の場合はスキップ
+            if (isNaN(gachaId) || gachaId < 0) continue;
+
+            // 定義に基づきレート情報を取得
+            // i+6: Rare, i+8: Super, i+10: Uber, i+11: Guaranteed, i+12: Legend
+            const rateRare = parseInt(cols[i + 6]) || 0;
+            const rateSupa = parseInt(cols[i + 8]) || 0;
+            const rateUber = parseInt(cols[i + 10]) || 0;
+            const isGuaranteed = cols[i + 11] === '1';
+            const rateLegend = parseInt(cols[i + 12]) || 0;
+
+            if (gachasMaster[gachaId]) {
+                gachasMaster[gachaId].rarity_rates = {
+                    rare: rateRare,
+                    super: rateSupa,
+                    uber: rateUber,
+                    legend: rateLegend
+                };
+                // 確定フラグを保存
+                gachasMaster[gachaId].guaranteed = isGuaranteed;
+            }
+        }
+    });
+}
+
+====================
+FILE: gacha_selector.js
+====================
+/**
+ * gacha_selector.js
+ * ガチャ選択用プルダウンのオプション生成ロジック
+ */
+
+function getGachaSelectorOptions(selectedId) {
+    const now = new Date();
+    const formatInt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return parseInt(`${y}${m}${day}`, 10);
+    };
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayInt = formatInt(yesterdayDate);
+
+    const toShortDate = (str) => {
+        if(!str || str.length < 8) return str;
+        return `${parseInt(str.substring(4,6))}/${parseInt(str.substring(6,8))}`;
+    };
+
+    let scheduleRaw = [];
+    if (loadedTsvContent && typeof parseGachaTSV === 'function') {
+        scheduleRaw = parseGachaTSV(loadedTsvContent);
+    }
+    
+    const usedIds = new Set();
+    const allOptions = [];
+
+    // Group 1: スケジュール (終了日 >= 昨日)
+    let scheduledItems = [];
+    scheduleRaw.forEach(item => {
+        if(!gachaMasterData.gachas[item.id]) return;
+
+        const masterName = gachaMasterData.gachas[item.id].name;
+        const checkStr = (masterName + item.tsvName).replace(/\s/g, "");
+        const isSpecial = checkStr.includes("プラチナ") || checkStr.includes("レジェンド");
+
+        const e = parseInt(item.rawEnd, 10);
+
+        // 表示条件: 特殊ガチャ または 終了日が昨日以降
+        if (isSpecial || e >= yesterdayInt) {
+            scheduledItems.push({
+                id: item.id,
+                name: masterName,
+                tsvName: item.tsvName || item.name,
+                rawStart: item.rawStart,
+                rawEnd: item.rawEnd,
+                s: parseInt(item.rawStart, 10),
+                isSpecial: isSpecial,
+                isGuaranteed: item.guaranteed // 確定フラグを引き継ぐ
+            });
+        }
+    });
+
+    scheduledItems.sort((a, b) => {
+        if (a.isSpecial !== b.isSpecial) return a.isSpecial ? 1 : -1;
+        return a.s - b.s;
+    });
+
+    scheduledItems.forEach(item => {
+        if (usedIds.has(item.id.toString())) return;
+        
+        // 確定フラグがある場合、名称に [確定] を付与 (既に含まれていれば二重付与しない)
+        let displayName = item.name;
+        if (item.isGuaranteed && !displayName.includes("確定")) {
+            displayName += " [確定]";
+        }
+
+        const baseName = `${displayName} (${item.id})`;
+        let label = item.isSpecial 
+            ? `${toShortDate(item.rawStart)}~ ${baseName}`
+            : `${toShortDate(item.rawStart)}~${toShortDate(item.rawEnd)} ${baseName}`;
+        
+        allOptions.push({ value: item.id, label: label });
+        usedIds.add(item.id.toString());
+    });
+
+    // Group 2: シリーズ最新 (G1で表示済みはスキップ)
+    const seriesMaxMap = new Map();
+    Object.values(gachaMasterData.gachas).forEach(g => {
+        if (usedIds.has(g.id)) return;
+        if (g.series_id !== undefined && g.sort < 800) {
+            const current = seriesMaxMap.get(g.series_id);
+            if (!current || parseInt(g.id) > parseInt(current.id)) {
+                seriesMaxMap.set(g.series_id, g);
+            }
+        }
+    });
+
+    const seriesList = Array.from(seriesMaxMap.values());
+    seriesList.sort((a, b) => a.sort - b.sort);
+
+    seriesList.forEach(g => {
+        allOptions.push({ value: g.id, label: `${g.name} (${g.id})` });
+        usedIds.add(g.id);
+    });
+
+    // Group 3: その他
+    const othersList = [];
+    Object.values(gachaMasterData.gachas).forEach(g => {
+        if (usedIds.has(g.id)) return;
+        othersList.push(g);
+    });
+
+    othersList.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+
+    othersList.forEach(g => {
+        allOptions.push({ value: g.id, label: `${g.id} ${g.name}` });
+        usedIds.add(g.id);
+    });
+
+    if (selectedId && !usedIds.has(selectedId)) {
+        const missing = gachaMasterData.gachas[selectedId];
+        if (missing) {
+            allOptions.push({ value: selectedId, label: `${selectedId} ${missing.name} (選択中)` });
+        }
+    }
+
+    return allOptions;
+}
+
+====================
+FILE: gacha_series.js
+====================
+const gacha_series = [
+    {"series_id":0,"name":"ネコルガ族", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":300},
+    {"series_id":1,"name":"ダイナマイツ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":301},
+    {"series_id":2,"name":"バサラーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":302},
+    {"series_id":3,"name":"ギャラクシーギャルズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":303},
+    {"series_id":4,"name":"ドラゴンエンペラーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":304},
+    {"series_id":5,"name":"レッドバスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":200},
+    {"series_id":6,"name":"ウルトラソウルズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":305},
+    {"series_id":7,"name":"ダークヒーローズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":306},
+    {"series_id":8,"name":"ハロウィン", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":400},
+    {"series_id":9,"name":"クリスマスギャルズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":401},
+    {"series_id":10,"name":"忘年会", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":801},
+    {"series_id":11,"name":"ゆるドラシル", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":802},
+    {"series_id":12,"name":"メタルスラッグディフェンス", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":803},
+    {"series_id":13,"name":"メルクストーリア", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":600},
+    {"series_id":14,"name":"生きろ！マンボウ！", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":601},
+    {"series_id":15,"name":"消滅都市", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":602},
+    {"series_id":16,"name":"新年", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":700},
+    {"series_id":17,"name":"ケリ姫スイーツ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":603},
+    {"series_id":18,"name":"ギガントゼウス", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":307},
+    {"series_id":19,"name":"超ネコ祭", "rare":6470, "supa":2600, "uber":900, "legend":30,"sort":100},
+    {"series_id":20,"name":"サマーガールズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":804},
+    {"series_id":21,"name":"プラチナガチャ", "rare":0, "supa":0, "uber":10000, "legend":0,"sort":102},
+    {"series_id":22,"name":"エアバスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":201},
+    {"series_id":23,"name":"魔法少女まどか☆マギカ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":604},
+    {"series_id":24,"name":"アイアンウォーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":308},
+    {"series_id":25,"name":"クラッシュフィーバー", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":805},
+    {"series_id":26,"name":"イースターカーニバル", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":402},
+    {"series_id":27,"name":"極ネコ祭", "rare":6470, "supa":2600, "uber":900, "legend":30,"sort":101},
+    {"series_id":28,"name":"ギャルズモンスターズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":309},
+    {"series_id":29,"name":"ぐでたま", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":806},
+    {"series_id":30,"name":"ウルトラセレクション", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":807},
+    {"series_id":31,"name":"ミラクルセレクション", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":808},
+    {"series_id":32,"name":"メタルバスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":202},
+    {"series_id":33,"name":"エレメンタルピクシーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":310},
+    {"series_id":34,"name":"劇場版 Fate stay night", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":605},
+    {"series_id":35,"name":"超選抜祭", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":701},
+    {"series_id":36,"name":"実況パワフルプロ野球", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":809},
+    {"series_id":37,"name":"エヴァンゲリオン", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":606},
+    {"series_id":38,"name":"ビックリマン", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":607},
+    {"series_id":39,"name":"極選抜祭", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":702},
+    {"series_id":40,"name":"ストリートファイターV", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":810},
+    {"series_id":41,"name":"エクセレントセレクション", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":811},
+    {"series_id":42,"name":"超極ネコ祭", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":104},
+    {"series_id":43,"name":"初音ミク", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":608},
+    {"series_id":44,"name":"エヴァンゲリオン2nd", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":609},
+    {"series_id":45,"name":"波動バスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":203},
+    {"series_id":46,"name":"レジェンドガチャ", "rare":0, "supa":0, "uber":9500, "legend":500,"sort":103},
+    {"series_id":47,"name":"超国王祭", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":105},
+    {"series_id":48,"name":"バレンタインギャルズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":403},
+    {"series_id":49,"name":"らんま1/2", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":610},
+    {"series_id":50,"name":"女王祭", "rare":6940, "supa":2500, "uber":500, "legend":60,"sort":106},
+    {"series_id":51,"name":"くにおくん熱血大運動会", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":812},
+    {"series_id":52,"name":"ホワイトデー", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":404},
+    {"series_id":53,"name":"ジューンブライド", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":405},
+    {"series_id":54,"name":"ストリートファイター BLUE TEAM", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":611},
+    {"series_id":55,"name":"ストリートファイター RED TEAM", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":612},
+    {"series_id":56,"name":"超生命体バスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":204},
+    {"series_id":57,"name":"くにお熱血大運動会 赤組", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":703},
+    {"series_id":58,"name":"りき熱血大運動会 白組", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":704},
+    {"series_id":59,"name":"バスターズ祭", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":107},
+    {"series_id":60,"name":"メタルスラッグアタック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":613},
+    {"series_id":61,"name":"9000万DL記念選抜", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":813},
+    {"series_id":62,"name":"神魔之塔", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":814},
+    {"series_id":63,"name":"るろうに剣心", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":614},
+    {"series_id":64,"name":"サマーガールズ サンシャイン", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":406},
+    {"series_id":65,"name":"サマーガールズ ブルーオーシャン", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":407},
+    {"series_id":66,"name":"ウルトラ4セレクション", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":500},
+    {"series_id":67,"name":"ミラクル4セレクション", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":501},
+    {"series_id":68,"name":"エクセレント4セレクション", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":502},
+    {"series_id":69,"name":"1億チケットガチャ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":815},
+    {"series_id":70,"name":"億DL記念選抜", "rare":6930, "supa":2500, "uber":500, "legend":70,"sort":108},
+    {"series_id":71,"name":"アウトレット", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":705},
+    {"series_id":72,"name":"範馬刃牙", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":615},
+    {"series_id":73,"name":"ソニック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":616}
+];
+
+====================
+FILE: index.html
+====================
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rare Gacha Rolls</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Rare Gacha Rolls</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="seed">Seed:</label>
+                <input type="number" id="seed" placeholder="Enter Seed" value="12345" onchange="updateUrlParams(); resetAndGenerateTable();">
+            </div>
+            
+            <div class="control-group" id="sim-control-wrapper" class="hidden">
+                <label for="sim-config">Simulation Config:</label>
+                <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();">
+                <button onclick="clearSimConfig()">Clear Config</button>
+            </div>
+
+            <div class="mode-select">
+                <label><input type="radio" name="appMode" value="display" checked onchange="onModeChange()"> 表示モード</label>
+                <label><input type="radio" name="appMode" value="simulation" onchange="onModeChange()"> シミュレーションモード（未実装）</label>
+            </div>
+
+            <div style="margin-top: 5px;">
+                <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
+                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
+            </div>
+        </div>
+
+        <div id="description-content" class="description-box hidden">
+            <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
+            以下、未実装<br>
+            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
+            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
+        </div>
+
+        <div id="result" class="result-box hidden"></div>
+        
+        <div id="rolls-table-container"></div>
+
+        <div id="bottom-controls" class="bottom-controls" style="margin-top: 10px; margin-bottom: 20px; display: flex; gap: 10px;">
+            <button onclick="addMoreRolls()">100行追加</button>
+            <button id="toggle-result-btn" class="secondary" onclick="toggleResultDisplay()">計算過程を表示</button>
+        </div>
+        
+        <div id="schedule-container" class="hidden"></div>
+    </div>
+
+    <script src="cats.js"></script>
+    <script src="gacha_series.js"></script>
+    <script src="limited_cats.js"></script>
+
+    <script src="logic.js"></script>
+    <script src="simulation.js"></script>
+    <script src="schedule_logic.js"></script>
+    <script src="data_loader.js"></script> 
+
+    <script src="url_manager.js"></script>
+    <script src="gacha_selector.js"></script>
+    <script src="table_renderer.js"></script>
+    <script src="ui_controller.js"></script>
+    
+    <script src="main.js"></script>
+</body>
+</html>
+
+====================
+FILE: limited_cats.js
+====================
+const limitedCats = [283,286,318,333,378,380,397,435,441,484,529,543,559,585,586,609,612,641,657,690,705,758,779,783,787,810];
+
+====================
+FILE: logic.js
+====================
+/**
+ * 乱数生成クラス
+ */
+class Xorshift32 {
+    constructor(seed) { this.seed = (seed >>> 0) || 1;
+}
+    next() {
+        let x = this.seed;
+x ^= (x << 13);
+        x ^= (x >>> 17);
+        x ^= (x << 15);
+        this.seed = x >>> 0;
+return this.seed;
+    }
+}
+
+/**
+ * 1回分のガチャ抽選を行う（シード消費あり）
+ * 多重レア被りに対応 (被り続ける限りプールを減らして再抽選)
+ */
+function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo) {
+    if (startIndex + 1 >= seeds.length) return { seedsConsumed: 0, finalChar: { name: "データ不足", id: null }, originalChar: null, isRerolled: false, rarity: null, charId: null, s0: null, s1: null, s2: null };
+    
+    const s0_seed = seeds[startIndex];
+    const s1_seed = seeds[startIndex + 1];
+
+    const rarityRoll = s0_seed % 10000;
+    const rates = gachaConfig.rarity_rates || {};
+    const rareRate = rates.rare || 0, superRate = rates.super || 0, uberRate = rates.uber || 0, legendRate = rates.legend || 0;
+    
+    let currentRarity;
+    if (rarityRoll < rareRate) { currentRarity = 'rare'; } 
+    else if (rarityRoll < rareRate + superRate) { currentRarity = 'super'; } 
+    else if (rarityRoll < rareRate + superRate + uberRate) { currentRarity = 'uber'; } 
+    else if (rarityRoll < rareRate + superRate + uberRate + legendRate) { currentRarity = 'legend'; } 
+    else { currentRarity = 'rare'; }
+    
+    const characterPool = gachaConfig.pool[currentRarity] || [];
+    if (characterPool.length === 0) {
+        const s2_seed = (startIndex + 2 < seeds.length) ? seeds[startIndex + 2] : null;
+        return { seedsConsumed: 2, finalChar: { name: "該当なし", id: null }, originalChar: null, isRerolled: false, rarity: currentRarity, charId: null, charIndex: -1, totalChars: 0, s0: s0_seed, s1: s1_seed, s2: s2_seed };
+    }
+    
+    const totalChars = characterPool.length;
+    const charIndex = s1_seed % totalChars;
+    let character = characterPool[charIndex];
+    const originalChar = character;
+    
+    let seedsConsumed = 2;
+    let isRerolled = false;
+    let reRollIndex = null;
+    let uniqueTotal = null;
+    let finalSeedVal = null; // 最後に使用したSEED（表示用）
+
+    // --- レア被り判定と多重再抽選ロジック ---
+    if (currentRarity === 'rare' && lastDrawInfo && lastDrawInfo.rarity === 'rare' && lastDrawInfo.charId === character.id) {
+        
+        // 元のプールをコピーして操作用プールを作成
+        let currentPool = [...characterPool];
+        // 直前に選ばれたインデックス（除外対象）
+        let removeIndex = charIndex;
+        
+        // 被りが解消されるまでループ
+        while (true) {
+            // 1. 直前の抽選で選ばれたキャラ（index）をプールから除外
+            currentPool.splice(removeIndex, 1);
+            uniqueTotal = currentPool.length;
+
+            if (uniqueTotal === 0) {
+                // 万が一プールが空になった場合はループ終了
+                break;
+            }
+
+            // 2. 次のSEEDが存在するか確認
+            if (startIndex + seedsConsumed >= seeds.length) {
+                return { seedsConsumed: 0, finalChar: { name: "データ不足", id: null }, originalChar: null, isRerolled: false, rarity: null, charId: null, s0: s0_seed, s1: s1_seed, s2: null };
+            }
+
+            // 3. 次のSEEDを取得
+            finalSeedVal = seeds[startIndex + seedsConsumed];
+            seedsConsumed++; // SEED消費数を加算
+
+            // 4. 新しいプールで抽選
+            reRollIndex = finalSeedVal % uniqueTotal;
+            character = currentPool[reRollIndex];
+            
+            isRerolled = true;
+
+            // 5. 再抽選結果が、なお前回の確定キャラ(lastDrawInfo)と同じIDか確認
+            if (character.id !== lastDrawInfo.charId) {
+                // 被りが解消されたので終了
+                break;
+            }
+
+            // まだ被っている場合
+            // 今回選ばれた reRollIndex を次の除外対象としてループ継続
+            removeIndex = reRollIndex;
+
+            // 安全策: もしプール内の全キャラが同じIDなら無限ループになるためチェック
+            const hasDifferentChar = currentPool.some(c => c.id !== lastDrawInfo.charId);
+            if (!hasDifferentChar) {
+                break; // 回避不可能
+            }
+        }
+    } else {
+        // 再抽選なしの場合、S2のSEED値として仮に次の値をセット（従来の互換性のため）
+        if (startIndex + 2 < seeds.length) finalSeedVal = seeds[startIndex + 2];
+    }
+    
+    return { 
+        s0: s0_seed, 
+        s1: s1_seed, 
+        s2: finalSeedVal, // 最終的に抽選に使用されたSEED
+        originalChar: originalChar, 
+        finalChar: character, 
+        isRerolled: isRerolled, 
+        rarity: currentRarity, 
+        charId: character.id, 
+        charIndex: charIndex, 
+        totalChars: totalChars, 
+        uniqueTotal: uniqueTotal, // 最終ループ時のプールサイズ
+        reRollIndex: reRollIndex, // 最終ループ時のスロット値
+        seedsConsumed: seedsConsumed 
+    };
+}
+
+/**
+ * 確定枠（Uber）の抽選
+ */
+function rollGuaranteedUber(startIndex, gachaConfig, seeds) {
+    if (startIndex >= seeds.length) return { seedsConsumed: 0, finalChar: { name: "データ不足", id: null }, originalChar: null, isRerolled: false, rarity: 'uber', charId: null, s0: null };
+    const s0_seed = seeds[startIndex];
+    const currentRarity = 'uber';
+    const characterPool = gachaConfig.pool[currentRarity] || [];
+    const totalChars = characterPool.length;
+    if (totalChars === 0) {
+        return { seedsConsumed: 1, finalChar: { name: "該当なし", id: null }, originalChar: null, isRerolled: false, rarity: currentRarity, charId: null, charIndex: -1, totalChars: 0, s0: s0_seed };
+    }
+    const charIndex = s0_seed % totalChars;
+    const character = characterPool[charIndex];
+    return { seedsConsumed: 1, finalChar: character, originalChar: character, isRerolled: false, rarity: currentRarity, charId: character.id, charIndex: charIndex, totalChars: totalChars, s0: s0_seed };
+}
+
+/**
+ * 確定枠の先読み計算
+ */
+function calculateGuaranteedLookahead(startSeedIndex, gachaConfig, allSeeds, initialLastDraw, normalRollsCount = 10) {
+    if (!gachaConfig || !gachaConfig.pool['uber']) return { name: "N/A", charId: null, nextSeed: null, nextRollStartSeedIndex: null };
+    // シミュレーション実行用ヘルパー関数
+    const simulateRoute = (startSeed, startLastDraw) => {
+        let seedCursor = startSeed;
+        let lastDraw = startLastDraw;
+        
+        for (let i = 0; i < normalRollsCount; i++) {
+            if (seedCursor + 1 >= allSeeds.length) return null;
+            const rollResult = rollWithSeedConsumptionFixed(seedCursor, gachaConfig, allSeeds, lastDraw);
+            if (rollResult.seedsConsumed === 0) return null;
+            
+            seedCursor += rollResult.seedsConsumed;
+            lastDraw = { rarity: rollResult.rarity, charId: rollResult.charId };
+        }
+
+        if (seedCursor >= allSeeds.length) return null;
+        const guarRoll = rollGuaranteedUber(seedCursor, gachaConfig, allSeeds);
+        if (guarRoll.seedsConsumed === 0) return null;
+        
+        seedCursor += guarRoll.seedsConsumed;
+        const nextSimSeedValue = (seedCursor < allSeeds.length) ? allSeeds[seedCursor] : null;
+        return {
+            name: guarRoll.finalChar.name,
+            charId: guarRoll.finalChar.id,
+            nextSeed: nextSimSeedValue,
+            nextRollStartSeedIndex: seedCursor // 排出後のインデックス
+        };
+    };
+
+    // 1. 最初の1回目がレア被りになるかチェック
+    let isFirstDupe = false;
+    if (normalRollsCount > 0 && startSeedIndex + 1 < allSeeds.length) {
+        const checkRoll = rollWithSeedConsumptionFixed(startSeedIndex, gachaConfig, allSeeds, initialLastDraw);
+        if (checkRoll.isRerolled) {
+            isFirstDupe = true;
+        }
+    }
+
+    // 2. メインルート（実際の挙動）
+    const mainResult = simulateRoute(startSeedIndex, initialLastDraw);
+    if (!mainResult) return { name: "データ不足", charId: null, nextSeed: null, nextRollStartSeedIndex: null };
+    // 3. Alternativeルート（1回目が被りなしと仮定）
+    let altResult = null;
+    if (isFirstDupe) {
+        // initialLastDrawをnullにすることで、1回目の被り判定を回避させる
+        altResult = simulateRoute(startSeedIndex, null);
+    }
+
+    // 結果をマージして返す
+    return {
+        ...mainResult, // 既存コードとの互換性のため展開
+        alternative: altResult
+    };
+}
+
+====================
+FILE: main.js
+====================
+/**
+ * main.js
+ * アプリケーションのエントリーポイント
+ */
+
+window.onload = async function() {
+    // 1. データの読み込み (data_loader.js)
+    const success = await loadAllData();
+    if (!success) {
+        alert("データの読み込みに失敗しました。");
+        return;
+    }
+
+    // 2. URLパラメータの処理 (ui_controller.js)
+    processUrlParams();
+
+    // 3. デフォルトガチャの初期化 (ui_controller.js)
+    initializeDefaultGachas();
+
+    // 4. スケジュールUIの準備 (ui_controller.js)
+    setupScheduleUI();
+
+    // 5. 初回描画 (ui_controller.js)
+    onModeChange();
+};
+
+====================
+FILE: schedule_logic.js
+====================
+/**
+ * schedule_logic.js
+ * gatya.tsvの解析とスケジュール表・ガントチャートのレンダリング
+ */
+
+// YYYYMMDD -> YYYY年MM月DD日
+function formatDateJP(dateStr) {
+    if (!dateStr || dateStr.length < 8) return dateStr;
+    const y = dateStr.substring(0, 4);
+    const m = dateStr.substring(4, 6);
+    const d = dateStr.substring(6, 8);
+    return `${y}年${m}月${d}日`;
+}
+
+// HHMM -> HH:MM
+function formatTime(timeStr) {
+    if (!timeStr) return "00:00";
+    let s = timeStr.toString().padStart(4, '0');
+    return `${s.substring(0, 2)}:${s.substring(2, 4)}`;
+}
+
+// YYYYMMDD -> Dateオブジェクト (00:00:00)
+function parseDateStr(dateStr) {
+    if (!dateStr || dateStr.length < 8) return new Date();
+    const y = parseInt(dateStr.substring(0, 4), 10);
+    const m = parseInt(dateStr.substring(4, 6), 10) - 1;
+    const d = parseInt(dateStr.substring(6, 8), 10);
+    return new Date(y, m, d);
+}
+
+// YYYYMMDD, HHMM -> Dateオブジェクト
+function parseDateTime(dateStr, timeStr) {
+    const d = parseDateStr(dateStr);
+    if (timeStr) {
+        let s = timeStr.toString().padStart(4, '0');
+        const h = parseInt(s.substring(0, 2), 10);
+        const min = parseInt(s.substring(2, 4), 10);
+        d.setHours(h, min, 0, 0);
+    }
+    return d;
+}
+
+// Date -> YYYYMMDD 数値
+function getDateInt(dateObj) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return parseInt(`${y}${m}${d}`, 10);
+}
+
+// Date -> M/D 文字列
+function getShortDateStr(dateObj) {
+    return `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+}
+
+// プラチナ・レジェンド判定
+function isPlatinumOrLegend(item) {
+    const name = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
+    return name.includes("プラチナガチャ") || name.includes("レジェンドガチャ");
+}
+
+// 文字列の表示幅を概算する関数 (動的幅調整用)
+function calcTextWidth(text) {
+    let width = 0;
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        // 半角文字(ASCII範囲)は約8px、それ以外(全角)は約13pxと仮定
+        if ((code >= 0x00 && code < 0x81) || (code === 0xf8f0) || (code >= 0xff61 && code < 0xffa0) || (code >= 0xf8f1 && code < 0xf8f4)) {
+            width += 8;
+        } else {
+            width += 13;
+        }
+    }
+    return width;
+}
+
+// TSVデータのパース処理
+function parseGachaTSV(tsv) {
+    const lines = tsv.split('\n');
+    const schedule = [];
+
+    lines.forEach(line => {
+        if (line.trim().startsWith('[') || !line.trim()) return;
+
+        const cols = line.split('\t');
+        if (cols.length < 10) return;
+
+        // 1. フィルタリング: 9列目(index 8)が '1' のもののみ抽出
+        if (cols[8] !== '1') return;
+
+        // 2. 年月日・時刻情報の取得
+        const startDateStr = cols[0]; 
+        const startTimeStr = cols[1]; 
+        const endDateStr   = cols[2]; 
+        const endTimeStr   = cols[3]; 
+
+        // 3. 有効なガチャ情報ブロックの探索
+        let validBlockIndex = -1;
+        for (let i = 10; i < cols.length; i += 15) {
+            const descIndex = i + 14;
+            if (descIndex >= cols.length) break;
+            const desc = cols[descIndex];
+            if (desc && desc !== '0' && /[^\x01-\x7E]/.test(desc)) {
+                validBlockIndex = i;
+                break; 
+            }
+        }
+
+        if (validBlockIndex === -1) {
+            if (cols[10] && cols[10] !== '-1') {
+                validBlockIndex = 10;
+            } else {
+                return;
+            }
+        }
+
+        const base = validBlockIndex;
+        
+        // ガチャ情報抽出
+        const gachaId = cols[base];
+        const rateRare = cols[base + 6]; 
+        const rateSupa = cols[base + 8]; 
+        const rateUber = cols[base + 10]; 
+        const guarFlag = cols[base + 11]; 
+        const rateLegend = cols[base + 12]; 
+        const detail = cols[base + 14];   
+
+        const guaranteed = (guarFlag === '1' || parseInt(guarFlag) > 0);
+
+        let seriesName = "";
+        let tsvName = detail || ""; 
+        
+        if (typeof gachaMasterData !== 'undefined' && gachaMasterData.gachas[gachaId]) {
+            seriesName = gachaMasterData.gachas[gachaId].name;
+        } else {
+            seriesName = `ID:${gachaId}`;
+        }
+
+        schedule.push({
+            id: gachaId,
+            start: startDateStr,
+            end: endDateStr,
+            rawStart: startDateStr,
+            rawEnd: endDateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            seriesName: seriesName,
+            tsvName: tsvName,
+            rare: rateRare,
+            supa: rateSupa,
+            uber: rateUber,
+            legend: rateLegend,
+            guaranteed: guaranteed
+        });
+    });
+
+    // 開始日順にソート
+    schedule.sort((a, b) => parseInt(a.start) - parseInt(b.start));
+    return schedule;
+}
+
+/**
+ * ロールズ（シミュレータ）の初期値を決定する関数
+ * - 終了していないガチャの中で開始日が最も早いものを選択
+ * - 確定ガチャの場合は '11g'、それ以外は '11' を推奨設定として返す
+ */
+function findDefaultGachaState(data) {
+    const now = new Date();
+
+    // 1. フィルタリング (終了していない & プラチナ・レジェンド除外)
+    let candidates = data.filter(item => {
+        if (isPlatinumOrLegend(item)) return false; // 通常ロールズ対象外を除外
+        
+        const endDt = parseDateTime(item.rawEnd, item.endTime);
+        return endDt >= now; // 現在時刻を過ぎていない
+    });
+
+    // 2. 開始日順にソート
+    candidates.sort((a, b) => {
+        const startA = parseDateTime(a.rawStart, a.startTime);
+        const startB = parseDateTime(b.rawStart, b.startTime);
+        return startA - startB;
+    });
+
+    if (candidates.length === 0) return null;
+
+    // 3. 最も開催が近い(または開催中の)ものを選択
+    const target = candidates[0];
+
+    // 確定フラグがあれば初期表示を '11g' (11連確定) にする
+    const recommendedRollType = target.guaranteed ? '11g' : '11';
+
+    return {
+        gacha: target,
+        gachaId: target.id,
+        rollType: recommendedRollType
+    };
+}
+
+// 画像保存処理
+function saveGanttImage() {
+    const element = document.querySelector('.gantt-chart-container');
+    if (!element) return;
+
+    // ガントチャートのコンテンツ幅を取得
+    const header = element.querySelector('.gantt-header');
+    if (!header) return;
+    const contentWidth = header.style.width;
+
+    const originalOverflow = element.style.overflow;
+    const originalWidth = element.style.width; 
+    
+    const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
+    const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
+
+    // キャプチャ用に一時的にスタイル変更
+    element.style.overflow = 'visible';
+    element.style.width = contentWidth; 
+    
+    if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
+
+    html2canvas(element).then(canvas => {
+        // スタイル復元
+        element.style.overflow = originalOverflow;
+        element.style.width = originalWidth;
+        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+
+        const link = document.createElement('a');
+        link.download = 'gacha_schedule.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }).catch(err => {
+        console.error("Image capture failed:", err);
+        alert("画像の保存に失敗しました。");
+        element.style.overflow = originalOverflow;
+        element.style.width = originalWidth;
+        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+    });
+}
+
+// ガントチャート生成ロジック
+function renderGanttChart(data) {
+    const filteredData = data.filter(item => !isPlatinumOrLegend(item));
+
+    if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0); 
+    const yesterdayInt = getDateInt(yesterday);
+
+    const activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+    
+    if (activeData.length === 0) {
+        return '<p>現在開催中または予定されているガチャはありません。</p>';
+    }
+
+    // 表示範囲の決定
+    let minDateInt = parseInt(activeData[0].rawStart);
+    let maxEndDateTime = new Date(0);
+
+    // 動的幅計算用の最大幅変数
+    let maxLabelTextWidth = 0;
+
+    activeData.forEach(item => {
+        const s = parseInt(item.rawStart);
+        if (s < minDateInt) minDateInt = s;
+        
+        const eDt = parseDateTime(item.rawEnd, item.endTime);
+        if (eDt > maxEndDateTime) maxEndDateTime = eDt;
+
+        // --- 幅計算ロジック ---
+        let displayName = item.seriesName;
+        if (item.guaranteed) displayName += " [確定]";
+        // 表示名の長さを計算
+        const textW = calcTextWidth(displayName);
+        if (textW > maxLabelTextWidth) {
+            maxLabelTextWidth = textW;
+        }
+    });
+
+    // 幅の設定
+    // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
+    let labelWidth = Math.max(160, maxLabelTextWidth + 20);
+    if (labelWidth > 320) labelWidth = 320; // 上限設定
+
+    let minDate = parseDateStr(String(minDateInt));
+    
+    // 表示開始日を調整
+    const viewStartDate = new Date(yesterday);
+    viewStartDate.setDate(viewStartDate.getDate() - 2); 
+    if (minDate < viewStartDate) {
+        minDate = viewStartDate;
+    }
+
+    // --- 終了日の決定 ---
+    let limitDate = new Date(minDate);
+    limitDate.setDate(limitDate.getDate() + 35); 
+    
+    let chartEnd = new Date(maxEndDateTime);
+    if (chartEnd > limitDate) {
+        chartEnd = limitDate;
+    }
+
+    // 右端
+    chartEnd.setHours(0, 0, 0, 0);
+    chartEnd.setDate(chartEnd.getDate() + 1);
+
+    const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
+    
+    if (totalDays <= 0) return '';
+
+    const dayWidth = 50; 
+    const msPerDay = 1000 * 60 * 60 * 24;
+    
+    // 全体幅計算
+    const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
+
+    // 現在時刻線の位置計算
+    const now = new Date();
+    let currentLineHtml = '';
+    
+    if (now >= minDate && now < chartEnd) {
+        const diffNowMs = now - minDate;
+        const currentLineLeftPx = (diffNowMs / msPerDay) * dayWidth;
+        currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
+    }
+
+    let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
+    
+    for (let i = 0; i < totalDays; i++) {
+        const d = new Date(minDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = getShortDateStr(d);
+        const isToday = getDateInt(d) === getDateInt(new Date());
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
+        headerHtml += `<div class="${cls}" style="width:${dayWidth}px;">${dateStr}</div>`;
+    }
+    headerHtml += `<div class="gantt-date-cell" style="width:${dayWidth/2}px; border-right:none;"></div>`;
+    headerHtml += '</div>';
+
+    let bodyHtml = '';
+    activeData.forEach(item => {
+        const startDateTime = parseDateTime(item.rawStart, item.startTime);
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+
+        const diffStartMs = startDateTime - minDate;
+        const durationMs = endDateTime - startDateTime;
+
+        let offsetPx = (diffStartMs / msPerDay) * dayWidth;
+        let widthPx = (durationMs / msPerDay) * dayWidth;
+
+        if (offsetPx < 0) {
+            widthPx += offsetPx; 
+            offsetPx = 0;
+        }
+        
+        const maxPx = totalDays * dayWidth;
+        if (offsetPx >= maxPx) return;
+        if (offsetPx + widthPx > maxPx) {
+            widthPx = maxPx - offsetPx; 
+        }
+        
+        if (widthPx <= 0) return;
+
+        let displayName = item.seriesName;
+        // 確定なら表記追加
+        if (item.guaranteed) {
+            displayName += " [確定]";
+        }
+
+        let barClass = 'gantt-bar';
+        if (displayName.includes("極選抜")) barClass += ' g-kyoku';
+        else if (displayName.includes("超選抜")) barClass += ' g-cho';
+        else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
+        else if (displayName.includes("コラボ")) barClass += ' g-collab';
+
+        const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
+
+        // 行のスタイル判定
+        let rowClass = 'gantt-row';
+        if (now > endDateTime) {
+            rowClass += ' row-ended';
+        } else if (item.guaranteed) {
+            rowClass += ' row-guaranteed';
+        }
+
+        bodyHtml += `
+            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;" title="${displayName} (ID:${item.id})">${displayName}</div>
+                <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
+                    ${generateGridLines(totalDays, dayWidth, minDate)}
+                    <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
+                        <span class="gantt-bar-text">${durationDays}日間</span>
+                    </div>
+                    ${currentLineHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    return `
+        <div class="gantt-outer-wrapper">
+            <div style="margin-bottom: 5px; text-align: right;">
+                <button onclick="saveGanttImage()" class="secondary" style="font-size: 11px; padding: 4px 8px;">画像として保存</button>
+            </div>
+            <div class="gantt-chart-container">
+                <div class="gantt-scroll-wrapper">
+                    ${headerHtml}
+                    <div class="gantt-body">
+                        ${bodyHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateGridLines(days, width, startDate) {
+    let html = '';
+    for (let i = 0; i < days; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const style = `left:${i * width}px; width:${width}px;`;
+        const cls = isWeekend ? 'gantt-grid-line weekend' : 'gantt-grid-line';
+        html += `<div class="${cls}" style="${style}"></div>`;
+    }
+    return html;
+}
+
+function fmtRate(val) {
+    if (!val) return "0%";
+    return (parseInt(val) / 100) + "%";
+}
+
+function renderScheduleTable(tsvContent, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const data = parseGachaTSV(tsvContent);
+    const ganttHtml = renderGanttChart(data);
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayInt = getDateInt(yesterday);
+    
+    let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+
+    filteredData.sort((a, b) => {
+        const isSpecialA = isPlatinumOrLegend(a);
+        const isSpecialB = isPlatinumOrLegend(b);
+        
+        if (isSpecialA && !isSpecialB) return 1; 
+        if (!isSpecialA && isSpecialB) return -1; 
+        
+        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    });
+
+    let html = `
+        <h3 style="margin-top:0;">開催スケジュール</h3>
+        ${ganttHtml}
+        <div style="margin-top: 20px;"></div>
+        <div class="schedule-scroll-wrapper">
+        <table class="schedule-table">
+        <thead>
+            <tr>
+                <th style="min-width:140px;">開始日時</th>
+                <th style="min-width:140px;">終了日時</th>
+                <th>ガチャ名 / 詳細</th>
+                <th>レア</th>
+                <th>激レア</th>
+                <th>超激</th>
+                <th>伝説</th>
+                <th>確定</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    const now = new Date();
+
+    filteredData.forEach(item => {
+        let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
+        
+        if (item.guaranteed) {
+            seriesDisplay += " [確定]";
+        }
+
+        const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
+        const endStr = `${formatDateJP(item.rawEnd)}<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        
+        const isPlatLeg = isPlatinumOrLegend(item);
+
+        const uberRateVal = parseInt(item.uber);
+        let uberStyle = '';
+        if (!isPlatLeg && uberRateVal !== 500) {
+            uberStyle = 'color:red; font-weight:bold;';
+        }
+
+        const legendRateVal = parseInt(item.legend);
+        let legendStyle = '';
+        if (!isPlatLeg && legendRateVal > 30) {
+            legendStyle = 'color:red; font-weight:bold;';
+        }
+
+        // 行の背景色決定
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+        let rowClass = "";
+        
+        if (now > endDateTime) {
+            rowClass = "row-ended";
+        } else if (item.guaranteed) {
+            rowClass = "row-guaranteed";
+        }
+
+        html += `
+            <tr class="${rowClass}">
+                <td>${startStr}</td>
+                <td>${endStr}</td>
+                <td style="text-align:left; vertical-align: middle;">
+                    <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
+                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+                </td>
+                <td>${fmtRate(item.rare)}</td>
+                <td>${fmtRate(item.supa)}</td>
+                <td style="${uberStyle}">${fmtRate(item.uber)}</td>
+                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
+                <td style="text-align:center; font-size:1.2em;">
+                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+        </tbody>
+        </table>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+====================
+FILE: simulation.js
+====================
+// --- sim-config ヘルパー関数 ---
+
+function parseSimConfig(configStr) {
+    if (!configStr) return [];
+    const configs = [];
+    // スペース、タブ、ハイフンで分割し、空の要素を除外
+    const parts = configStr.split(/[\s\-]+/).filter(Boolean);
+    
+    for (let i = 0; i < parts.length; i += 2) {
+        const id = parts[i];
+        const rollStr = parts[i+1];
+        if (id && rollStr) {
+            // 'g' が末尾にあれば確定扱い (11g, 15g, 7g など)
+            const isGuaranteed = rollStr.endsWith('g');
+            // 数値部分を取り出し
+            const rolls = parseInt(rollStr.replace('g', ''), 10);
+            configs.push({ id, rolls, g: isGuaranteed });
+        }
+    }
+    return configs;
+}
+
+function stringifySimConfig(configArr) {
+    // 表示用はスペース区切りで整形
+    return configArr.map(c => `${c.id} ${c.rolls}${c.g ? 'g' : ''}`).join(' ');
+}
+
+function incrementLastRoll(configStr) {
+    if (!configStr) return null;
+    const configs = parseSimConfig(configStr);
+    if (configs.length > 0) {
+        const last = configs[configs.length - 1];
+        // 確定でない場合のみ回数を増やす（確定指定の場合は単発1回を追加）
+        if (!last.g) { 
+            last.rolls += 1;
+        } else {
+            configs.push({ id: last.id, rolls: 1, g: false });
+        }
+    }
+    return stringifySimConfig(configs);
+}
+
+function decrementLastRollOrRemoveSegment(configStr) {
+    if (!configStr) return null;
+    const configs = parseSimConfig(configStr);
+    if (configs.length > 0) {
+        const last = configs[configs.length - 1];
+        if (last.rolls > 1 && !last.g) {
+            last.rolls -= 1;
+        } else {
+            configs.pop();
+        }
+    }
+    return stringifySimConfig(configs);
+}
+
+function generateGuaranteedConfig(configStr, gachaId) {
+    if (!configStr) return null;
+    const parsed = parseSimConfig(configStr);
+    if (parsed.length === 0) return null;
+    
+    const lastPart = parsed.pop();
+    
+    if (!lastPart.g && lastPart.rolls > 0) { 
+        const newRollsForLastPart = Math.max(0, lastPart.rolls - 1);
+        if (newRollsForLastPart > 0) {
+            lastPart.rolls = newRollsForLastPart;
+            parsed.push(lastPart);
+        }
+        parsed.push({ id: gachaId, rolls: 11, g: true });
+        return stringifySimConfig(parsed);
+    }
+    return null;
+}
+
+// --- 回避/誘発ロジック ---
+
+function getBestLink(cellSimConfigs, seedIndex, gachaConfigs) {
+    if (seedIndex < 0) return null;
+    for (const config of gachaConfigs) {
+        const configStr = cellSimConfigs.get(`${seedIndex}-${config.id}`);
+        if (configStr !== undefined) {
+            return configStr;
+        }
+    }
+    return null;
+}
+
+function getForcedRerollName(currentRoll, gachaConfig) {
+    if (!currentRoll || !gachaConfig || currentRoll.rarity !== 'rare' || currentRoll.s2 === null) {
+        return null;
+    }
+    const characterPool = gachaConfig.pool['rare'] || [];
+    const uniqueRareChars = characterPool.filter(c => c.id !== currentRoll.originalChar.id);
+    const uniqueTotal = uniqueRareChars.length;
+    
+    if (uniqueTotal > 0) {
+        const reRollIndex = currentRoll.s2 % uniqueTotal;
+        return uniqueRareChars[reRollIndex].name;
+    }
+    return null;
+}
+
+function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaConfigs, cellSimConfigs, newRow1Index) {
+    const i = Math.floor(seedIndex / 2);
+    if (i < newRow1Index) {
+        return { link: null, rerollCharName: null };
+    }
+
+    const gachaIndex = gachaConfigs.findIndex(c => c.id === currentGachaId);
+    if (gachaIndex === -1 || !tableData[seedIndex] || !tableData[seedIndex][gachaIndex]) {
+        return { link: null, rerollCharName: null };
+    }
+
+    const currentRoll = tableData[seedIndex][gachaIndex].roll;
+    const isRerolled = currentRoll.isRerolled;
+    const originalCharId = currentRoll.originalChar?.id;
+    const originalRarity = currentRoll.rarity;
+
+    if (originalRarity !== 'rare' || !originalCharId) {
+        return { link: null, rerollCharName: null };
+    }
+
+    const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
+
+    for (const otherConfig of gachaConfigs) {
+        const otherGachaId = otherConfig.id;
+        if (otherGachaId === currentGachaId) continue;
+
+        const otherIndex = gachaConfigs.findIndex(c => c.id === otherGachaId);
+        if (otherIndex === -1) continue;
+
+        const createAltConfig = (prevIndexUsed) => {
+            const configStr = getBestLink(cellSimConfigs, prevIndexUsed, gachaConfigs); 
+            if (configStr === null) return null; 
+            const parts = parseSimConfig(configStr);
+            const last_part = parts.length > 0 ? parts[parts.length - 1] : null;
+            if (last_part && last_part.id === otherGachaId && !last_part.g) {
+                last_part.rolls += 1;
+            } else {
+                parts.push({ id: otherGachaId, rolls: 1, g: false });
+            }
+            return stringifySimConfig(parts);
+        };
+
+        for (const prevIndex of prevIndicesToCheck) {
+            if (prevIndex < 0) continue;
+            const otherRoll_prev = tableData[prevIndex]?.[otherIndex]?.roll;
+            if (!otherRoll_prev) continue;
+
+            if (isRerolled) {
+                // 回避
+                if (otherRoll_prev.rarity !== 'rare' || otherRoll_prev.charId !== originalCharId) { 
+                    const altConfig = createAltConfig(prevIndex);
+                    if (altConfig) return { link: altConfig, rerollCharName: null };
+                }
+            } else {
+                // 誘発
+                if (otherRoll_prev.rarity === 'rare' && otherRoll_prev.charId === originalCharId) {
+                    const altConfig = createAltConfig(prevIndex);
+                    if (altConfig) {
+                        const rerollCharName = getForcedRerollName(currentRoll, gachaConfigs[gachaIndex]);
+                        return { link: altConfig, rerollCharName: rerollCharName };
+                    }
+                }
+            }
+        }
+    }
+    return { link: null, rerollCharName: null };
+}
+
+function canBeForced(seedIndex, currentGachaId, tableData, gachaConfigs) {
+    const gachaIndex = gachaConfigs.findIndex(c => c.id === currentGachaId);
+    if (gachaIndex === -1 || seedIndex < 1 || !tableData[seedIndex] || !tableData[seedIndex][gachaIndex]) return false;
+
+    const currentRoll = tableData[seedIndex][gachaIndex].roll;
+    const originalCharId = currentRoll.originalChar ? currentRoll.originalChar.id : null;
+    if (!originalCharId) return false;
+
+    const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
+    for (const prevIndex of prevIndicesToCheck) {
+        if (prevIndex < 0) continue;
+        for (const otherConfig of gachaConfigs) {
+            const otherIndex = gachaConfigs.findIndex(c => c.id === otherConfig.id);
+            if (otherIndex === -1) continue;
+            const otherRoll_prev = tableData[prevIndex]?.[otherIndex]?.roll;
+            if (otherRoll_prev && otherRoll_prev.rarity === 'rare' && otherRoll_prev.charId === originalCharId) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function canBeAvoided(seedIndex, currentGachaId, tableData, gachaConfigs) {
+    const gachaIndex = gachaConfigs.findIndex(c => c.id === currentGachaId);
+    if (gachaIndex === -1 || seedIndex < 1 || !tableData[seedIndex] || !tableData[seedIndex][gachaIndex]) return false;
+
+    const currentRoll = tableData[seedIndex][gachaIndex].roll;
+    if (currentRoll.rarity !== 'rare' || !currentRoll.isRerolled || !currentRoll.originalChar) return false;
+    const originalCharId = currentRoll.originalChar.id;
+
+    const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
+    for (const prevIndex of prevIndicesToCheck) {
+        if (prevIndex < 0) continue;
+        for (const otherConfig of gachaConfigs) {
+            const otherIndex = gachaConfigs.findIndex(c => c.id === otherConfig.id);
+            if (otherIndex === -1) continue;
+            const otherRoll_prev = tableData[prevIndex]?.[otherIndex]?.roll;
+            if (otherRoll_prev && (otherRoll_prev.rarity !== 'rare' || otherRoll_prev.charId !== originalCharId)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+====================
+FILE: style.css
+====================
+@charset "UTF-8";
+
+/* =========================================
+   基本設定
+   ========================================= */
+body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    padding: 20px;
+    color: #333;
+    background-color: #fff;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+/* =========================================
+   コントロールエリア
+   ========================================= */
+.controls {
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.control-group {
+    margin-bottom: 10px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="number"] {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* =========================================
+   ボタン
+   ========================================= */
+button {
+    cursor: pointer;
+    padding: 6px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+button.secondary {
+    background: #6c757d;
+}
+
+button.secondary:hover {
+    background: #545b62;
+}
+
+button.active {
+    background: #28a745;
+}
+
+/* =========================================
+   ユーティリティ
+   ========================================= */
+.hidden {
+    display: none !important;
+}
+
+.description-box {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.result-box {
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #d9534f;
+}
+
+.error {
+    color: red;
+    font-weight: bold;
+}
+
+/* =========================================
+   テーブルスタイル (Gacha Rolls)
+   ========================================= */
+#rolls-table-container {
+    overflow-x: auto;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* 列ごとのスタイル */
+.col-no {
+    background-color: #eee;
+    width: 30px;
+}
+
+.calc-column {
+    background-color: #f0f8ff; /* 薄い青 */
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* ガチャ選択列 */
+.gacha-column {
+    min-width: 120px;
+}
+
+/* セル内のハイライト */
+.gacha-cell {
+    position: relative;
+}
+
+/* ハイライト（シミュレーションルート） */
+.highlight {
+    /* 枠線は削除し、背景色のみ table_renderer.js で制御 */
+    position: relative;
+}
+
+.highlight-uber {
+    /* 枠線と影の設定を削除、文字色のみ強調 */
+    font-weight: bold;
+    color: #c2185b;
+}
+
+/* リンク */
+.char-link:hover {
+    color: #0056b3;
+}
+
+/* ヘッダー内のボタンなど */
+.remove-btn {
+    background: #dc3545;
+    padding: 2px 6px;
+    font-size: 10px;
+    margin-left: 5px;
+}
+
+.add-gacha-btn {
+    background: #28a745;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.uber-add-select {
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+/* =========================================
+   スケジュール表 & ガントチャート共通
+   ========================================= */
+#schedule-container {
+    padding: 20px;
+    background-color: #fff;
+    border-top: 1px solid #ddd;
+}
+
+.schedule-scroll-wrapper {
+    overflow-x: auto;
+    max-height: 80vh;
+    border: 1px solid #ddd;
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0; /* ラッパー内なのでマージン削除 */
+    font-size: 14px;
+}
+
+.schedule-table th,
+.schedule-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ガチャ名は折り返し許可 */
+.schedule-table td:nth-child(3) {
+    white-space: normal;
+    text-align: left;
+    min-width: 250px;
+}
+
+.schedule-table th {
+    background-color: #eee;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* --- 追加: スケジュール行の背景色 --- */
+.row-ended {
+    background-color: #e0e0e0 !important; /* 終了: グレー */
+    color: #666;
+}
+
+/* 終了した行のガントバーは彩度を落とす */
+.row-ended .gantt-bar {
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+.row-guaranteed {
+    background-color: #ffffe0 !important; /* 確定: 薄い黄色 */
+}
+
+/* =========================================
+   ガントチャート
+   ========================================= */
+.gantt-outer-wrapper * {
+    box-sizing: border-box;
+}
+
+/* ガントチャート全体を囲むラッパー (shrink-to-fit) */
+.gantt-outer-wrapper {
+    display: inline-block; /* コンテンツ幅に合わせて縮む */
+    max-width: 100%;       /* 画面幅を超えたらスクロール */
+    vertical-align: top;
+}
+
+.gantt-chart-container {
+    border: 1px solid #ccc;
+    background: #fff;
+    overflow: hidden; 
+    font-size: 12px;
+    margin-bottom: 20px;
+}
+
+.gantt-scroll-wrapper {
+    overflow-x: auto;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+/* ヘッダー（日付行） */
+.gantt-header {
+    display: flex;
+    border-bottom: 1px solid #ccc;
+    background: #f9f9f9;
+    position: sticky;
+    left: 0;
+    z-index: 6; 
+}
+
+.gantt-label-col {
+    width: 160px; /* 幅を縮小 */
+    min-width: 160px;
+    padding: 5px;
+    border-right: 1px solid #ccc;
+    /* 親要素(row)の色を透過させるためinheritまたはtransparentに変更 */
+    background-color: inherit; 
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 中央揃え */
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+}
+
+/* ヘッダーのみ背景色を固定 */
+.gantt-header .gantt-label-col {
+    background-color: #f9f9f9;
+}
+
+.gantt-date-cell {
+    border-right: 1px solid #eee;
+    text-align: center;
+    padding: 5px 0;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.gantt-date-cell.today {
+    background-color: #ffeb3b;
+}
+
+.gantt-date-cell.weekend {
+    background-color: #e0f7fa;
+}
+
+/* ボディ（行） */
+.gantt-body {
+    position: relative;
+}
+
+.gantt-row {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    height: 30px;
+    background-color: #fff; /* デフォルト背景 */
+}
+
+.gantt-row:hover {
+    filter: brightness(0.95); /* ホバー時は少し暗くする（背景色維持のため） */
+}
+
+.gantt-row .gantt-label-col {
+    font-weight: normal;
+    text-align: center; /* 中央揃え */
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    line-height: 20px; 
+}
+
+.gantt-bar-area {
+    position: relative;
+    height: 100%;
+    flex-grow: 1;
+}
+
+/* ガントバー */
+.gantt-bar {
+    position: absolute;
+    top: 5px;
+    height: 20px;
+    background-color: #4caf50;
+    border: 1px solid #4caf50; /* 枠線を背景色と同じにする */
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    z-index: 2; 
+}
+
+/* 各色設定（枠線色も合わせる） */
+.gantt-bar.g-kyoku { 
+    background-color: #e91e63;
+    border-color: #e91e63;
+}
+.gantt-bar.g-cho { 
+    background-color: #9c27b0;
+    border-color: #9c27b0;
+} 
+.gantt-bar.g-fest { 
+    background-color: #ff9800;
+    border-color: #ff9800;
+}
+.gantt-bar.g-collab { 
+    background-color: #2196f3;
+    border-color: #2196f3;
+}
+
+.gantt-bar-text {
+    padding: 0 4px;
+}
+
+/* 縦グリッド線 */
+.gantt-grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid #f5f5f5;
+    z-index: 0;
+}
+
+.gantt-grid-line.weekend {
+    background-color: rgba(224, 247, 250, 0.3);
+}
+
+/* ガントチャート現在時刻線 */
+.gantt-current-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #ff0000;
+    z-index: 1; 
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+====================
+FILE: table_renderer.js
+====================
+/**
+ * table_renderer.js
+ * ガチャ結果テーブルのHTML生成と描画ロジック
+ */
+
+function generateRollsTable() {
+    try {
+        if (Object.keys(gachaMasterData.gachas).length === 0) return;
+        const seedEl = document.getElementById('seed');
+        if(!seedEl) return;
+        
+        let initialSeed = parseInt(seedEl.value, 10);
+        if (isNaN(initialSeed)) {
+             initialSeed = 12345;
+             seedEl.value = "12345";
+        }
+        const numRolls = currentRolls;
+        // global変数参照
+
+        if (typeof Xorshift32 === 'undefined' || typeof rollWithSeedConsumptionFixed === 'undefined') {
+            document.getElementById('rolls-table-container').innerHTML = 
+                '<p class="error">logic.js が読み込まれていません。</p>';
+            return;
+        }
+
+        const seeds = [];
+        const rngForSeeds = new Xorshift32(initialSeed);
+        // 少し多めに生成
+        for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
+        // ID抽出（suffix除去）
+        const uniqueGachaIds = [...new Set(tableGachaIds.map(idStr => {
+            let id = idStr;
+            if (idStr.endsWith('f')) id = idStr.slice(0, -1);
+            else if (idStr.endsWith('s')) id = idStr.slice(0, -1);
+            else if (idStr.endsWith('g')) id = idStr.slice(0, -1);
+            return id;
+        }))];
+        
+        // データの計算 (表示用ロジック)
+        const tableData = Array(numRolls * 2).fill(null).map(() => []);
+        // 列ごとの設定を生成
+        const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
+            let id = idWithSuffix;
+            let suffix = '';
+            if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
+            else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
+            else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+
+            let guaranteedNormalRolls = 0;
+            if (suffix === 'g') guaranteedNormalRolls = 10;
+            else if (suffix === 'f') guaranteedNormalRolls = 14;
+            else if (suffix === 's') guaranteedNormalRolls = 6;
+
+            const originalConfig = gachaMasterData.gachas[id];
+            if(!originalConfig) return null;
+
+            // コピー作成
+            const config = { ...originalConfig };
+            config.pool = { ...originalConfig.pool };
+            if (config.pool.uber) {
+                config.pool.uber = [...config.pool.uber];
+            }
+            
+            config._guaranteedNormalRolls = guaranteedNormalRolls;
+            // 超激レア追加ロジック
+            const addCount = uberAdditionCounts[colIndex] || 0;
+            if (addCount > 0) {
+                for (let k = 1; k <= addCount; k++) {
+                    config.pool.uber.unshift({
+                        id: `sim-new-${k}`,
+                        name: `新規超激${k}`,
+                        rarity: 'uber'
+                    });
+                }
+            }
+            return config;
+        });
+
+        // 計算実行 (Column Base)
+        columnConfigs.forEach((config, colIndex) => {
+            if (!config) return;
+            let prevDrawA = null, prevDrawB = null;
+            for (let i = 0; i < numRolls; i++) {
+                const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
+                
+                const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
+                const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
+                
+                if (!tableData[seedIndexA]) tableData[seedIndexA] = [];
+                tableData[seedIndexA][colIndex] = { gachaId: config.id, roll: rollResultA, isConsecutive: isConsecutiveA };
+                
+                prevDrawA = { rarity: rollResultA.rarity, charId: rollResultA.charId, isRerolled: rollResultA.isRerolled };
+                
+                if (seedIndexB < seeds.length - 2) {
+                    const rollResultB = rollWithSeedConsumptionFixed(seedIndexB, config, seeds, prevDrawB);
+                    const isConsecutiveB = prevDrawB && prevDrawB.isRerolled && rollResultB.isRerolled;
+                    
+                    if (!tableData[seedIndexB]) tableData[seedIndexB] = [];
+                    tableData[seedIndexB][colIndex] = { gachaId: config.id, roll: rollResultB, isConsecutive: isConsecutiveB };
+                    
+                    prevDrawB = { rarity: rollResultB.rarity, charId: rollResultB.charId, isRerolled: rollResultB.isRerolled };
+                }
+            }
+        });
+        // シミュレーションモードのハイライト計算
+        const highlightMap = new Map();
+        const guarHighlightMap = new Map();
+        // 確定ガチャ開始行のハイライト用
+        
+        if (isSimulationMode) { 
+            const simConfigEl = document.getElementById('sim-config');
+            if(simConfigEl && typeof parseSimConfig !== 'undefined') {
+                const simConfigs = parseSimConfig(simConfigEl.value.trim());
+                let rngForText = new Xorshift32(initialSeed);
+                let currentSeedIndex = 0;
+                let lastDrawForHighlight = { rarity: null, charId: null };
+                for (const sim of simConfigs) {
+                    if (gachaMasterData.gachas[sim.id]) sim.gachaConfig = gachaMasterData.gachas[sim.id];
+                    if (!sim.gachaConfig) continue;
+
+                    let normalRolls = sim.rolls; 
+                    let isGuaranteedStep = false;
+                    if (sim.g) {
+                        if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
+                        else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
+                        else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
+                        else { normalRolls = sim.rolls; }
+                    }
+
+                    if (isGuaranteedStep) {
+                        const startSeedIndex = currentSeedIndex;
+                        guarHighlightMap.set(startSeedIndex, sim.id);
+
+                        for(let k=0; k<normalRolls; k++){
+                             if(currentSeedIndex >= numRolls*2) break;
+                             highlightMap.set(currentSeedIndex, sim.id);
+                             const rr = rollWithSeedConsumptionFixed(currentSeedIndex, sim.gachaConfig, seeds, lastDrawForHighlight);
+                             if(rr.seedsConsumed===0) break;
+                             lastDrawForHighlight = {rarity: rr.rarity, charId: rr.charId};
+                             currentSeedIndex += rr.seedsConsumed;
+                             for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
+                        }
+                        if(startSeedIndex < numRolls*2) highlightMap.set(`${startSeedIndex}G`, sim.id);
+                        if(currentSeedIndex < seeds.length && typeof rollGuaranteedUber !== 'undefined') {
+                            const gr = rollGuaranteedUber(currentSeedIndex, sim.gachaConfig, seeds);
+                            currentSeedIndex += gr.seedsConsumed;
+                            for(let x=0; x<gr.seedsConsumed; x++) rngForText.next();
+                        }
+                    } else {
+                        for(let k=0; k<normalRolls; k++){
+                            if(currentSeedIndex >= numRolls*2) break;
+                            highlightMap.set(currentSeedIndex, sim.id);
+                            const rr = rollWithSeedConsumptionFixed(currentSeedIndex, sim.gachaConfig, seeds, lastDrawForHighlight);
+                            if(rr.seedsConsumed===0) break;
+                            lastDrawForHighlight = {rarity: rr.rarity, charId: rr.charId};
+                            currentSeedIndex += rr.seedsConsumed;
+                            for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
+                        }
+                    }
+                }
+                finalSeedForUpdate = rngForText.seed;
+            }
+        }
+        
+        const buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>`;
+        let totalGachaCols = 0;
+        tableGachaIds.forEach(idWithSuffix => {
+            const hasSuffix = /[gfs]$/.test(idWithSuffix);
+            let id = idWithSuffix;
+            if (idWithSuffix.endsWith('f')) id = idWithSuffix.slice(0, -1);
+            else if (idWithSuffix.endsWith('s')) id = idWithSuffix.slice(0, -1);
+            else if (idWithSuffix.endsWith('g')) id = idWithSuffix.slice(0, -1);
+
+            if (gachaMasterData.gachas[id]) totalGachaCols += hasSuffix ? 2 : 1;
+        });
+        const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
+        const calcColSpan = showSeedColumns ? 5 : 0;
+        const totalTrackSpan = calcColSpan + totalGachaCols;
+
+        // ヘッダー生成関数
+        let tableHtml = `<table><thead>
+            <tr><th rowspan="2" class="col-no">NO.</th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
+            <th rowspan="2" class="col-no">NO.</th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
+        const generateHeader = (isInteractive) => {
+            let html = `
+                <th class="${calcColClass}">SEED</th>
+                <th class="${calcColClass}">rarity</th>
+                <th class="${calcColClass}">slot</th>
+                <th class="${calcColClass}">ReRoll</th>
+                <th class="${calcColClass}">Guar</th>
+            `;
+            tableGachaIds.forEach((idWithSuffix, index) => {
+                let id = idWithSuffix;
+                let suffix = '';
+                if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
+                else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
+                else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+
+                const isGuaranteed = (suffix !== '');
+
+                const gachaConfig = gachaMasterData.gachas[id];
+                if (!gachaConfig) return;
+                
+                // ガチャ名の生成 (期間情報などを含むラベルを取得)
+                let selectedLabel = `${id} ${gachaConfig.name}`;
+                // B列(isInteractive=false)でも詳細情報(期間)を表示するためにOptionsを検索
+                const options = getGachaSelectorOptions(id);
+                const foundOption = options.find(o => o.value == id);
+                if (foundOption) {
+                    selectedLabel = foundOption.label;
+                }
+
+                let displayHTML = "";
+                const firstSpaceIdx = selectedLabel.indexOf(' ');
+                if (firstSpaceIdx !== -1) {
+                    const part1 = selectedLabel.substring(0, firstSpaceIdx);
+                    const part2 = selectedLabel.substring(firstSpaceIdx + 1);
+                    displayHTML = `<span style="font-size:0.85em; color:#333;">${part1}</span><br><span style="font-weight:bold; font-size:0.95em;">${part2}</span>`;
+                } else {
+                    displayHTML = selectedLabel;
+                }
+
+                // 操作エリアまたは情報表示エリアの生成
+                let selectorArea = '';
+                let controlArea = '';
+
+                if (isInteractive) {
+                    // --- A列: ボタンやプルダウンを表示 ---
+                    const removeBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})">x</button>`;
+                    let gBtnLabel = 'G';
+                    if (suffix === 'g') gBtnLabel = '11G';
+                    else if (suffix === 'f') gBtnLabel = '15G';
+                    else if (suffix === 's') gBtnLabel = '7G';
+                    
+                    const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px;">${gBtnLabel}</button>`;
+                    
+                    const currentAddVal = uberAdditionCounts[index] || 0;
+                    let addSelect = `<select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width: 40px; margin: 0 2px; padding: 0; font-size: 0.85em;">`;
+                    for(let k=0; k<=19; k++){
+                        addSelect += `<option value="${k}" ${k===currentAddVal ? 'selected':''}>${k}</option>`;
+                    }
+                    addSelect += `</select>`;
+                    // プルダウン生成
+                    let selector = `<select onchange="updateGachaSelection(this, ${index})" style="width: 30px; cursor: pointer; opacity: 0; position: absolute; left:0; top:0; height: 100%; width: 100%;">`;
+                    options.forEach(opt => {
+                        const selected = (opt.value == id) ? 'selected' : '';
+                        selector += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+                    });
+                    selector += '</select>';
+                    
+                    const fakeSelectBtn = `<div style="width:20px; height:20px; background:#ddd; border:1px solid #999; display:flex; align-items:center; justify-content:center; border-radius:3px;">▼</div>`;
+                    selectorArea = `
+                        <div style="position: relative; width: 24px; height: 24px;">
+                            ${fakeSelectBtn}
+                            ${selector}
+                        </div>`;
+                    controlArea = `
+                        <div style="margin-top:4px; display:flex; justify-content:center; align-items:center; gap:3px;">
+                            ${gBtn}
+                            <span style="font-size:0.8em; color:#555;">add:</span>
+                            ${addSelect}
+                            ${removeBtn}
+                        </div>`;
+                } else {
+                    // --- B列: テキスト情報のみ表示 ---
+                    
+                    // セレクターの場所は空けておく
+                    selectorArea = `<div style="width: 24px; height: 24px;"></div>`;
+                    // 設定情報のテキスト化
+                    let statusTextParts = [];
+                    // 1. 確定設定
+                    if (suffix === 'g') statusTextParts.push('11G');
+                    else if (suffix === 'f') statusTextParts.push('15G');
+                    else if (suffix === 's') statusTextParts.push('7G');
+                    // 2. Add設定
+                    const currentAddVal = uberAdditionCounts[index] || 0;
+                    if (currentAddVal > 0) {
+                        statusTextParts.push(`add:${currentAddVal}`);
+                    }
+
+                    if (statusTextParts.length > 0) {
+                        controlArea = `
+                            <div style="margin-top:4px; font-size:0.85em; color:#555; height: 21px; display: flex; align-items: center; justify-content: center;">
+                                ${statusTextParts.join(' / ')}
+                            </div>`;
+                    } else {
+                         // 高さを揃えるための空要素
+                         controlArea = `<div style="margin-top:4px; height: 21px;"></div>`;
+                    }
+                }
+                
+                const cls = isGuaranteed ? '' : 'class="gacha-column"';
+
+                html += `
+                <th ${cls} ${isGuaranteed?'colspan="2"':''}>
+                    <div class="gacha-header-wrapper" style="display: flex; align-items: center; justify-content: center; gap: 6px; position: relative;">
+                        ${selectorArea}
+                        <div style="text-align: left; line-height: 1.25;">
+                            ${displayHTML}
+                        </div>
+                    </div>
+                    ${controlArea}
+                </th>`;
+            });
+            return html;
+        };
+        // A列はインタラクティブ、B列は非インタラクティブ
+        tableHtml += generateHeader(true) + generateHeader(false) + `</tr></thead><tbody>`;
+        const formatAddress = (idx) => {
+            if (idx === null || idx === undefined) return '';
+            const row = Math.floor(idx / 2) + 1;
+            const side = (idx % 2 === 0) ? 'A' : 'B';
+            return `${side}${row})`;
+        };
+
+        const generateDetailedCalcCells = (seedIndex) => {
+            if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
+            const firstGachaIdWithSuffix = tableGachaIds[0];
+            if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
+            
+            let firstId = firstGachaIdWithSuffix;
+            if (firstGachaIdWithSuffix.endsWith('f')) firstId = firstGachaIdWithSuffix.slice(0, -1);
+            else if (firstGachaIdWithSuffix.endsWith('s')) firstId = firstGachaIdWithSuffix.slice(0, -1);
+            else if (firstGachaIdWithSuffix.endsWith('g')) firstId = firstGachaIdWithSuffix.slice(0, -1);
+
+            const originalConfig = gachaMasterData.gachas[firstId];
+            if(!originalConfig) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
+
+            const config = { ...originalConfig };
+            config.pool = { ...originalConfig.pool };
+            if (config.pool.uber) {
+                config.pool.uber = [...config.pool.uber];
+                const addCount = uberAdditionCounts[0] || 0;
+                if (addCount > 0) {
+                    for (let k = 1; k <= addCount; k++) {
+                        config.pool.uber.unshift({ id: `sim-new-${k}`, name: `新規超激${k}`, rarity: 'uber' });
+                    }
+                }
+            }
+
+            if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
+            const sNum1 = seedIndex + 1;
+            const sNum2 = seedIndex + 2;
+            const sNum3 = seedIndex + 3;
+            const sVal_0 = seeds[seedIndex];
+            const sVal_1 = seeds[seedIndex+1];
+            const sVal_2 = seeds[seedIndex+2];
+
+            const colSeed = `<td>(S${sNum1})<br>${sVal_0}</td>`;
+            const rVal = sVal_0 % 10000;
+            const rates = config.rarity_rates || {};
+            const rareRate = rates.rare || 0, superRate = rates.super || 0, uberRate = rates.uber || 0, legendRate = rates.legend || 0;
+            let rType = 'rare';
+            if (rVal < rareRate) { rType = 'rare'; } 
+            else if (rVal < rareRate + superRate) { rType = 'super'; } 
+            else if (rVal < rareRate + superRate + uberRate) { rType = 'uber'; } 
+            else if (rVal < rareRate + superRate + uberRate + legendRate) { rType = 'legend'; } 
+            
+            const colRarity = `<td>(S${sNum1})<br>${rVal}<br>(${rType})</td>`;
+            const pool = config.pool[rType] || [];
+            let colSlot = '<td>-</td>';
+            let slotVal = '-';
+            if (pool.length > 0) {
+                slotVal = sVal_1 % pool.length;
+                colSlot = `<td>(S${sNum2})<br>%${pool.length}<br>${slotVal}</td>`;
+            }
+
+            // --- ReRoll列の表示ロジック修正 ---
+            let colReRoll = '<td>-</td>';
+            if (tableData[seedIndex] && tableData[seedIndex][0] && tableData[seedIndex][0].roll) {
+                const roll = tableData[seedIndex][0].roll;
+                
+                if (pool.length > 0) {
+                    if (roll.isRerolled) {
+                        // レア被り発生時: 最終的に使用したSEED情報で表示
+                        // seedsConsumedは消費数なので、使用した最後のIndexは seedIndex + seedsConsumed - 1
+                        const finalSeedIndex = seedIndex + roll.seedsConsumed - 1;
+                        const sNumFinal = finalSeedIndex + 1; // 表示用は1始まり
+                        const finalPoolSize = roll.uniqueTotal;
+                        const finalVal = roll.reRollIndex;
+                        
+                        colReRoll = `<td>(S${sNumFinal})<br>%${finalPoolSize}<br>${finalVal}</td>`;
+                    } else {
+                        // レア被りなし
+                        colReRoll = `<td>false</td>`;
+                    }
+                }
+            }
+
+            let tempSeedIdx = seedIndex;
+            let tempDraw = null;
+            let validSim = true;
+            
+            for(let k=0; k<10; k++) {
+                if (tempSeedIdx + 1 >= seeds.length) { validSim = false; break; }
+                const rr = rollWithSeedConsumptionFixed(tempSeedIdx, config, seeds, tempDraw);
+                if (rr.seedsConsumed === 0) { validSim = false; break; }
+                tempSeedIdx += rr.seedsConsumed;
+                tempDraw = { rarity: rr.rarity, charId: rr.charId };
+            }
+            
+            let colGuar = '<td>-</td>';
+            if (validSim && tempSeedIdx < seeds.length) {
+                const uberPool = config.pool['uber'] || [];
+                if (uberPool.length > 0) {
+                    const guarSeedVal = seeds[tempSeedIdx];
+                    const guarSlot = guarSeedVal % uberPool.length;
+                    const sNumGuar = tempSeedIdx + 1;
+                    colGuar = `<td>(S${sNumGuar})<br>%${uberPool.length}<br>${guarSlot}</td>`;
+                }
+            }
+
+            return colSeed + colRarity + colSlot + colReRoll + colGuar;
+        };
+
+        const generateCell = (seedIndex, id, colIndex) => {
+            if(!tableData[seedIndex] || !tableData[seedIndex][colIndex]) {
+                return `<td class="gacha-cell gacha-column">N/A</td>`;
+            }
+            const fullRoll = tableData[seedIndex][colIndex].roll;
+            if(!fullRoll) return `<td>N/A</td>`;
+            const gachaConfig = gachaMasterData.gachas[id];
+            const gachaName = gachaConfig ? gachaConfig.name : "";
+            const isPlatOrLegend = gachaName.includes("プラチナ") || gachaName.includes("レジェンド");
+            let isLimited = false;
+            if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
+                if (limitedCats.includes(parseInt(fullRoll.finalChar.id)) || limitedCats.includes(fullRoll.finalChar.id.toString())) {
+                    isLimited = true;
+                }
+            }
+
+            let hlClass = '';
+            let isSimRoute = false;
+            if (isSimulationMode) {
+                if (highlightMap.get(seedIndex) === id) {
+                    hlClass = ' highlight';
+                    isSimRoute = true;
+                }
+                if (hlClass && fullRoll.rarity === 'uber') hlClass = ' highlight-uber';
+            }
+
+            let style = '';
+            if (isSimRoute) {
+                if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend') {
+                    style = 'background-color: #32CD32;';
+                } else {
+                    style = 'background-color: #98FB98;';
+                }
+            } else {
+                if (isLimited) {
+                    style = 'background-color: #66FFFF;';
+                } else if (isPlatOrLegend) {
+                    style = '';
+                } else {
+                    if (!hlClass) {
+                        const sv = seeds[seedIndex] % 10000;
+                        if(sv >= 9970) style = 'background-color: #DDA0DD;';
+                        else if(sv >= 9940) style = 'background-color: #de59de;';
+                        else if(sv >= 9500) style = 'background-color: #FF4C4C;';
+                        else if(sv >= 9100) style = 'background-color: #FFB6C1;';
+                        else if(sv >= 6970) style = 'background-color: #ffff33;';
+                        else if(sv >= 6470) style = 'background-color: #FFFFcc;';
+                    }
+                }
+            }
+
+            let content = fullRoll.finalChar.name;
+            if (!isSimulationMode) {
+                if (fullRoll.isRerolled) {
+                    const s2Val = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
+                    const s3Val = (seedIndex + 2 < seeds.length) ? seeds[seedIndex + 2] : null;
+                    const originalName = fullRoll.originalChar.name;
+                    const finalName = fullRoll.finalChar.name;
+
+                    let originalHtml = originalName;
+                    if (s2Val !== null) {
+                        originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
+                    }
+                    
+                    let finalHtml = finalName;
+                    if (s3Val !== null) {
+                        finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
+                    }
+
+                    const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
+                    const addr = formatAddress(nextSeedIdx);
+                    
+                    content = `${originalHtml}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${finalHtml}`;
+
+                } else {
+                    const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
+                    if(slotSeedVal !== null) {
+                        content = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
+                    }
+                }
+            } else {
+                if (fullRoll.isRerolled) {
+                    const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
+                    const addr = formatAddress(nextSeedIdx);
+                    content = `${fullRoll.originalChar.name}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${fullRoll.finalChar.name}`;
+                }
+            }
+
+            return `<td class="gacha-cell gacha-column${hlClass}" style="${style}">${content}</td>`;
+        };
+
+        for(let i=0; i<numRolls; i++){
+            const seedIndexA = i*2, seedIndexB = i*2+1;
+            let rowHtml = `<tr><td class="col-no">${i+1}</td>`;
+            
+            rowHtml += generateDetailedCalcCells(seedIndexA);
+
+            tableGachaIds.forEach((idWithSuffix, colIndex) => {
+                let id = idWithSuffix;
+                let suffix = '';
+                if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
+                else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
+                else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+                
+                const isG = (suffix !== '');
+
+                if(!gachaMasterData.gachas[id]) return;
+                rowHtml += generateCell(seedIndexA, id, colIndex);
+                if(isG) {
+                    let gContent = '---';
+                    let cellStyle = '';
+
+                    if (isSimulationMode && guarHighlightMap.get(seedIndexA) === id) {
+                        cellStyle = 'background-color: #98FB98;'; 
+                    }
+
+                    if (typeof calculateGuaranteedLookahead !== 'undefined') {
+                         const config = columnConfigs[colIndex];
+                         const normalRolls = config._guaranteedNormalRolls || 10;
+
+                         let lastDraw = (i>0 && tableData[seedIndexA-2]?.[colIndex]?.roll) ? 
+                                       {rarity: tableData[seedIndexA-2][colIndex].roll.rarity, charId: tableData[seedIndexA-2][colIndex].roll.charId} : null;
+                         const gRes = calculateGuaranteedLookahead(seedIndexA, config, seeds, lastDraw, normalRolls);
+                         
+                         const addr = formatAddress(gRes.nextRollStartSeedIndex);
+                         let charName = gRes.name;
+                         if (!isSimulationMode && gRes.nextRollStartSeedIndex > 0) {
+                             const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
+                             if (guarSeedIdx < seeds.length) {
+                                 const guarSeedVal = seeds[guarSeedIdx];
+                                 charName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${guarSeedVal})">${charName}</span>`;
+                             }
+                         }
+
+                         let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span>${charName}`;
+                         let altHtml = '';
+                         if (gRes.alternative) {
+                             const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
+                             let altCharName = gRes.alternative.name;
+                             if (!isSimulationMode && gRes.alternative.nextRollStartSeedIndex > 0) {
+                                 const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
+                                 if (altGuarSeedIdx < seeds.length) {
+                                     const altGuarSeedVal = seeds[altGuarSeedIdx];
+                                     altCharName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${altGuarSeedVal})">${altCharName}</span>`;
+                                 }
+                             }
+                             altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
+                         }
+
+                         gContent = altHtml + mainHtml;
+                         if (cellStyle !== '') {
+                             let isLimited = false;
+                             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
+                                 if (limitedCats.includes(parseInt(gRes.charId)) || limitedCats.includes(String(gRes.charId))) {
+                                     isLimited = true;
+                                 }
+                             }
+                             cellStyle = 'background-color: #32CD32;';
+                         }
+                    }
+                    rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
+                }
+            });
+
+            rowHtml += `<td class="col-no">${i+1}</td>`;
+
+            rowHtml += generateDetailedCalcCells(seedIndexB);
+            tableGachaIds.forEach((idWithSuffix, colIndex) => {
+                let id = idWithSuffix;
+                let suffix = '';
+                if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
+                else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
+                else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+                
+                const isG = (suffix !== '');
+
+                if(!gachaMasterData.gachas[id]) return;
+                rowHtml += generateCell(seedIndexB, id, colIndex);
+                if(isG) {
+                    let gContent = '---';
+                    let cellStyle = '';
+
+                    if (isSimulationMode && guarHighlightMap.get(seedIndexB) === id) {
+                        cellStyle = 'background-color: #98FB98;';
+                    }
+
+                    if (typeof calculateGuaranteedLookahead !== 'undefined') {
+                        const config = columnConfigs[colIndex];
+                        const normalRolls = config._guaranteedNormalRolls || 10;
+
+                        let lastDraw = (i>0 && tableData[seedIndexB-2]?.[colIndex]?.roll) ? 
+                                       {rarity: tableData[seedIndexB-2][colIndex].roll.rarity, charId: tableData[seedIndexB-2][colIndex].roll.charId} : null;
+                        const gRes = calculateGuaranteedLookahead(seedIndexB, config, seeds, lastDraw, normalRolls);
+                        
+                        const addr = formatAddress(gRes.nextRollStartSeedIndex);
+                        let charName = gRes.name;
+                        if (!isSimulationMode && gRes.nextRollStartSeedIndex > 0) {
+                             const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
+                             if (guarSeedIdx < seeds.length) {
+                                 const guarSeedVal = seeds[guarSeedIdx];
+                                 charName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${guarSeedVal})">${charName}</span>`;
+                             }
+                        }
+
+                        let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span>${charName}`;
+                        let altHtml = '';
+                        if (gRes.alternative) {
+                             const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
+                             let altCharName = gRes.alternative.name;
+                             if (!isSimulationMode && gRes.alternative.nextRollStartSeedIndex > 0) {
+                                 const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
+                                 if (altGuarSeedIdx < seeds.length) {
+                                     const altGuarSeedVal = seeds[altGuarSeedIdx];
+                                     altCharName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${altGuarSeedVal})">${altCharName}</span>`;
+                                 }
+                             }
+                             altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
+                        }
+
+                        gContent = altHtml + mainHtml;
+                        if (cellStyle !== '') {
+                             cellStyle = 'background-color: #32CD32;';
+                        }
+                    }
+                    rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
+                }
+            });
+            
+            rowHtml += `</tr>`;
+            tableHtml += rowHtml;
+        }
+        
+        tableHtml += '</tbody></table>';
+        const container = document.getElementById('rolls-table-container');
+        if(container) container.innerHTML = tableHtml;
+
+        const resultDiv = document.getElementById('result');
+        if(resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
+        
+        updateUrlParams();
+
+    } catch(e) {
+        const container = document.getElementById('rolls-table-container');
+        if(container) container.innerHTML = `<p class="error">エラー: ${e.message}</p>`;
+        console.error(e);
+    }
+}
+
+====================
+FILE: ui_controller.js
+====================
+/**
+ * ui_controller.js
+ * 画面描画制御、イベントハンドラ、UI状態管理
+ * (ロジック詳細は url_manager.js, gacha_selector.js, table_renderer.js に委譲)
+ */
+
+// UI状態変数 (Global)
+let tableGachaIds = [];
+let currentRolls = 100;
+let showSeedColumns = false;
+let showResultDisplay = false;
+let finalSeedForUpdate = null;
+let isSimulationMode = false;
+let isScheduleMode = false;
+let activeGuaranteedIds = new Set(); // 現在開催中で確定のガチャIDを保持
+let isScheduleAnalyzed = false; // 解析済みフラグ
+
+// 超激レア追加シミュレーション用 (index -> 追加数)
+let uberAdditionCounts = {};
+
+// --- スケジュール解析とデータ反映の共通関数 ---
+// gacha_selector.js や initializeDefaultGachas から呼ばれる
+function prepareScheduleInfo() {
+    if (isScheduleAnalyzed) return; // すでに実行済みならスキップ
+
+    if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
+        typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
+        
+        try {
+            const scheduleData = parseGachaTSV(loadedTsvContent);
+            const now = new Date();
+            activeGuaranteedIds.clear();
+
+            scheduleData.forEach(item => {
+                const startDt = parseDateTime(item.rawStart, item.startTime);
+                const endDt = parseDateTime(item.rawEnd, item.endTime);
+                
+                // 現在開催中かどうか
+                if (now >= startDt && now <= endDt) {
+                    // 確定ガチャの場合の処理
+                    if (item.guaranteed) {
+                        const gId = parseInt(item.id);
+                        activeGuaranteedIds.add(gId);
+
+                        // マスタデータの名称に [確定] を追加表示 (未追加の場合のみ)
+                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                            const currentName = gachaMasterData.gachas[gId].name;
+                            if (!currentName.includes('[確定]')) {
+                                gachaMasterData.gachas[gId].name += " [確定]";
+                            }
+                        }
+                    }
+                }
+            });
+            isScheduleAnalyzed = true;
+            console.log("Schedule Analyzed. Active Guaranteed IDs:", Array.from(activeGuaranteedIds));
+
+        } catch (e) {
+            console.warn("Schedule analysis failed:", e);
+        }
+    }
+}
+
+// --- 初期化関連 ---
+
+function initializeDefaultGachas() {
+    // まずスケジュール情報を整理
+    prepareScheduleInfo();
+
+    if (tableGachaIds.length === 0) {
+        let scheduleFound = false;
+
+        // 1. スケジュールロジックを利用して「現在開催中」の情報を解析
+        if (isScheduleAnalyzed && typeof parseGachaTSV === 'function') {
+            try {
+                const scheduleData = parseGachaTSV(loadedTsvContent);
+                const now = new Date();
+
+                // デフォルト表示用のガチャ選択 (プラチナ・レジェンド以外)
+                const activeGachas = scheduleData.filter(item => {
+                    if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
+                    const startDt = parseDateTime(item.rawStart, item.startTime);
+                    const endDt = parseDateTime(item.rawEnd, item.endTime);
+                    return now >= startDt && now <= endDt;
+                });
+
+                if (activeGachas.length > 0) {
+                    activeGachas.forEach(gacha => {
+                        let newId = gacha.id.toString();
+                        // 確定フラグがあれば 'g' (11連確定) をデフォルトにする
+                        if (gacha.guaranteed) {
+                            newId += 'g';
+                        }
+                        tableGachaIds.push(newId);
+                    });
+                    scheduleFound = true;
+                }
+            } catch (e) {
+                console.warn("Auto-select from schedule failed:", e);
+            }
+        }
+
+        // 2. スケジュールから特定できなかった場合のフォールバック
+        if (!scheduleFound || tableGachaIds.length === 0) {
+            const options = getGachaSelectorOptions(null); 
+            if (options.length > 0) {
+                tableGachaIds.push(options[0].value);
+                if (options.length > 1) {
+                    tableGachaIds.push(options[1].value);
+                }
+            } else {
+                const sortedGachas = Object.values(gachaMasterData.gachas)
+                    .filter(gacha => gacha.sort < 800)
+                    .sort((a, b) => a.sort - b.sort);
+                if (sortedGachas.length > 0) tableGachaIds.push(sortedGachas[0].id);
+                if (sortedGachas.length > 1) tableGachaIds.push(sortedGachas[1].id);
+            }
+        }
+    }
+}
+
+// --- イベントハンドラ ---
+
+function onModeChange() {
+    const radios = document.getElementsByName('appMode');
+    for (const radio of radios) {
+        if (radio.checked) {
+            isSimulationMode = (radio.value === 'simulation');
+            break;
+        }
+    }
+    const simWrapper = document.getElementById('sim-control-wrapper');
+    if (simWrapper) {
+        if (isSimulationMode && !isScheduleMode) {
+            simWrapper.classList.remove('hidden');
+        } else {
+            simWrapper.classList.add('hidden');
+        }
+    }
+    resetAndGenerateTable();
+}
+
+function resetAndGenerateTable() {
+    if (isScheduleMode) return; 
+    finalSeedForUpdate = null;
+    const simConf = document.getElementById('sim-config');
+    if (simConf && simConf.value.trim() === '') {
+         currentRolls = 100;
+    }
+    generateRollsTable();
+    updateUrlParams();
+}
+
+function addMoreRolls() {
+    currentRolls += 100;
+    generateRollsTable();
+}
+
+function updateSeedAndRefresh(newSeed) {
+    const seedInput = document.getElementById('seed');
+    if(seedInput && newSeed) {
+        seedInput.value = newSeed;
+        currentRolls = 100; 
+        generateRollsTable();
+        updateUrlParams();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function clearSimConfig() {
+    const el = document.getElementById('sim-config');
+    if(el) el.value = '';
+    resetAndGenerateTable();
+}
+
+function updateSeedFromSim() {
+    if (finalSeedForUpdate) {
+        document.getElementById('seed').value = finalSeedForUpdate;
+        document.getElementById('sim-config').value = '';
+        resetAndGenerateTable(); 
+    }
+}
+
+function addGachaColumn() {
+    const options = getGachaSelectorOptions(null);
+    if (options.length > 0) {
+        // 追加時も、そのガチャが確定中なら最初から 'g' をつける
+        let val = options[0].value;
+        if (activeGuaranteedIds.has(parseInt(val))) {
+            val += 'g';
+        }
+        tableGachaIds.push(val);
+        generateRollsTable();
+    }
+}
+
+function removeGachaColumn(index) {
+    tableGachaIds.splice(index, 1);
+    delete uberAdditionCounts[index]; 
+    generateRollsTable();
+}
+
+function updateGachaSelection(selectElement, index) {
+    const originalIdWithSuffix = tableGachaIds[index];
+    const newBaseId = selectElement.value;
+    
+    // 選択されたガチャが現在「確定」かどうかチェック
+    if (activeGuaranteedIds.has(parseInt(newBaseId))) {
+        // 確定ガチャなら強制的に 11g (11連確定) モードにする
+        tableGachaIds[index] = newBaseId + 'g';
+    } else {
+        // 確定でない場合は、元のサフィックスを引き継ぐ
+        let suffix = '';
+        if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
+        else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
+        else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
+        
+        tableGachaIds[index] = newBaseId + suffix;
+    }
+    
+    generateRollsTable();
+}
+
+function toggleGuaranteedColumn(index) {
+    const currentVal = tableGachaIds[index];
+    
+    let baseId = currentVal;
+    let suffix = '';
+    
+    if (currentVal.endsWith('f')) {
+        suffix = 'f';
+        baseId = currentVal.substring(0, currentVal.length - 1);
+    } else if (currentVal.endsWith('s')) {
+        suffix = 's';
+        baseId = currentVal.substring(0, currentVal.length - 1);
+    } else if (currentVal.endsWith('g')) {
+        suffix = 'g';
+        baseId = currentVal.substring(0, currentVal.length - 1);
+    }
+
+    let nextSuffix = '';
+    // サイクル: ''(通常) -> 'g'(11連) -> 'f'(15連) -> 's'(7連) -> ''(通常)
+    if (suffix === '') nextSuffix = 'g';
+    else if (suffix === 'g') nextSuffix = 'f';
+    else if (suffix === 'f') nextSuffix = 's';
+    else if (suffix === 's') nextSuffix = '';
+
+    tableGachaIds[index] = baseId + nextSuffix;
+    generateRollsTable();
+}
+
+function updateUberAddition(selectElement, index) {
+    const val = parseInt(selectElement.value, 10);
+    if (!isNaN(val)) {
+        uberAdditionCounts[index] = val;
+    } else {
+        uberAdditionCounts[index] = 0;
+    }
+    generateRollsTable();
+}
+
+function toggleSeedColumns() {
+    showSeedColumns = !showSeedColumns;
+    generateRollsTable(); 
+    updateToggleButtons();
+}
+
+function toggleResultDisplay() {
+    showResultDisplay = !showResultDisplay;
+    const res = document.getElementById('result');
+    if(res) res.classList.toggle('hidden', !showResultDisplay);
+    updateToggleButtons();
+}
+
+function updateToggleButtons() {
+    const btnSeed = document.getElementById('toggle-seed-btn');
+    const btnRes = document.getElementById('toggle-result-btn');
+    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEEDを非表示' : 'SEEDを表示';
+    if(btnRes) btnRes.textContent = showResultDisplay ? '計算過程を非表示' : '計算過程を表示';
+}
+
+function toggleDescription() {
+    const content = document.getElementById('description-content');
+    const toggle = document.getElementById('toggle-description');
+    if(content && toggle) {
+        const isHidden = content.classList.toggle('hidden');
+        toggle.textContent = isHidden ? '概要を表示' : '概要を非表示';
+    }
+}
+
+// --- スケジュール表示関連 ---
+
+function setupScheduleUI() {
+    let scheduleContainer = document.getElementById('schedule-container');
+    if (!scheduleContainer) {
+        scheduleContainer = document.createElement('div');
+        scheduleContainer.id = 'schedule-container';
+        scheduleContainer.className = 'hidden';
+        const tableContainer = document.getElementById('rolls-table-container');
+        if (tableContainer) {
+            tableContainer.parentNode.insertBefore(scheduleContainer, tableContainer.nextSibling);
+        } else {
+            document.body.appendChild(scheduleContainer);
+        }
+    }
+
+    if (!document.getElementById('toggle-schedule-btn')) {
+        const btn = document.createElement('button');
+        btn.id = 'toggle-schedule-btn';
+        btn.textContent = 'スケジュールを表示';
+        btn.onclick = toggleSchedule;
+        btn.className = 'secondary';
+        
+        const refBtn = document.getElementById('toggle-description');
+        if (refBtn && refBtn.parentNode) {
+            refBtn.parentNode.insertBefore(btn, refBtn.nextSibling);
+        } else {
+            const controls = document.querySelector('.controls');
+            if(controls) controls.appendChild(btn);
+        }
+    }
+}
+
+function toggleSchedule() {
+    if (!loadedTsvContent) {
+        alert("スケジュールの読み込みに失敗しました。");
+        return;
+    }
+
+    isScheduleMode = !isScheduleMode;
+    const scheduleBtn = document.getElementById('toggle-schedule-btn');
+    const simWrapper = document.getElementById('sim-control-wrapper');
+    const tableContainer = document.getElementById('rolls-table-container');
+    const scheduleContainer = document.getElementById('schedule-container');
+    const resultDiv = document.getElementById('result');
+    const bottomControls = document.getElementById('bottom-controls');
+
+    if (isScheduleMode) {
+        scheduleBtn.textContent = 'ロールズに戻る';
+        scheduleBtn.classList.add('active');
+        if (simWrapper) simWrapper.classList.add('hidden');
+        if (tableContainer) tableContainer.classList.add('hidden');
+        if (resultDiv) resultDiv.classList.add('hidden');
+        if (bottomControls) bottomControls.classList.add('hidden');
+        if (scheduleContainer) {
+            scheduleContainer.classList.remove('hidden');
+            if (typeof renderScheduleTable === 'function') {
+                renderScheduleTable(loadedTsvContent, 'schedule-container');
+            }
+        }
+    } else {
+        scheduleBtn.textContent = 'スケジュールを表示';
+        scheduleBtn.classList.remove('active');
+        if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
+        if (tableContainer) tableContainer.classList.remove('hidden');
+        if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
+        if (bottomControls) bottomControls.classList.remove('hidden');
+        if (scheduleContainer) scheduleContainer.classList.add('hidden');
+    }
+}
+
+====================
+FILE: url_manager.js
+====================
+/**
+ * url_manager.js
+ * URLパラメータの読み込みと更新を担当
+ */
+
+function processUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const seedParam = urlParams.get('seed');
+    const simConfigParam = urlParams.get('sim_config');
+    const gachasParam = urlParams.get('gachas');
+
+    // global変数のtableGachaIdsを参照
+    if (gachasParam) {
+        tableGachaIds = gachasParam.split('-');
+    }
+
+    const seedEl = document.getElementById('seed');
+    if (seedParam) {
+        if(seedEl) seedEl.value = seedParam;
+    } else {
+        // デフォルト値
+        if(seedEl && !seedEl.value) seedEl.value = "12345";
+    }
+
+    if (simConfigParam) {
+        const configEl = document.getElementById('sim-config');
+        if(configEl) configEl.value = simConfigParam;
+        
+        // ui_controllerで管理されるisSimulationModeも更新が必要だが
+        // ここではDOMを操作し、初期化フローで整合性を取る
+        const simRadio = document.querySelector('input[value="simulation"]');
+        if(simRadio) {
+            simRadio.checked = true;
+            // グローバル変数の更新（ui_controllerがロードされている前提）
+            if(typeof isSimulationMode !== 'undefined') isSimulationMode = true;
+        }
+    }
+}
+
+function updateUrlParams() {
+    const seed = document.getElementById('seed').value;
+    const simConfig = document.getElementById('sim-config').value;
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if (seed) urlParams.set('seed', seed); else urlParams.delete('seed');
+    // global変数のisSimulationModeを参照
+    if (simConfig && isSimulationMode) urlParams.set('sim_config', simConfig); else urlParams.delete('sim_config');
+    // global変数のtableGachaIdsを参照
+    if (tableGachaIds.length > 0) urlParams.set('gachas', tableGachaIds.join('-')); else urlParams.delete('gachas');
+
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    try { window.history.pushState({path: newUrl}, '', newUrl); } catch (e) { console.warn("URL update failed", e); }
+}
+

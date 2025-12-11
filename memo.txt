@@ -1,0 +1,2 @@
+//combined_code.txtを生成（ターミナルに↓を入力）
+Get-ChildItem -Include *.html,*.css,*.js -Recurse | ForEach-Object { "===================="; "FILE: $($_.Name)"; "===================="; Get-Content $_ -Encoding UTF8; "" } | Out-File combined_code.txt -Encoding UTF8

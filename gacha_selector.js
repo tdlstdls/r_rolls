@@ -48,7 +48,8 @@ function getGachaSelectorOptions(selectedId) {
                 rawStart: item.rawStart,
                 rawEnd: item.rawEnd,
                 s: parseInt(item.rawStart, 10),
-                isSpecial: isSpecial
+                isSpecial: isSpecial,
+                isGuaranteed: item.guaranteed // 確定フラグを引き継ぐ
             });
         }
     });
@@ -61,7 +62,13 @@ function getGachaSelectorOptions(selectedId) {
     scheduledItems.forEach(item => {
         if (usedIds.has(item.id.toString())) return;
         
-        const baseName = `${item.name} (${item.id})`;
+        // 確定フラグがある場合、名称に [確定] を付与 (既に含まれていれば二重付与しない)
+        let displayName = item.name;
+        if (item.isGuaranteed && !displayName.includes("確定")) {
+            displayName += " [確定]";
+        }
+
+        const baseName = `${displayName} (${item.id})`;
         let label = item.isSpecial 
             ? `${toShortDate(item.rawStart)}~ ${baseName}`
             : `${toShortDate(item.rawStart)}~${toShortDate(item.rawEnd)} ${baseName}`;
