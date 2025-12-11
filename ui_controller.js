@@ -6,14 +6,15 @@
 
 // UI状態変数 (Global)
 let tableGachaIds = [];
-let currentRolls = 100;
+let currentRolls = 2000; // ★変更1: 初期値を2000に設定
 let showSeedColumns = false;
 let showResultDisplay = false;
 let finalSeedForUpdate = null;
 let isSimulationMode = false;
 let isScheduleMode = false;
 let activeGuaranteedIds = new Set(); // 現在開催中で確定のガチャIDを保持
-let isScheduleAnalyzed = false; // 解析済みフラグ
+let isScheduleAnalyzed = false;
+// 解析済みフラグ
 
 // 超激レア追加シミュレーション用 (index -> 追加数)
 let uberAdditionCounts = {};
@@ -21,7 +22,8 @@ let uberAdditionCounts = {};
 // --- スケジュール解析とデータ反映の共通関数 ---
 // gacha_selector.js や initializeDefaultGachas から呼ばれる
 function prepareScheduleInfo() {
-    if (isScheduleAnalyzed) return; // すでに実行済みならスキップ
+    if (isScheduleAnalyzed) return;
+// すでに実行済みならスキップ
 
     if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
         typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
@@ -66,10 +68,8 @@ function prepareScheduleInfo() {
 function initializeDefaultGachas() {
     // まずスケジュール情報を整理
     prepareScheduleInfo();
-
     if (tableGachaIds.length === 0) {
         let scheduleFound = false;
-
         // 1. スケジュールロジックを利用して「現在開催中」の情報を解析
         if (isScheduleAnalyzed && typeof parseGachaTSV === 'function') {
             try {
@@ -80,10 +80,10 @@ function initializeDefaultGachas() {
                 const activeGachas = scheduleData.filter(item => {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
+                    
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
                     return now >= startDt && now <= endDt;
                 });
-
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
@@ -102,7 +102,7 @@ function initializeDefaultGachas() {
 
         // 2. スケジュールから特定できなかった場合のフォールバック
         if (!scheduleFound || tableGachaIds.length === 0) {
-            const options = getGachaSelectorOptions(null); 
+            const options = getGachaSelectorOptions(null);
             if (options.length > 0) {
                 tableGachaIds.push(options[0].value);
                 if (options.length > 1) {
@@ -141,11 +141,12 @@ function onModeChange() {
 }
 
 function resetAndGenerateTable() {
-    if (isScheduleMode) return; 
+    if (isScheduleMode) return;
     finalSeedForUpdate = null;
     const simConf = document.getElementById('sim-config');
     if (simConf && simConf.value.trim() === '') {
-         currentRolls = 100;
+         // ★変更2: ここで強制的に100に戻されていたのを2000に変更
+         currentRolls = 2000; 
     }
     generateRollsTable();
     updateUrlParams();
@@ -160,7 +161,7 @@ function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
         seedInput.value = newSeed;
-        currentRolls = 100; 
+        currentRolls = 2000; // ★ここも念のため初期値(2000)に戻す設定にしておきます
         generateRollsTable();
         updateUrlParams();
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -196,14 +197,13 @@ function addGachaColumn() {
 
 function removeGachaColumn(index) {
     tableGachaIds.splice(index, 1);
-    delete uberAdditionCounts[index]; 
+    delete uberAdditionCounts[index];
     generateRollsTable();
 }
 
 function updateGachaSelection(selectElement, index) {
     const originalIdWithSuffix = tableGachaIds[index];
     const newBaseId = selectElement.value;
-    
     // 選択されたガチャが現在「確定」かどうかチェック
     if (activeGuaranteedIds.has(parseInt(newBaseId))) {
         // 確定ガチャなら強制的に 11g (11連確定) モードにする
@@ -214,7 +214,6 @@ function updateGachaSelection(selectElement, index) {
         if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
         else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
         else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
-        
         tableGachaIds[index] = newBaseId + suffix;
     }
     
@@ -226,7 +225,6 @@ function toggleGuaranteedColumn(index) {
     
     let baseId = currentVal;
     let suffix = '';
-    
     if (currentVal.endsWith('f')) {
         suffix = 'f';
         baseId = currentVal.substring(0, currentVal.length - 1);
@@ -284,7 +282,8 @@ function toggleDescription() {
     const toggle = document.getElementById('toggle-description');
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ? '概要を表示' : '概要を非表示';
+        toggle.textContent = isHidden ?
+        '概要を表示' : '概要を非表示';
     }
 }
 
@@ -334,7 +333,6 @@ function toggleSchedule() {
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const bottomControls = document.getElementById('bottom-controls');
-
     if (isScheduleMode) {
         scheduleBtn.textContent = 'ロールズに戻る';
         scheduleBtn.classList.add('active');

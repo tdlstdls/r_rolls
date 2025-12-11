@@ -3,6 +3,93 @@
  * ガチャ結果テーブルのHTML生成と描画ロジック
  */
 
+// ★追加: 当たりキャラの予報リストを生成する関数
+function generateForecastSummary(tableData, columnConfigs, numRolls) {
+    let summaryHtml = '<div class="forecast-summary-container" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-radius: 4px;">';
+
+    columnConfigs.forEach((config, colIndex) => {
+        if (!config) return;
+
+        // 1. このガチャに含まれるターゲット（伝説レア・限定キャラ）をリストアップ
+        const targetMap = new Map(); // charId -> { name, hits: [] }
+
+        // 伝説レアをプールから探す
+        if (config.pool.legend) {
+            config.pool.legend.forEach(c => {
+                targetMap.set(parseInt(c.id), { name: c.name, hits: [], isLegend: true });
+            });
+        }
+
+        // 限定キャラをプールから探す (Rare/Super/Uber/Legend 全て走査)
+        if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
+            ['rare', 'super', 'uber', 'legend'].forEach(rarity => {
+                if (config.pool[rarity]) {
+                    config.pool[rarity].forEach(c => {
+                        const cid = parseInt(c.id);
+                        if (limitedCats.includes(cid)) {
+                            // 既に伝説レアとして登録済みでなければ追加
+                            if (!targetMap.has(cid)) {
+                                targetMap.set(cid, { name: c.name, hits: [], isLegend: false });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        if (targetMap.size === 0) return; // 対象なしならスキップ
+
+        // 2. tableData を走査して出現位置を記録
+        // tableData.length は numRolls * 2 (A側とB側)
+        for (let sIdx = 0; sIdx < tableData.length; sIdx++) {
+            const cellData = tableData[sIdx]?.[colIndex];
+            if (!cellData || !cellData.roll) continue;
+
+            const charId = parseInt(cellData.roll.finalChar.id);
+            if (targetMap.has(charId)) {
+                const row = Math.floor(sIdx / 2) + 1;
+                const side = (sIdx % 2 === 0) ? 'A' : 'B';
+                targetMap.get(charId).hits.push(`${row}${side}`);
+            }
+        }
+
+        // 3. 表示用の整形
+        let listItems = [];
+        targetMap.forEach((data, id) => {
+            let resultStr = "";
+            if (data.hits.length > 0) {
+                resultStr = data.hits.join(", ");
+            } else {
+                resultStr = `(${numRolls}+)`;
+            }
+            
+            // スタイル装飾: 伝説レアは太字+色など
+            const nameStyle = data.isLegend ? 'font-weight:bold; color:#e91e63;' : 'font-weight:bold; color:#d35400;';
+            listItems.push({
+                firstHitIndex: data.hits.length > 0 ? parseInt(data.hits[0]) : 999999, // 出現順ソート用
+                html: `<div style="margin-bottom: 4px;"><span style="${nameStyle}">${data.name}</span>: ${resultStr}</div>`
+            });
+        });
+
+        // 出現順にソート（出ないキャラは最後）
+        listItems.sort((a, b) => a.firstHitIndex - b.firstHitIndex);
+
+        // 列ごとの見出しとリスト出力
+        summaryHtml += `<div style="margin-bottom: 10px;">
+            <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 5px; font-size: 0.9em;">
+                ${config.name} (ID:${config.id}) - Target List
+            </div>
+            <div style="font-family: monospace; font-size: 1.1em; line-height: 1.4;">
+                ${listItems.map(item => item.html).join('')}
+            </div>
+        </div>`;
+    });
+
+    summaryHtml += '</div>';
+    return summaryHtml;
+}
+
+
 function generateRollsTable() {
     try {
         if (Object.keys(gachaMasterData.gachas).length === 0) return;
@@ -14,8 +101,8 @@ function generateRollsTable() {
              initialSeed = 12345;
              seedEl.value = "12345";
         }
+        // ui_controller.js で設定された currentRolls (2000推奨) を使用
         const numRolls = currentRolls;
-        // global変数参照
 
         if (typeof Xorshift32 === 'undefined' || typeof rollWithSeedConsumptionFixed === 'undefined') {
             document.getElementById('rolls-table-container').innerHTML = 
@@ -27,7 +114,8 @@ function generateRollsTable() {
         const rngForSeeds = new Xorshift32(initialSeed);
         // 少し多めに生成
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-        // ID抽出（suffix除去）
+
+        // ID抽出
         const uniqueGachaIds = [...new Set(tableGachaIds.map(idStr => {
             let id = idStr;
             if (idStr.endsWith('f')) id = idStr.slice(0, -1);
@@ -36,8 +124,9 @@ function generateRollsTable() {
             return id;
         }))];
         
-        // データの計算 (表示用ロジック)
+        // データの計算
         const tableData = Array(numRolls * 2).fill(null).map(() => []);
+
         // 列ごとの設定を生成
         const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
             let id = idWithSuffix;
@@ -54,7 +143,6 @@ function generateRollsTable() {
             const originalConfig = gachaMasterData.gachas[id];
             if(!originalConfig) return null;
 
-            // コピー作成
             const config = { ...originalConfig };
             config.pool = { ...originalConfig.pool };
             if (config.pool.uber) {
@@ -62,6 +150,7 @@ function generateRollsTable() {
             }
             
             config._guaranteedNormalRolls = guaranteedNormalRolls;
+
             // 超激レア追加ロジック
             const addCount = uberAdditionCounts[colIndex] || 0;
             if (addCount > 0) {
@@ -82,7 +171,7 @@ function generateRollsTable() {
             let prevDrawA = null, prevDrawB = null;
             for (let i = 0; i < numRolls; i++) {
                 const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
-                
+            
                 const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
                 const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
                 
@@ -102,10 +191,10 @@ function generateRollsTable() {
                 }
             }
         });
+
         // シミュレーションモードのハイライト計算
         const highlightMap = new Map();
         const guarHighlightMap = new Map();
-        // 確定ガチャ開始行のハイライト用
         
         if (isSimulationMode) { 
             const simConfigEl = document.getElementById('sim-config');
@@ -114,6 +203,7 @@ function generateRollsTable() {
                 let rngForText = new Xorshift32(initialSeed);
                 let currentSeedIndex = 0;
                 let lastDrawForHighlight = { rarity: null, charId: null };
+
                 for (const sim of simConfigs) {
                     if (gachaMasterData.gachas[sim.id]) sim.gachaConfig = gachaMasterData.gachas[sim.id];
                     if (!sim.gachaConfig) continue;
@@ -141,6 +231,7 @@ function generateRollsTable() {
                              for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
                         }
                         if(startSeedIndex < numRolls*2) highlightMap.set(`${startSeedIndex}G`, sim.id);
+
                         if(currentSeedIndex < seeds.length && typeof rollGuaranteedUber !== 'undefined') {
                             const gr = rollGuaranteedUber(currentSeedIndex, sim.gachaConfig, seeds);
                             currentSeedIndex += gr.seedsConsumed;
@@ -162,6 +253,12 @@ function generateRollsTable() {
             }
         }
         
+        // ---------------------------------------------------------------------
+        // ★ SummaryのHTML生成 (テーブルヘッダー構築の前に行う)
+        // ---------------------------------------------------------------------
+        const summaryHtml = generateForecastSummary(tableData, columnConfigs, numRolls);
+        // ---------------------------------------------------------------------
+
         const buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>`;
         let totalGachaCols = 0;
         tableGachaIds.forEach(idWithSuffix => {
@@ -173,14 +270,16 @@ function generateRollsTable() {
 
             if (gachaMasterData.gachas[id]) totalGachaCols += hasSuffix ? 2 : 1;
         });
+
         const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
         const calcColSpan = showSeedColumns ? 5 : 0;
         const totalTrackSpan = calcColSpan + totalGachaCols;
 
-        // ヘッダー生成関数
+        // テーブルHTML構築開始
         let tableHtml = `<table><thead>
             <tr><th rowspan="2" class="col-no">NO.</th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
             <th rowspan="2" class="col-no">NO.</th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
+        
         const generateHeader = (isInteractive) => {
             let html = `
                 <th class="${calcColClass}">SEED</th>
@@ -201,9 +300,7 @@ function generateRollsTable() {
                 const gachaConfig = gachaMasterData.gachas[id];
                 if (!gachaConfig) return;
                 
-                // ガチャ名の生成 (期間情報などを含むラベルを取得)
                 let selectedLabel = `${id} ${gachaConfig.name}`;
-                // B列(isInteractive=false)でも詳細情報(期間)を表示するためにOptionsを検索
                 const options = getGachaSelectorOptions(id);
                 const foundOption = options.find(o => o.value == id);
                 if (foundOption) {
@@ -220,12 +317,10 @@ function generateRollsTable() {
                     displayHTML = selectedLabel;
                 }
 
-                // 操作エリアまたは情報表示エリアの生成
                 let selectorArea = '';
                 let controlArea = '';
 
                 if (isInteractive) {
-                    // --- A列: ボタンやプルダウンを表示 ---
                     const removeBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})">x</button>`;
                     let gBtnLabel = 'G';
                     if (suffix === 'g') gBtnLabel = '11G';
@@ -240,7 +335,7 @@ function generateRollsTable() {
                         addSelect += `<option value="${k}" ${k===currentAddVal ? 'selected':''}>${k}</option>`;
                     }
                     addSelect += `</select>`;
-                    // プルダウン生成
+
                     let selector = `<select onchange="updateGachaSelection(this, ${index})" style="width: 30px; cursor: pointer; opacity: 0; position: absolute; left:0; top:0; height: 100%; width: 100%;">`;
                     options.forEach(opt => {
                         const selected = (opt.value == id) ? 'selected' : '';
@@ -262,17 +357,12 @@ function generateRollsTable() {
                             ${removeBtn}
                         </div>`;
                 } else {
-                    // --- B列: テキスト情報のみ表示 ---
-                    
-                    // セレクターの場所は空けておく
                     selectorArea = `<div style="width: 24px; height: 24px;"></div>`;
-                    // 設定情報のテキスト化
                     let statusTextParts = [];
-                    // 1. 確定設定
                     if (suffix === 'g') statusTextParts.push('11G');
                     else if (suffix === 'f') statusTextParts.push('15G');
                     else if (suffix === 's') statusTextParts.push('7G');
-                    // 2. Add設定
+
                     const currentAddVal = uberAdditionCounts[index] || 0;
                     if (currentAddVal > 0) {
                         statusTextParts.push(`add:${currentAddVal}`);
@@ -284,7 +374,6 @@ function generateRollsTable() {
                                 ${statusTextParts.join(' / ')}
                             </div>`;
                     } else {
-                         // 高さを揃えるための空要素
                          controlArea = `<div style="margin-top:4px; height: 21px;"></div>`;
                     }
                 }
@@ -304,8 +393,9 @@ function generateRollsTable() {
             });
             return html;
         };
-        // A列はインタラクティブ、B列は非インタラクティブ
+
         tableHtml += generateHeader(true) + generateHeader(false) + `</tr></thead><tbody>`;
+
         const formatAddress = (idx) => {
             if (idx === null || idx === undefined) return '';
             const row = Math.floor(idx / 2) + 1;
@@ -315,6 +405,7 @@ function generateRollsTable() {
 
         const generateDetailedCalcCells = (seedIndex) => {
             if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
+
             const firstGachaIdWithSuffix = tableGachaIds[0];
             if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
             
@@ -339,14 +430,14 @@ function generateRollsTable() {
             }
 
             if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
+
             const sNum1 = seedIndex + 1;
             const sNum2 = seedIndex + 2;
-            const sNum3 = seedIndex + 3;
             const sVal_0 = seeds[seedIndex];
             const sVal_1 = seeds[seedIndex+1];
-            const sVal_2 = seeds[seedIndex+2];
 
             const colSeed = `<td>(S${sNum1})<br>${sVal_0}</td>`;
+
             const rVal = sVal_0 % 10000;
             const rates = config.rarity_rates || {};
             const rareRate = rates.rare || 0, superRate = rates.super || 0, uberRate = rates.uber || 0, legendRate = rates.legend || 0;
@@ -357,6 +448,7 @@ function generateRollsTable() {
             else if (rVal < rareRate + superRate + uberRate + legendRate) { rType = 'legend'; } 
             
             const colRarity = `<td>(S${sNum1})<br>${rVal}<br>(${rType})</td>`;
+
             const pool = config.pool[rType] || [];
             let colSlot = '<td>-</td>';
             let slotVal = '-';
@@ -365,23 +457,18 @@ function generateRollsTable() {
                 colSlot = `<td>(S${sNum2})<br>%${pool.length}<br>${slotVal}</td>`;
             }
 
-            // --- ReRoll列の表示ロジック修正 ---
             let colReRoll = '<td>-</td>';
             if (tableData[seedIndex] && tableData[seedIndex][0] && tableData[seedIndex][0].roll) {
                 const roll = tableData[seedIndex][0].roll;
-                
                 if (pool.length > 0) {
                     if (roll.isRerolled) {
-                        // レア被り発生時: 最終的に使用したSEED情報で表示
-                        // seedsConsumedは消費数なので、使用した最後のIndexは seedIndex + seedsConsumed - 1
                         const finalSeedIndex = seedIndex + roll.seedsConsumed - 1;
-                        const sNumFinal = finalSeedIndex + 1; // 表示用は1始まり
+                        const sNumFinal = finalSeedIndex + 1;
                         const finalPoolSize = roll.uniqueTotal;
                         const finalVal = roll.reRollIndex;
                         
                         colReRoll = `<td>(S${sNumFinal})<br>%${finalPoolSize}<br>${finalVal}</td>`;
                     } else {
-                        // レア被りなし
                         colReRoll = `<td>false</td>`;
                     }
                 }
@@ -419,9 +506,11 @@ function generateRollsTable() {
             }
             const fullRoll = tableData[seedIndex][colIndex].roll;
             if(!fullRoll) return `<td>N/A</td>`;
+
             const gachaConfig = gachaMasterData.gachas[id];
             const gachaName = gachaConfig ? gachaConfig.name : "";
             const isPlatOrLegend = gachaName.includes("プラチナ") || gachaName.includes("レジェンド");
+
             let isLimited = false;
             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
                 if (limitedCats.includes(parseInt(fullRoll.finalChar.id)) || limitedCats.includes(fullRoll.finalChar.id.toString())) {
@@ -465,6 +554,7 @@ function generateRollsTable() {
             }
 
             let content = fullRoll.finalChar.name;
+            
             if (!isSimulationMode) {
                 if (fullRoll.isRerolled) {
                     const s2Val = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
@@ -647,7 +737,10 @@ function generateRollsTable() {
         
         tableHtml += '</tbody></table>';
         const container = document.getElementById('rolls-table-container');
-        if(container) container.innerHTML = tableHtml;
+        if(container) {
+            // ★変更: Summary HTML をテーブルの前に追加
+            container.innerHTML = summaryHtml + tableHtml;
+        }
 
         const resultDiv = document.getElementById('result');
         if(resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
