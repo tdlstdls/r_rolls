@@ -3,87 +3,180 @@
  * ガチャ結果テーブルのHTML生成と描画ロジック
  */
 
-// ★追加: 当たりキャラの予報リストを生成する関数
-function generateForecastSummary(tableData, columnConfigs, numRolls) {
+/**
+ * ★高速予報生成関数
+ * 描画用のテーブルデータとは独立して、2000行先まで数値計算のみでスキャンします。
+ * 再抽選(Reroll)は考慮しません。
+ */
+function generateFastForecast(initialSeed, columnConfigs) {
+    const scanRows = 2000; // 2000行先までチェック
+    const requiredSeeds = scanRows * 2 + 10;
+    
+    // 1. 計算用のシード配列を高速生成
+    const seeds = new Uint32Array(requiredSeeds); // メモリ効率の良いTypedArrayを使用
+    const rng = new Xorshift32(initialSeed);
+    for (let i = 0; i < requiredSeeds; i++) {
+        seeds[i] = rng.next();
+    }
+
     let summaryHtml = '<div class="forecast-summary-container" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-radius: 4px;">';
+
+    // -------------------------------------------------------------------------
+    // 各ガチャ列ごとのターゲット（伝説・限定）表示
+    // -------------------------------------------------------------------------
+    const processedGachaIds = new Set();
 
     columnConfigs.forEach((config, colIndex) => {
         if (!config) return;
 
-        // 1. このガチャに含まれるターゲット（伝説レア・限定キャラ）をリストアップ
-        const targetMap = new Map(); // charId -> { name, hits: [] }
+        // 既にこのIDのガチャを表示済みならスキップ
+        if (processedGachaIds.has(config.id)) {
+            return;
+        }
+        processedGachaIds.add(config.id);
 
-        // 伝説レアをプールから探す
-        if (config.pool.legend) {
-            config.pool.legend.forEach(c => {
-                targetMap.set(parseInt(c.id), { name: c.name, hits: [], isLegend: true });
-            });
+        // ★追加: プラチナガチャ・レジェンドガチャは冗長になるため表示しない
+        const gachaName = config.name || "";
+        if (gachaName.includes("プラチナ") || gachaName.includes("レジェンド")) {
+            return;
         }
 
-        // 限定キャラをプールから探す (Rare/Super/Uber/Legend 全て走査)
+        // --- 準備: ターゲット情報の整理 ---
+        const targetIds = new Set();
+        const poolsToCheck = {}; // 'uber': true など
+
+        // 伝説レアは無条件でチェック対象
+        const hasLegend = (config.rarity_rates.legend > 0 && config.pool.legend && config.pool.legend.length > 0);
+
+        // 限定キャラ(limitedCats)のチェック準備
         if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-            ['rare', 'super', 'uber', 'legend'].forEach(rarity => {
-                if (config.pool[rarity]) {
-                    config.pool[rarity].forEach(c => {
-                        const cid = parseInt(c.id);
-                        if (limitedCats.includes(cid)) {
-                            // 既に伝説レアとして登録済みでなければ追加
-                            if (!targetMap.has(cid)) {
-                                targetMap.set(cid, { name: c.name, hits: [], isLegend: false });
-                            }
-                        }
-                    });
+            ['rare', 'super', 'uber'].forEach(r => {
+                if (config.pool[r] && config.pool[r].length > 0) {
+                    const poolIds = config.pool[r].map(c => parseInt(c.id));
+                    const targetsInPool = poolIds.filter(id => limitedCats.includes(id));
+                    
+                    if (targetsInPool.length > 0) {
+                        poolsToCheck[r] = true;
+                        targetsInPool.forEach(id => targetIds.add(id));
+                    }
                 }
             });
         }
 
-        if (targetMap.size === 0) return; // 対象なしならスキップ
+        if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
 
-        // 2. tableData を走査して出現位置を記録
-        // tableData.length は numRolls * 2 (A側とB側)
-        for (let sIdx = 0; sIdx < tableData.length; sIdx++) {
-            const cellData = tableData[sIdx]?.[colIndex];
-            if (!cellData || !cellData.roll) continue;
+        const resultMap = new Map();
 
-            const charId = parseInt(cellData.roll.finalChar.id);
-            if (targetMap.has(charId)) {
-                const row = Math.floor(sIdx / 2) + 1;
-                const side = (sIdx % 2 === 0) ? 'A' : 'B';
-                targetMap.get(charId).hits.push(`${row}${side}`);
+        // --- 高速スキャンループ ---
+        for (let n = 0; n < scanRows * 2; n++) {
+            const s0 = seeds[n];
+            const rVal = s0 % 10000;
+            
+            const rates = config.rarity_rates;
+            let rarity = 'rare'; 
+            const rareR = rates.rare;
+            const superR = rates.super;
+            const uberR = rates.uber;
+            const legendR = rates.legend;
+
+            if (rVal < rareR) { rarity = 'rare'; }
+            else if (rVal < rareR + superR) { rarity = 'super'; }
+            else if (rVal < rareR + superR + uberR) { rarity = 'uber'; }
+            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend'; }
+            else { rarity = 'rare'; }
+
+            // 1. 伝説レア判定
+            if (rarity === 'legend' && hasLegend) {
+                const s1 = seeds[n + 1];
+                const pool = config.pool.legend;
+                const slot = s1 % pool.length;
+                const charObj = pool[slot];
+                const cid = parseInt(charObj.id);
+
+                if (!resultMap.has(cid)) {
+                    resultMap.set(cid, { name: charObj.name, hits: [], isLegend: true });
+                }
+                const row = Math.floor(n / 2) + 1;
+                const side = (n % 2 === 0) ? 'A' : 'B';
+                resultMap.get(cid).hits.push(`${row}${side}`);
+            }
+            // 2. 限定キャラ判定
+            else if (poolsToCheck[rarity]) {
+                const s1 = seeds[n + 1];
+                const pool = config.pool[rarity];
+                const slot = s1 % pool.length;
+                const charObj = pool[slot];
+                const cid = parseInt(charObj.id);
+
+                if (targetIds.has(cid)) {
+                    if (!resultMap.has(cid)) {
+                        resultMap.set(cid, { name: charObj.name, hits: [], isLegend: false });
+                    }
+                    const row = Math.floor(n / 2) + 1;
+                    const side = (n % 2 === 0) ? 'A' : 'B';
+                    resultMap.get(cid).hits.push(`${row}${side}`);
+                }
             }
         }
 
-        // 3. 表示用の整形
+        if (resultMap.size === 0) return;
+
         let listItems = [];
-        targetMap.forEach((data, id) => {
-            let resultStr = "";
-            if (data.hits.length > 0) {
-                resultStr = data.hits.join(", ");
-            } else {
-                resultStr = `(${numRolls}+)`;
-            }
-            
-            // スタイル装飾: 伝説レアは太字+色など
+        resultMap.forEach((data, id) => {
+            let resultStr = data.hits.join(", ");
             const nameStyle = data.isLegend ? 'font-weight:bold; color:#e91e63;' : 'font-weight:bold; color:#d35400;';
             listItems.push({
-                firstHitIndex: data.hits.length > 0 ? parseInt(data.hits[0]) : 999999, // 出現順ソート用
+                firstHit: parseInt(data.hits[0]), 
                 html: `<div style="margin-bottom: 4px;"><span style="${nameStyle}">${data.name}</span>: ${resultStr}</div>`
             });
         });
 
-        // 出現順にソート（出ないキャラは最後）
-        listItems.sort((a, b) => a.firstHitIndex - b.firstHitIndex);
+        listItems.sort((a, b) => a.firstHit - b.firstHit);
 
-        // 列ごとの見出しとリスト出力
         summaryHtml += `<div style="margin-bottom: 10px;">
             <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 5px; font-size: 0.9em;">
-                ${config.name} (ID:${config.id}) - Target List
+                ${config.name} (ID:${config.id}) - Target List (～${scanRows}行)
             </div>
             <div style="font-family: monospace; font-size: 1.1em; line-height: 1.4;">
                 ${listItems.map(item => item.html).join('')}
             </div>
         </div>`;
     });
+
+    // -------------------------------------------------------------------------
+    // 伝説枠・昇格伝説枠の汎用アドレス表示 (ここは共通なので1回だけ表示)
+    // -------------------------------------------------------------------------
+    const legendSlots = [];   // 9970以上
+    const promotedSlots = []; // 9940以上 9970未満
+
+    for (let n = 0; n < scanRows * 2; n++) {
+        const val = seeds[n] % 10000;
+        const row = Math.floor(n / 2) + 1;
+        const side = (n % 2 === 0) ? 'A' : 'B';
+        const addr = `${row}${side}`; // 例: 1A
+
+        if (val >= 9970) {
+            legendSlots.push(addr);
+        } else if (val >= 9940) {
+            promotedSlots.push(addr);
+        }
+    }
+
+    const legendStr = legendSlots.length > 0 ? legendSlots.join(", ") : "なし";
+    const promotedStr = promotedSlots.length > 0 ? promotedSlots.join(", ") : "なし";
+
+    summaryHtml += `
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #eee;">
+            <div style="margin-bottom: 6px;">
+                <span style="font-weight:bold; color:#e91e63; background:#ffe0eb; padding:2px 6px; border-radius:3px;">伝説枠 (9970↑)</span>
+                <span style="font-family: monospace; font-size: 1.1em; margin-left: 8px;">${legendStr}</span>
+            </div>
+            <div>
+                <span style="font-weight:bold; color:#9c27b0; background:#f3e5f5; padding:2px 6px; border-radius:3px;">昇格伝説枠 (9940-9969)</span>
+                <span style="font-family: monospace; font-size: 1.1em; margin-left: 8px;">${promotedStr}</span>
+            </div>
+        </div>
+    `;
 
     summaryHtml += '</div>';
     return summaryHtml;
@@ -101,7 +194,7 @@ function generateRollsTable() {
              initialSeed = 12345;
              seedEl.value = "12345";
         }
-        // ui_controller.js で設定された currentRolls (2000推奨) を使用
+        
         const numRolls = currentRolls;
 
         if (typeof Xorshift32 === 'undefined' || typeof rollWithSeedConsumptionFixed === 'undefined') {
@@ -112,7 +205,7 @@ function generateRollsTable() {
 
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
-        // 少し多めに生成
+        // テーブル表示用に必要な分だけ生成 (300行分 + バッファ)
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
 
         // ID抽出
@@ -124,7 +217,7 @@ function generateRollsTable() {
             return id;
         }))];
         
-        // データの計算
+        // データの計算 (表示用ロジック)
         const tableData = Array(numRolls * 2).fill(null).map(() => []);
 
         // 列ごとの設定を生成
@@ -165,7 +258,13 @@ function generateRollsTable() {
             return config;
         });
 
-        // 計算実行 (Column Base)
+        // ---------------------------------------------------------------------
+        // ★ 高速予報サマリーの生成
+        // ---------------------------------------------------------------------
+        const summaryHtml = generateFastForecast(initialSeed, columnConfigs);
+        // ---------------------------------------------------------------------
+
+        // テーブル計算実行 (Column Base)
         columnConfigs.forEach((config, colIndex) => {
             if (!config) return;
             let prevDrawA = null, prevDrawB = null;
@@ -252,12 +351,6 @@ function generateRollsTable() {
                 finalSeedForUpdate = rngForText.seed;
             }
         }
-        
-        // ---------------------------------------------------------------------
-        // ★ SummaryのHTML生成 (テーブルヘッダー構築の前に行う)
-        // ---------------------------------------------------------------------
-        const summaryHtml = generateForecastSummary(tableData, columnConfigs, numRolls);
-        // ---------------------------------------------------------------------
 
         const buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>`;
         let totalGachaCols = 0;
@@ -275,7 +368,7 @@ function generateRollsTable() {
         const calcColSpan = showSeedColumns ? 5 : 0;
         const totalTrackSpan = calcColSpan + totalGachaCols;
 
-        // テーブルHTML構築開始
+        // ヘッダー生成関数
         let tableHtml = `<table><thead>
             <tr><th rowspan="2" class="col-no">NO.</th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
             <th rowspan="2" class="col-no">NO.</th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
@@ -738,7 +831,7 @@ function generateRollsTable() {
         tableHtml += '</tbody></table>';
         const container = document.getElementById('rolls-table-container');
         if(container) {
-            // ★変更: Summary HTML をテーブルの前に追加
+            // Summaryをテーブルの上に追加
             container.innerHTML = summaryHtml + tableHtml;
         }
 

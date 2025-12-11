@@ -6,7 +6,7 @@
 
 // UI状態変数 (Global)
 let tableGachaIds = [];
-let currentRolls = 2000; // ★変更1: 初期値を2000に設定
+let currentRolls = 300; // 表示行数の初期値を設定
 let showSeedColumns = false;
 let showResultDisplay = false;
 let finalSeedForUpdate = null;
@@ -145,8 +145,8 @@ function resetAndGenerateTable() {
     finalSeedForUpdate = null;
     const simConf = document.getElementById('sim-config');
     if (simConf && simConf.value.trim() === '') {
-         // ★変更2: ここで強制的に100に戻されていたのを2000に変更
-         currentRolls = 2000; 
+         // ★ここで強制的に100に戻されるので留意
+         currentRolls = 300; 
     }
     generateRollsTable();
     updateUrlParams();
@@ -161,7 +161,7 @@ function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
         seedInput.value = newSeed;
-        currentRolls = 2000; // ★ここも念のため初期値(2000)に戻す設定にしておきます
+        currentRolls = 300; // ★ここも念のため留意しておきます
         generateRollsTable();
         updateUrlParams();
         window.scrollTo({ top: 0, behavior: 'smooth' });
