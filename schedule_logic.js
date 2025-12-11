@@ -3,13 +3,19 @@
  * gatya.tsvの解析とスケジュール表・ガントチャートのレンダリング
  */
 
-// YYYYMMDD -> YYYY年MM月DD日
+// YYYYMMDD -> M/D (年は無視、20300101は「永続」)
 function formatDateJP(dateStr) {
     if (!dateStr || dateStr.length < 8) return dateStr;
-    const y = dateStr.substring(0, 4);
-    const m = dateStr.substring(4, 6);
-    const d = dateStr.substring(6, 8);
-    return `${y}年${m}月${d}日`;
+    
+    // 特殊対応: 2030/1/1 (20300101) は「永続」と表示
+    if (dateStr === '20300101') {
+        return '永続';
+    }
+
+    // 年は切り捨てて 月/日 形式に変換 (parseIntで0埋めを除去: 05月 -> 5)
+    const m = parseInt(dateStr.substring(4, 6), 10);
+    const d = parseInt(dateStr.substring(6, 8), 10);
+    return `${m}/${d}`;
 }
 
 // HHMM -> HH:MM
@@ -78,7 +84,6 @@ function calcTextWidth(text) {
 function parseGachaTSV(tsv) {
     const lines = tsv.split('\n');
     const schedule = [];
-
     lines.forEach(line => {
         if (line.trim().startsWith('[') || !line.trim()) return;
 
@@ -115,21 +120,18 @@ function parseGachaTSV(tsv) {
         }
 
         const base = validBlockIndex;
-        
         // ガチャ情報抽出
         const gachaId = cols[base];
-        const rateRare = cols[base + 6]; 
+        const rateRare = cols[base + 6];
         const rateSupa = cols[base + 8]; 
         const rateUber = cols[base + 10]; 
-        const guarFlag = cols[base + 11]; 
+        const guarFlag = cols[base + 11];
         const rateLegend = cols[base + 12]; 
-        const detail = cols[base + 14];   
-
+        const detail = cols[base + 14];
         const guaranteed = (guarFlag === '1' || parseInt(guarFlag) > 0);
 
         let seriesName = "";
-        let tsvName = detail || ""; 
-        
+        let tsvName = detail || "";
         if (typeof gachaMasterData !== 'undefined' && gachaMasterData.gachas[gachaId]) {
             seriesName = gachaMasterData.gachas[gachaId].name;
         } else {
@@ -166,7 +168,6 @@ function parseGachaTSV(tsv) {
  */
 function findDefaultGachaState(data) {
     const now = new Date();
-
     // 1. フィルタリング (終了していない & プラチナ・レジェンド除外)
     let candidates = data.filter(item => {
         if (isPlatinumOrLegend(item)) return false; // 通常ロールズ対象外を除外
@@ -174,22 +175,18 @@ function findDefaultGachaState(data) {
         const endDt = parseDateTime(item.rawEnd, item.endTime);
         return endDt >= now; // 現在時刻を過ぎていない
     });
-
     // 2. 開始日順にソート
     candidates.sort((a, b) => {
         const startA = parseDateTime(a.rawStart, a.startTime);
         const startB = parseDateTime(b.rawStart, b.startTime);
         return startA - startB;
     });
-
     if (candidates.length === 0) return null;
 
     // 3. 最も開催が近い(または開催中の)ものを選択
     const target = candidates[0];
-
     // 確定フラグがあれば初期表示を '11g' (11連確定) にする
     const recommendedRollType = target.guaranteed ? '11g' : '11';
-
     return {
         gacha: target,
         gachaId: target.id,
@@ -201,7 +198,6 @@ function findDefaultGachaState(data) {
 function saveGanttImage() {
     const element = document.querySelector('.gantt-chart-container');
     if (!element) return;
-
     // ガントチャートのコンテンツ幅を取得
     const header = element.querySelector('.gantt-header');
     if (!header) return;
@@ -212,13 +208,11 @@ function saveGanttImage() {
     
     const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
     const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-
     // キャプチャ用に一時的にスタイル変更
     element.style.overflow = 'visible';
     element.style.width = contentWidth; 
     
     if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
-
     html2canvas(element).then(canvas => {
         // スタイル復元
         element.style.overflow = originalOverflow;
@@ -243,12 +237,10 @@ function renderGanttChart(data) {
     const filteredData = data.filter(item => !isPlatinumOrLegend(item));
 
     if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
-
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0); 
     const yesterdayInt = getDateInt(yesterday);
-
     const activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
     
     if (activeData.length === 0) {
@@ -258,7 +250,6 @@ function renderGanttChart(data) {
     // 表示範囲の決定
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
-
     // 動的幅計算用の最大幅変数
     let maxLabelTextWidth = 0;
 
@@ -271,6 +262,7 @@ function renderGanttChart(data) {
 
         // --- 幅計算ロジック ---
         let displayName = item.seriesName;
+        
         if (item.guaranteed) displayName += " [確定]";
         // 表示名の長さを計算
         const textW = calcTextWidth(displayName);
@@ -278,25 +270,22 @@ function renderGanttChart(data) {
             maxLabelTextWidth = textW;
         }
     });
-
     // 幅の設定
     // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
     if (labelWidth > 320) labelWidth = 320; // 上限設定
 
     let minDate = parseDateStr(String(minDateInt));
-    
     // 表示開始日を調整
     const viewStartDate = new Date(yesterday);
-    viewStartDate.setDate(viewStartDate.getDate() - 2); 
+    viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) {
         minDate = viewStartDate;
     }
 
     // --- 終了日の決定 ---
     let limitDate = new Date(minDate);
-    limitDate.setDate(limitDate.getDate() + 35); 
-    
+    limitDate.setDate(limitDate.getDate() + 35);
     let chartEnd = new Date(maxEndDateTime);
     if (chartEnd > limitDate) {
         chartEnd = limitDate;
@@ -305,21 +294,16 @@ function renderGanttChart(data) {
     // 右端
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
-
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
     
     if (totalDays <= 0) return '';
-
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    
     // 全体幅計算
     const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
-
     // 現在時刻線の位置計算
     const now = new Date();
     let currentLineHtml = '';
-    
     if (now >= minDate && now < chartEnd) {
         const diffNowMs = now - minDate;
         const currentLineLeftPx = (diffNowMs / msPerDay) * dayWidth;
@@ -328,7 +312,6 @@ function renderGanttChart(data) {
 
     let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
         <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
-    
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(minDate);
         d.setDate(d.getDate() + i);
@@ -376,7 +359,6 @@ function renderGanttChart(data) {
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
-
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
 
         // 行のスタイル判定
@@ -446,7 +428,6 @@ function renderScheduleTable(tsvContent, containerId) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayInt = getDateInt(yesterday);
-    
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
 
     filteredData.sort((a, b) => {
@@ -458,7 +439,6 @@ function renderScheduleTable(tsvContent, containerId) {
         
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     let html = `
         <h3 style="margin-top:0;">開催スケジュール</h3>
         ${ganttHtml}
@@ -467,8 +447,8 @@ function renderScheduleTable(tsvContent, containerId) {
         <table class="schedule-table">
         <thead>
             <tr>
-                <th style="min-width:140px;">開始日時</th>
-                <th style="min-width:140px;">終了日時</th>
+                <th style="min-width:50px;">自</th>
+                <th style="min-width:50px;">至</th>
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
                 <th>激レア</th>
@@ -479,7 +459,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
-
     const now = new Date();
 
     filteredData.forEach(item => {
@@ -490,7 +469,12 @@ function renderScheduleTable(tsvContent, containerId) {
         }
 
         const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
-        const endStr = `${formatDateJP(item.rawEnd)}<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        
+        const endDateFormatted = formatDateJP(item.rawEnd);
+        let endStr = endDateFormatted;
+        if (endDateFormatted !== '永続') {
+            endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        }
         
         const isPlatLeg = isPlatinumOrLegend(item);
 
@@ -540,6 +524,5 @@ function renderScheduleTable(tsvContent, containerId) {
         </table>
         </div>
     `;
-
     container.innerHTML = html;
 }

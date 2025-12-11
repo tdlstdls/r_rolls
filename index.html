@@ -13,9 +13,15 @@
             <h1>Rare Gacha Rolls</h1>
             <div class="header-actions">
                 <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
-                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">シミュレーションモードへ</button>
+                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">シミュレーションモードへ（未実装）</button>
                 <button id="toggle-schedule-btn" class="secondary" onclick="toggleSchedule()">スケジュールを表示</button>
             </div>
+        </div>
+
+        <div id="description-content" class="description-box hidden">
+            <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
+            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
+            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
         </div>
         
         <div class="controls">
@@ -34,12 +40,6 @@
                 <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
                 <button id="toggle-master-info-btn" class="secondary" onclick="toggleMasterInfo()">ガチャマスター情報を表示</button>
             </div>
-        </div>
-
-        <div id="description-content" class="description-box hidden">
-            <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
-            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
-            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
         </div>
 
         <div id="master-info-container" class="description-box hidden" style="font-size: 0.85em; line-height: 1.4; word-break: break-all;"></div>
