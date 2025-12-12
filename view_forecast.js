@@ -55,8 +55,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
         </div>
     `;
 
-    // ▼ 追加: 一括選択解除ボタン
-    // isFindListClearedフラグを見てボタンのラベルを変える
+    // 一括選択解除ボタン
     const toggleBtnText = (typeof isFindListCleared !== 'undefined' && isFindListCleared) ? "伝説・限定を表示" : "一括非表示";
     summaryHtml += `
         <div style="margin-bottom: 15px; text-align: left;">
@@ -90,11 +89,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
     columnConfigs.forEach((config, colIndex) => {
         if (!config) return;
 
+        // 同じIDのガチャが複数列あっても1回だけ表示
         if (processedGachaIds.has(config.id)) return;
         processedGachaIds.add(config.id);
 
-        const gachaName = config.name || "";
-        if (gachaName.includes("プラチナ") || gachaName.includes("レジェンド")) return;
+        // ※以前ここにあったプラチナ/レジェンドガチャの除外ロジックを削除しました
 
         // --- 準備: ターゲット情報の整理 ---
         const targetIds = new Set();
@@ -125,6 +124,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         });
 
+        // ターゲットが全くなければスキップ
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
 
         // --- 高速スキャン実行 ---
