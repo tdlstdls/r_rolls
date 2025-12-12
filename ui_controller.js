@@ -214,6 +214,91 @@ function addGachaColumn() {
     }
 }
 
+// ▼▼▼ 修正: スケジュールから一括追加（全件対象、IDで追加機能追加） ▼▼▼
+function addGachasFromSchedule() {
+    if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
+        alert("スケジュールデータがありません。");
+        return;
+    }
+
+    const scheduleData = parseGachaTSV(loadedTsvContent);
+    
+    // 1. 日付計算 (昨日) - schedule_logic.js の renderScheduleTable と同じ基準
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const y = yesterday.getFullYear();
+    const m = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const d = String(yesterday.getDate()).padStart(2, '0');
+    const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
+
+    // 2. フィルタリング: 昨日以降に終了するもの（開催中・未来含む）
+    let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+
+    if (activeScheduleItems.length === 0) {
+        alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
+        return;
+    }
+
+    // 3. ソート: スケジュール表の並び順に合わせる
+    // (プラチナ/レジェンドは最後、それ以外は日付順)
+    activeScheduleItems.sort((a, b) => {
+        // schedule_logic.js の isPlatinumOrLegend が参照できる前提、なければ簡易判定
+        const checkSpecial = (item) => {
+            if (typeof isPlatinumOrLegend === 'function') return isPlatinumOrLegend(item);
+            const n = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
+            return n.includes("プラチナガチャ") || n.includes("レジェンドガチャ");
+        };
+
+        const isSpecialA = checkSpecial(a);
+        const isSpecialB = checkSpecial(b);
+        
+        if (isSpecialA && !isSpecialB) return 1; // Aが特殊なら後ろ
+        if (!isSpecialA && isSpecialB) return -1; // Bが特殊ならAは前
+        
+        // どちらも同じ属性なら開始日順
+        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    });
+
+    // 4. 現在のテーブル情報から「スケジュールにないもの」を抽出して保持
+    // (スケジュールにあるものは、今作った activeScheduleItems で置き換えるため一旦削除)
+    const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
+    const keptGachas = [];
+    
+    tableGachaIds.forEach((idWithSuffix, index) => {
+        const baseId = idWithSuffix.replace(/[gfs]$/, '');
+        if (!scheduleIds.has(baseId)) {
+            keptGachas.push({
+                fullId: idWithSuffix,
+                count: uberAdditionCounts[index] || 0
+            });
+        }
+    });
+
+    // 5. スケジュール分をリスト化
+    const newScheduleGachas = activeScheduleItems.map(item => {
+        let newId = item.id.toString();
+        // 確定フラグがあれば 'g' を付与
+        if (item.guaranteed) newId += 'g';
+        return {
+            fullId: newId,
+            count: 0 // 新規追加なので追加数は0
+        };
+    });
+
+    // 6. 結合（スケジュール順のリストを先頭に、残した分を後ろに）
+    const finalGachaList = [...newScheduleGachas, ...keptGachas];
+
+    // 7. グローバル変数に反映
+    tableGachaIds = finalGachaList.map(item => item.fullId);
+    uberAdditionCounts = finalGachaList.map(item => item.count);
+
+    // 8. 再描画
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    updateMasterInfoView();
+    updateUrlParams();
+}
+
 function removeGachaColumn(index) {
     tableGachaIds.splice(index, 1);
     uberAdditionCounts.splice(index, 1);
@@ -263,6 +348,50 @@ function updateUberAddition(selectElement, index) {
     const val = parseInt(selectElement.value, 10);
     uberAdditionCounts[index] = (!isNaN(val)) ? val : 0;
     if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
+// add入力欄の表示切替
+function showAddInput(index) {
+    const trigger = document.getElementById(`add-trigger-${index}`);
+    const wrapper = document.getElementById(`add-select-wrapper-${index}`);
+    if(trigger) trigger.style.display = 'none';
+    if(wrapper) wrapper.style.display = 'inline-block';
+}
+
+// --- ID入力欄の制御 ---
+function showIdInput() {
+    const trigger = document.getElementById('add-id-trigger');
+    const container = document.getElementById('add-id-container');
+    if(trigger) trigger.style.display = 'none';
+    if(container) {
+        container.style.display = 'inline-block';
+        const inp = document.getElementById('gacha-id-input');
+        if(inp) inp.focus();
+    }
+}
+
+function addGachaById() {
+    const inp = document.getElementById('gacha-id-input');
+    if(!inp) return;
+    const val = inp.value.trim();
+    if(!val) return; // 空なら何もしない（あるいは閉じる処理を入れても良い）
+
+    const id = parseInt(val, 10);
+    if(isNaN(id)) { alert("数値を入力してください"); return; }
+
+    if(!gachaMasterData.gachas[id]) {
+        alert(`ガチャID: ${id} のデータが見つかりません。`);
+        return;
+    }
+
+    // 追加
+    tableGachaIds.push(id.toString());
+    uberAdditionCounts.push(0);
+
+    // 再描画
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    updateMasterInfoView();
+    updateUrlParams();
 }
 
 // --- SEED入力欄の制御 ---

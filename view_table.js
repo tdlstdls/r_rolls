@@ -163,7 +163,17 @@ function generateRollsTable() {
         }
 
         // 4. HTML生成
-        const buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>`;
+        // 修正: ボタン名称を「skdで追加」に変更
+        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
+        
+        // ID追加用のトリガーと入力フォーム
+        buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
+        buttonHtml += `<span id="add-id-container" style="display:none; margin-left:5px;">`;
+        buttonHtml += `<label for="gacha-id-input" style="font-weight:normal; font-size:0.9em;">ID:</label>`;
+        buttonHtml += `<input type="number" id="gacha-id-input" style="width:60px; padding:1px; font-size:0.9em;" onkeydown="if(event.key==='Enter') addGachaById()">`;
+        buttonHtml += `<button onclick="addGachaById()" class="secondary" style="margin-left:3px; padding:1px 6px; font-size:0.85em;">追加</button>`;
+        buttonHtml += `</span>`;
+
         let totalGachaCols = 0;
         tableGachaIds.forEach(idWithSuffix => {
             let id = idWithSuffix.replace(/[gfs]$/, '');
@@ -173,7 +183,6 @@ function generateRollsTable() {
         const calcColSpan = showSeedColumns ? 5 : 0;
         const totalTrackSpan = calcColSpan + totalGachaCols;
 
-        // 修正: NO.列を上下に分割。上段は空、下段にNO.を表示
         let tableHtml = `<table><thead>
             <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
             <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
@@ -226,12 +235,17 @@ function generateRollsTable() {
                     
                     const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px;">${gBtnLabel}</button>`;
                     
+                    // 修正: add入力欄の表示切替UI
                     const currentAddVal = uberAdditionCounts[index] || 0;
-                    let addSelect = `<select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width: 40px; margin: 0 2px; padding: 0; font-size: 0.85em;">`;
+                    const addLabelText = (currentAddVal > 0) ? `add:${currentAddVal}` : `add`;
+                    const triggerHtml = `<span id="add-trigger-${index}" style="font-size:0.8em; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabelText}</span>`;
+
+                    let addSelect = `<span id="add-select-wrapper-${index}" style="display:none;">`;
+                    addSelect += `<select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width: 40px; margin: 0 2px; padding: 0; font-size: 0.85em;">`;
                     for(let k=0; k<=19; k++){
                         addSelect += `<option value="${k}" ${k===currentAddVal ? 'selected':''}>${k}</option>`;
                     }
-                    addSelect += `</select>`;
+                    addSelect += `</select></span>`;
 
                     let selector = `<select onchange="updateGachaSelection(this, ${index})" style="width: 30px; cursor: pointer; opacity: 0; position: absolute; left:0; top:0; height: 100%; width: 100%;">`;
                     options.forEach(opt => {
@@ -242,7 +256,7 @@ function generateRollsTable() {
                     
                     const fakeSelectBtn = `<div style="width:20px; height:20px; background:#ddd; border:1px solid #999; display:flex; align-items:center; justify-content:center; border-radius:3px;">▼</div>`;
                     selectorArea = `<div style="position: relative; width: 24px; height: 24px;">${fakeSelectBtn}${selector}</div>`;
-                    controlArea = `<div style="margin-top:4px; display:flex; justify-content:center; align-items:center; gap:3px;">${gBtn}<span style="font-size:0.8em; color:#555;">add:</span>${addSelect}${removeBtn}</div>`;
+                    controlArea = `<div style="margin-top:4px; display:flex; justify-content:center; align-items:center; gap:3px;">${gBtn}${triggerHtml}${addSelect}${removeBtn}</div>`;
                 } else {
                     selectorArea = `<div style="width: 24px; height: 24px;"></div>`;
                     let statusTextParts = [];
@@ -265,7 +279,6 @@ function generateRollsTable() {
             return html;
         };
 
-        // 修正: 2行目のヘッダー生成時にNO.列を追加
         tableHtml += `<th class="col-no">NO.</th>` + generateHeader(true) + `<th class="col-no">NO.</th>` + generateHeader(false) + `</tr></thead><tbody>`;
 
         // 内部ヘルパー: アドレスフォーマット
