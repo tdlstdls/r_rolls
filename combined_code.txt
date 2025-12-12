@@ -1267,7 +1267,11 @@ const gacha_series = [
     {"series_id":71,"name":"アウトレット", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":705},
     {"series_id":72,"name":"範馬刃牙", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":615},
     {"series_id":73,"name":"ソニック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":616},
-    {"series_id":74,"name":"仮2026新年超極(956add8)", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101}
+    {"series_id":75,"name":"仮2026新年超極1(956add8)", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
+    {"series_id":76,"name":"仮2026新年超極2", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
+    {"series_id":77,"name":"仮2026新年超極3", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
+    {"series_id":78,"name":"仮2026新年超極4", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101}
+
 ];
 
 ====================
@@ -1288,9 +1292,15 @@ FILE: index.html
             <h1>Rare Gacha Rolls</h1>
             <div class="header-actions">
                 <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
-                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">シミュレーションモードへ</button>
+                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">SIMモードへ（未実装）</button>
                 <button id="toggle-schedule-btn" class="secondary" onclick="toggleSchedule()">スケジュールを表示</button>
             </div>
+        </div>
+
+        <div id="description-content" class="description-box hidden">
+            <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
+            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
+            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
         </div>
         
         <div class="controls">
@@ -1309,12 +1319,6 @@ FILE: index.html
                 <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
                 <button id="toggle-master-info-btn" class="secondary" onclick="toggleMasterInfo()">ガチャマスター情報を表示</button>
             </div>
-        </div>
-
-        <div id="description-content" class="description-box hidden">
-            <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
-            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
-            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
         </div>
 
         <div id="master-info-container" class="description-box hidden" style="font-size: 0.85em; line-height: 1.4; word-break: break-all;"></div>
@@ -1595,13 +1599,19 @@ FILE: schedule_logic.js
  * gatya.tsvの解析とスケジュール表・ガントチャートのレンダリング
  */
 
-// YYYYMMDD -> YYYY年MM月DD日
+// YYYYMMDD -> M/D (年は無視、20300101は「永続」)
 function formatDateJP(dateStr) {
     if (!dateStr || dateStr.length < 8) return dateStr;
-    const y = dateStr.substring(0, 4);
-    const m = dateStr.substring(4, 6);
-    const d = dateStr.substring(6, 8);
-    return `${y}年${m}月${d}日`;
+    
+    // 特殊対応: 2030/1/1 (20300101) は「永続」と表示
+    if (dateStr === '20300101') {
+        return '永続';
+    }
+
+    // 年は切り捨てて 月/日 形式に変換 (parseIntで0埋めを除去: 05月 -> 5)
+    const m = parseInt(dateStr.substring(4, 6), 10);
+    const d = parseInt(dateStr.substring(6, 8), 10);
+    return `${m}/${d}`;
 }
 
 // HHMM -> HH:MM
@@ -1670,7 +1680,6 @@ function calcTextWidth(text) {
 function parseGachaTSV(tsv) {
     const lines = tsv.split('\n');
     const schedule = [];
-
     lines.forEach(line => {
         if (line.trim().startsWith('[') || !line.trim()) return;
 
@@ -1707,21 +1716,18 @@ function parseGachaTSV(tsv) {
         }
 
         const base = validBlockIndex;
-        
         // ガチャ情報抽出
         const gachaId = cols[base];
-        const rateRare = cols[base + 6]; 
+        const rateRare = cols[base + 6];
         const rateSupa = cols[base + 8]; 
         const rateUber = cols[base + 10]; 
-        const guarFlag = cols[base + 11]; 
+        const guarFlag = cols[base + 11];
         const rateLegend = cols[base + 12]; 
-        const detail = cols[base + 14];   
-
+        const detail = cols[base + 14];
         const guaranteed = (guarFlag === '1' || parseInt(guarFlag) > 0);
 
         let seriesName = "";
-        let tsvName = detail || ""; 
-        
+        let tsvName = detail || "";
         if (typeof gachaMasterData !== 'undefined' && gachaMasterData.gachas[gachaId]) {
             seriesName = gachaMasterData.gachas[gachaId].name;
         } else {
@@ -1758,7 +1764,6 @@ function parseGachaTSV(tsv) {
  */
 function findDefaultGachaState(data) {
     const now = new Date();
-
     // 1. フィルタリング (終了していない & プラチナ・レジェンド除外)
     let candidates = data.filter(item => {
         if (isPlatinumOrLegend(item)) return false; // 通常ロールズ対象外を除外
@@ -1766,22 +1771,18 @@ function findDefaultGachaState(data) {
         const endDt = parseDateTime(item.rawEnd, item.endTime);
         return endDt >= now; // 現在時刻を過ぎていない
     });
-
     // 2. 開始日順にソート
     candidates.sort((a, b) => {
         const startA = parseDateTime(a.rawStart, a.startTime);
         const startB = parseDateTime(b.rawStart, b.startTime);
         return startA - startB;
     });
-
     if (candidates.length === 0) return null;
 
     // 3. 最も開催が近い(または開催中の)ものを選択
     const target = candidates[0];
-
     // 確定フラグがあれば初期表示を '11g' (11連確定) にする
     const recommendedRollType = target.guaranteed ? '11g' : '11';
-
     return {
         gacha: target,
         gachaId: target.id,
@@ -1793,7 +1794,6 @@ function findDefaultGachaState(data) {
 function saveGanttImage() {
     const element = document.querySelector('.gantt-chart-container');
     if (!element) return;
-
     // ガントチャートのコンテンツ幅を取得
     const header = element.querySelector('.gantt-header');
     if (!header) return;
@@ -1804,13 +1804,11 @@ function saveGanttImage() {
     
     const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
     const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-
     // キャプチャ用に一時的にスタイル変更
     element.style.overflow = 'visible';
     element.style.width = contentWidth; 
     
     if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
-
     html2canvas(element).then(canvas => {
         // スタイル復元
         element.style.overflow = originalOverflow;
@@ -1835,12 +1833,10 @@ function renderGanttChart(data) {
     const filteredData = data.filter(item => !isPlatinumOrLegend(item));
 
     if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
-
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0); 
     const yesterdayInt = getDateInt(yesterday);
-
     const activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
     
     if (activeData.length === 0) {
@@ -1850,7 +1846,6 @@ function renderGanttChart(data) {
     // 表示範囲の決定
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
-
     // 動的幅計算用の最大幅変数
     let maxLabelTextWidth = 0;
 
@@ -1863,6 +1858,7 @@ function renderGanttChart(data) {
 
         // --- 幅計算ロジック ---
         let displayName = item.seriesName;
+        
         if (item.guaranteed) displayName += " [確定]";
         // 表示名の長さを計算
         const textW = calcTextWidth(displayName);
@@ -1870,25 +1866,22 @@ function renderGanttChart(data) {
             maxLabelTextWidth = textW;
         }
     });
-
     // 幅の設定
     // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
     if (labelWidth > 320) labelWidth = 320; // 上限設定
 
     let minDate = parseDateStr(String(minDateInt));
-    
     // 表示開始日を調整
     const viewStartDate = new Date(yesterday);
-    viewStartDate.setDate(viewStartDate.getDate() - 2); 
+    viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) {
         minDate = viewStartDate;
     }
 
     // --- 終了日の決定 ---
     let limitDate = new Date(minDate);
-    limitDate.setDate(limitDate.getDate() + 35); 
-    
+    limitDate.setDate(limitDate.getDate() + 35);
     let chartEnd = new Date(maxEndDateTime);
     if (chartEnd > limitDate) {
         chartEnd = limitDate;
@@ -1897,21 +1890,16 @@ function renderGanttChart(data) {
     // 右端
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
-
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
     
     if (totalDays <= 0) return '';
-
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    
     // 全体幅計算
     const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
-
     // 現在時刻線の位置計算
     const now = new Date();
     let currentLineHtml = '';
-    
     if (now >= minDate && now < chartEnd) {
         const diffNowMs = now - minDate;
         const currentLineLeftPx = (diffNowMs / msPerDay) * dayWidth;
@@ -1920,7 +1908,6 @@ function renderGanttChart(data) {
 
     let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
         <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
-    
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(minDate);
         d.setDate(d.getDate() + i);
@@ -1968,7 +1955,6 @@ function renderGanttChart(data) {
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
-
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
 
         // 行のスタイル判定
@@ -2038,7 +2024,6 @@ function renderScheduleTable(tsvContent, containerId) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayInt = getDateInt(yesterday);
-    
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
 
     filteredData.sort((a, b) => {
@@ -2050,7 +2035,6 @@ function renderScheduleTable(tsvContent, containerId) {
         
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     let html = `
         <h3 style="margin-top:0;">開催スケジュール</h3>
         ${ganttHtml}
@@ -2059,8 +2043,8 @@ function renderScheduleTable(tsvContent, containerId) {
         <table class="schedule-table">
         <thead>
             <tr>
-                <th style="min-width:140px;">開始日時</th>
-                <th style="min-width:140px;">終了日時</th>
+                <th style="min-width:50px;">自</th>
+                <th style="min-width:50px;">至</th>
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
                 <th>激レア</th>
@@ -2071,7 +2055,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
-
     const now = new Date();
 
     filteredData.forEach(item => {
@@ -2082,7 +2065,12 @@ function renderScheduleTable(tsvContent, containerId) {
         }
 
         const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
-        const endStr = `${formatDateJP(item.rawEnd)}<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        
+        const endDateFormatted = formatDateJP(item.rawEnd);
+        let endStr = endDateFormatted;
+        if (endDateFormatted !== '永続') {
+            endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        }
         
         const isPlatLeg = isPlatinumOrLegend(item);
 
@@ -2132,7 +2120,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </table>
         </div>
     `;
-
     container.innerHTML = html;
 }
 
@@ -2377,7 +2364,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    flex-wrap: wrap; /* モバイル対応 */
+    flex-wrap: wrap;
 }
 
 h1 {
@@ -2480,12 +2467,16 @@ button.active {
    ========================================= */
 #rolls-table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 80vh;
+    border: 1px solid #ddd;
 }
 
 table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 0;
     font-size: 12px;
 }
 
@@ -2499,6 +2490,15 @@ th, td {
 th {
     background-color: #f8f9fa;
     font-weight: bold;
+    /* ヘッダー固定設定 */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    /* 修正: 上部の罫線を復活 */
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    /* sticky時の境界線を綺麗に見せるための微調整 */
+    box-shadow: 0 1px 0 #ddd; 
 }
 
 /* 列ごとのスタイル */
@@ -2576,7 +2576,8 @@ th {
 
 .schedule-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     margin-top: 0; 
     font-size: 14px;
 }
@@ -2600,6 +2601,9 @@ th {
     position: sticky;
     top: 0;
     z-index: 10;
+    /* 修正: 上部の罫線を復活 */
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ccc;
 }
 
 .row-ended {
@@ -2783,7 +2787,7 @@ th {
     .header-actions {
         width: 100%;
         gap: 5px;
-        flex-wrap: wrap; /* ボタンが多い場合は折り返し */
+        flex-wrap: wrap;
     }
 
     body {
@@ -2853,14 +2857,15 @@ th {
         overflow: hidden;
     }
     
+    /* ガチャヘッダー内の調整 */
     .gacha-header-wrapper {
         gap: 2px;
+        justify-content: flex-start !important;
+        width: 100%;
     }
     
-    .gacha-header-wrapper select,
-    .gacha-header-wrapper .uber-add-select {
-        transform: scale(0.9);
-        transform-origin: left center;
+    .gacha-header-wrapper select {
+        transform: none !important;
     }
     
     th div[style*="margin-top"] {
@@ -3896,7 +3901,7 @@ function updateModeButtonState() {
             btn.textContent = "表示モードへ";
             btn.classList.add('active');
         } else {
-            btn.textContent = "シミュレーションモードへ";
+            btn.textContent = "SIMモードへ（未実装）"; // 修正
             btn.classList.remove('active');
         }
     }
