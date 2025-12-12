@@ -117,6 +117,12 @@ function initializeDefaultGachas() {
             }
         }
     }
+
+    // ▼▼▼ 修正: SEED値がデフォルト(12345)の場合は入力欄を表示する ▼▼▼
+    const seedEl = document.getElementById('seed');
+    if (seedEl && (seedEl.value === '12345' || seedEl.value === '')) {
+        showSeedInput();
+    }
 }
 
 // --- モード切替 ---
@@ -214,7 +220,7 @@ function addGachaColumn() {
     }
 }
 
-// ▼▼▼ 修正: スケジュールから一括追加（全件対象、IDで追加機能追加） ▼▼▼
+// ▼▼▼ 修正: スケジュールから一括追加（IDで追加機能は維持） ▼▼▼
 function addGachasFromSchedule() {
     if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
         alert("スケジュールデータがありません。");
@@ -261,7 +267,6 @@ function addGachasFromSchedule() {
     });
 
     // 4. 現在のテーブル情報から「スケジュールにないもの」を抽出して保持
-    // (スケジュールにあるものは、今作った activeScheduleItems で置き換えるため一旦削除)
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
     
@@ -286,8 +291,8 @@ function addGachasFromSchedule() {
         };
     });
 
-    // 6. 結合（スケジュール順のリストを先頭に、残した分を後ろに）
-    const finalGachaList = [...newScheduleGachas, ...keptGachas];
+    // ▼▼▼ 修正: 結合順序を変更 (残した分を左、スケジュール分を右) ▼▼▼
+    const finalGachaList = [...keptGachas, ...newScheduleGachas];
 
     // 7. グローバル変数に反映
     tableGachaIds = finalGachaList.map(item => item.fullId);
