@@ -224,17 +224,21 @@ function generateRollsTable() {
                 let controlArea = '';
 
                 if (isInteractive) {
-                    const removeBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})">x</button>`;
+                    // ボタンサイズ調整: ガチャ名称(約11-12px)に合わせてサイズを統一
+                    const removeBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})" style="font-size:11px; padding:2px 6px; margin-left: 5px;">x</button>`;
                     let gBtnLabel = 'G';
                     if (suffix === 'g') gBtnLabel = '11G';
                     else if (suffix === 'f') gBtnLabel = '15G';
                     else if (suffix === 's') gBtnLabel = '7G';
                     
-                    const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px;">${gBtnLabel}</button>`;
+                    // Gボタン: フォントサイズ11px, パディング調整
+                    const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px; font-size:11px; padding:2px 6px;">${gBtnLabel}</button>`;
                     
                     const currentAddVal = uberAdditionCounts[index] || 0;
                     const addLabelText = (currentAddVal > 0) ? `add:${currentAddVal}` : `add`;
-                    const triggerHtml = `<span id="add-trigger-${index}" style="font-size:0.8em; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabelText}</span>`;
+                    // add文字: 12pxに変更
+                    const triggerHtml = `<span id="add-trigger-${index}" style="font-size:12px; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabelText}</span>`;
+                    
                     let addSelect = `<span id="add-select-wrapper-${index}" style="display:none;">`;
                     addSelect += `<select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width: 40px; margin: 0 2px; padding: 0; font-size: 0.85em;">`;
                     for(let k=0; k<=19; k++){
@@ -528,13 +532,15 @@ function generateRollsTable() {
         // 行の生成ループ
         for(let i=0; i<numRolls; i++){
             const seedIndexA = i*2, seedIndexB = i*2+1;
-            // スタイル判定 (Orange優先)
+            // スタイル判定 (Yellow優先)
+            // 両方満たす場合(slot 12等)は黄色になる
             let styleNoA = '';
-            if (isSimpleOrange(seedIndexA) || isConsecutiveOrange(seedIndexA)) styleNoA = 'style="background-color: #ff9800;"';
-            else if (isSimpleYellow(seedIndexA) || isConsecutiveYellow(seedIndexA)) styleNoA = 'style="background-color: #ffeb3b;"';
+            if (isSimpleYellow(seedIndexA) || isConsecutiveYellow(seedIndexA)) styleNoA = 'style="background-color: #ffeb3b;"';
+            else if (isSimpleOrange(seedIndexA) || isConsecutiveOrange(seedIndexA)) styleNoA = 'style="background-color: #ff9800;"';
+
             let styleNoB = '';
-            if (isSimpleOrange(seedIndexB) || isConsecutiveOrange(seedIndexB)) styleNoB = 'style="background-color: #ff9800;"';
-            else if (isSimpleYellow(seedIndexB) || isConsecutiveYellow(seedIndexB)) styleNoB = 'style="background-color: #ffeb3b;"';
+            if (isSimpleYellow(seedIndexB) || isConsecutiveYellow(seedIndexB)) styleNoB = 'style="background-color: #ffeb3b;"';
+            else if (isSimpleOrange(seedIndexB) || isConsecutiveOrange(seedIndexB)) styleNoB = 'style="background-color: #ff9800;"';
 
             let rowHtml = `<tr><td class="col-no" ${styleNoA}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexA);
