@@ -19,8 +19,7 @@ let isScheduleAnalyzed = false;
 // Find機能の状態管理
 let hiddenFindIds = new Set(); // 自動ターゲットのうち、非表示にするID
 let userTargetIds = new Set(); // 自動ターゲット以外で、表示するID (手動ターゲット)
-let isFindListCleared = false;
-// 一括非表示状態のフラグ
+let isFindListCleared = false; // 一括非表示状態のフラグ
 
 // 超激レア追加シミュレーション用 (配列に変更してindex管理を容易にする)
 let uberAdditionCounts = [];
@@ -41,22 +40,17 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
-            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
                         if (gachaMasterData && 
                             gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
-         
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
-                           
                                 gachaMasterData.gachas[gId].name += " [確定]";
-             
-                           }
+                            }
                         }
                     }
-        
                 }
             });
             isScheduleAnalyzed = true;
@@ -79,14 +73,12 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
-              
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
-                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); // 初期化
                     });
@@ -240,8 +232,10 @@ function addGachasFromSchedule() {
     const m = String(yesterday.getMonth() + 1).padStart(2, '0');
     const d = String(yesterday.getDate()).padStart(2, '0');
     const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
+
     // 2. フィルタリング: 昨日以降に終了するもの（開催中・未来含む）
     let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+
     if (activeScheduleItems.length === 0) {
         alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
         return;
@@ -266,6 +260,7 @@ function addGachasFromSchedule() {
         // どちらも同じ属性なら開始日順
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
+
     // 4. 現在のテーブル情報から「スケジュールにないもの」を抽出して保持
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
@@ -278,6 +273,7 @@ function addGachasFromSchedule() {
             });
         }
     });
+
     // 5. スケジュール分をリスト化
     const newScheduleGachas = activeScheduleItems.map(item => {
         let newId = item.id.toString();
@@ -288,11 +284,14 @@ function addGachasFromSchedule() {
             count: 0 // 新規追加なので追加数は0
         };
     });
-    // ▼▼▼ 修正: 結合順序を変更 (残した分を左、スケジュール分を右) ▼▼▼
+
+    // 6. 結合 (残した分を左、スケジュール分を右)
     const finalGachaList = [...keptGachas, ...newScheduleGachas];
+
     // 7. グローバル変数に反映
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
+
     // 8. 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
@@ -305,6 +304,23 @@ function removeGachaColumn(index) {
     // 対応する追加数データも削除して詰める
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
+}
+
+// ★★★ 追加: 一番左以外を削除する機能 ★★★
+function resetToFirstGacha() {
+    if (tableGachaIds.length <= 1) {
+        // 1つ以下なら何もしない
+        return;
+    }
+
+    // 0番目の要素だけ残して新しい配列にする
+    tableGachaIds = [tableGachaIds[0]];
+    uberAdditionCounts = [uberAdditionCounts[0]];
+
+    // 再描画
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    updateMasterInfoView();
+    updateUrlParams();
 }
 
 function updateGachaSelection(selectElement, index) {
@@ -440,7 +456,7 @@ function toggleDescription() {
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
         toggle.textContent = isHidden ?
-            '概要を表示' : '概要を非表示';
+        '概要を表示' : '概要を非表示';
     }
 }
 
@@ -454,7 +470,6 @@ function toggleFindInfo() {
         else container.classList.add('hidden');
     }
     if (btn) btn.textContent = showFindInfo ? 'Findを非表示' : 'Findを表示';
-    
     // ▼ 追加: ボタン切り替え時にメインテーブルも再描画してハイライトを反映させる
     if (typeof generateRollsTable === 'function') {
         generateRollsTable();
@@ -548,9 +563,7 @@ function toggleAllFindVisibility() {
                     {
                         const cid = c.id;
                         if (isAutomaticTarget(cid)) {
-                           
                             hiddenFindIds.add(cid);
-                   
                         }
                     });
                 }
@@ -561,7 +574,7 @@ function toggleAllFindVisibility() {
             const addCount = (colIndex >= 0 
             && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
             for(let k=1; k<=addCount; k++){
-                hiddenFindIds.add(`sim-new-${k}`);
+               hiddenFindIds.add(`sim-new-${k}`);
             }
  
         });
@@ -605,6 +618,7 @@ function toggleSchedule() {
     const mainControls = document.getElementById('main-controls');
     const masterInfoContainer = document.getElementById('master-info-container');
     const findContainer = document.getElementById('forecast-summary-area');
+
     if (isScheduleMode) {
         scheduleBtn.textContent = 'ロールズに戻る';
         scheduleBtn.classList.add('active');
