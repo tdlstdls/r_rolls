@@ -6,7 +6,6 @@
 function generateRollsTable() {
     try {
         if (Object.keys(gachaMasterData.gachas).length === 0) return;
-
         const seedEl = document.getElementById('seed');
         if(!seedEl) return;
         
@@ -16,7 +15,8 @@ function generateRollsTable() {
              seedEl.value = "12345";
         }
         
-        const numRolls = currentRolls; // グローバル変数
+        const numRolls = currentRolls;
+        // グローバル変数
 
         if (typeof Xorshift32 === 'undefined' || typeof rollWithSeedConsumptionFixed === 'undefined') {
             document.getElementById('rolls-table-container').innerHTML = 
@@ -28,10 +28,8 @@ function generateRollsTable() {
         const rngForSeeds = new Xorshift32(initialSeed);
         // テーブル表示用に必要な分だけ生成 (300行分 + バッファ)
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-
         // データの計算 (表示用ロジック)
         const tableData = Array(numRolls * 2).fill(null).map(() => []);
-
         // 列ごとの設定を生成
         const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
             let id = idWithSuffix;
@@ -55,7 +53,6 @@ function generateRollsTable() {
             }
             
             config._guaranteedNormalRolls = guaranteedNormalRolls;
-
             // 超激レア追加ロジック
             const addCount = uberAdditionCounts[colIndex] || 0;
             if (addCount > 0) {
@@ -74,14 +71,13 @@ function generateRollsTable() {
         const summaryHtml = (typeof generateFastForecast === 'function') 
             ? generateFastForecast(initialSeed, columnConfigs) 
             : '';
-
         // 2. テーブル計算実行 (Column Base)
         columnConfigs.forEach((config, colIndex) => {
             if (!config) return;
             let prevDrawA = null, prevDrawB = null;
             for (let i = 0; i < numRolls; i++) {
                 const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
-                
+    
                 const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
                 const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
                 
@@ -101,7 +97,6 @@ function generateRollsTable() {
                 }
             }
         });
-
         // 3. シミュレーションモードのハイライト計算
         const highlightMap = new Map();
         const guarHighlightMap = new Map();
@@ -112,7 +107,6 @@ function generateRollsTable() {
                 let rngForText = new Xorshift32(initialSeed);
                 let currentSeedIndex = 0;
                 let lastDrawForHighlight = { rarity: null, charId: null };
-
                 for (const sim of simConfigs) {
                     if (gachaMasterData.gachas[sim.id]) sim.gachaConfig = gachaMasterData.gachas[sim.id];
                     if (!sim.gachaConfig) continue;
@@ -120,10 +114,14 @@ function generateRollsTable() {
                     let normalRolls = sim.rolls; 
                     let isGuaranteedStep = false;
                     if (sim.g) {
-                        if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
-                        else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
-                        else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
-                        else { normalRolls = sim.rolls; }
+                        if (sim.rolls === 15) { normalRolls = 14;
+                            isGuaranteedStep = true; }
+                        else if (sim.rolls === 7) { normalRolls = 6;
+                            isGuaranteedStep = true; }
+                        else if (sim.rolls === 11) { normalRolls = 10;
+                            isGuaranteedStep = true; }
+                        else { normalRolls = sim.rolls;
+                        }
                     }
 
                     if (isGuaranteedStep) {
@@ -140,7 +138,6 @@ function generateRollsTable() {
                              for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
                         }
                         if(startSeedIndex < numRolls*2) highlightMap.set(`${startSeedIndex}G`, sim.id);
-
                         if(currentSeedIndex < seeds.length && typeof rollGuaranteedUber !== 'undefined') {
                             const gr = rollGuaranteedUber(currentSeedIndex, sim.gachaConfig, seeds);
                             currentSeedIndex += gr.seedsConsumed;
@@ -158,16 +155,18 @@ function generateRollsTable() {
                         }
                     }
                 }
-                finalSeedForUpdate = rngForText.seed; // UIコントローラで参照
+                finalSeedForUpdate = rngForText.seed;
+                // UIコントローラで参照
             }
         }
 
         // 4. HTML生成
-        // 修正: ボタン名称を「skdで追加」に変更
-        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
+        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;"
+            onclick="addGachasFromSchedule()">skdで追加</button>`;
         
         // ID追加用のトリガーと入力フォーム
-        buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
+        buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;"
+            onclick="showIdInput()">IDで追加</span>`;
         buttonHtml += `<span id="add-id-container" style="display:none; margin-left:5px;">`;
         buttonHtml += `<label for="gacha-id-input" style="font-weight:normal; font-size:0.9em;">ID:</label>`;
         buttonHtml += `<input type="number" id="gacha-id-input" style="width:60px; padding:1px; font-size:0.9em;" onkeydown="if(event.key==='Enter') addGachaById()">`;
@@ -186,7 +185,6 @@ function generateRollsTable() {
         let tableHtml = `<table><thead>
             <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
             <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
-        
         // ヘッダー部HTML生成関数（内部）
         const generateHeader = (isInteractive) => {
             let html = `
@@ -196,7 +194,6 @@ function generateRollsTable() {
                 <th class="${calcColClass}">ReRoll</th>
                 <th class="${calcColClass}">Guar</th>
             `;
-
             tableGachaIds.forEach((idWithSuffix, index) => {
                 let id = idWithSuffix;
                 let suffix = '';
@@ -235,18 +232,16 @@ function generateRollsTable() {
                     
                     const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px;">${gBtnLabel}</button>`;
                     
-                    // 修正: add入力欄の表示切替UI
                     const currentAddVal = uberAdditionCounts[index] || 0;
                     const addLabelText = (currentAddVal > 0) ? `add:${currentAddVal}` : `add`;
                     const triggerHtml = `<span id="add-trigger-${index}" style="font-size:0.8em; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabelText}</span>`;
-
                     let addSelect = `<span id="add-select-wrapper-${index}" style="display:none;">`;
                     addSelect += `<select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width: 40px; margin: 0 2px; padding: 0; font-size: 0.85em;">`;
                     for(let k=0; k<=19; k++){
-                        addSelect += `<option value="${k}" ${k===currentAddVal ? 'selected':''}>${k}</option>`;
+                        addSelect += `<option value="${k}" ${k===currentAddVal ?
+                        'selected':''}>${k}</option>`;
                     }
                     addSelect += `</select></span>`;
-
                     let selector = `<select onchange="updateGachaSelection(this, ${index})" style="width: 30px; cursor: pointer; opacity: 0; position: absolute; left:0; top:0; height: 100%; width: 100%;">`;
                     options.forEach(opt => {
                         const selected = (opt.value == id) ? 'selected' : '';
@@ -265,7 +260,6 @@ function generateRollsTable() {
                     else if (suffix === 's') statusTextParts.push('7G');
                     const currentAddVal = uberAdditionCounts[index] || 0;
                     if (currentAddVal > 0) statusTextParts.push(`add:${currentAddVal}`);
-                    
                     if (statusTextParts.length > 0) {
                         controlArea = `<div style="margin-top:4px; font-size:0.85em; color:#555; height: 21px; display: flex; align-items: center; justify-content: center;">${statusTextParts.join(' / ')}</div>`;
                     } else {
@@ -273,14 +267,14 @@ function generateRollsTable() {
                     }
                 }
                 
-                const cls = isGuaranteed ? '' : 'class="gacha-column"';
+                const cls = isGuaranteed ?
+                    '' : 'class="gacha-column"';
                 html += `<th ${cls} ${isGuaranteed?'colspan="2"':''}><div class="gacha-header-wrapper" style="display: flex; align-items: center; justify-content: center; gap: 6px; position: relative;">${selectorArea}<div style="text-align: left; line-height: 1.25;">${displayHTML}</div></div>${controlArea}</th>`;
             });
             return html;
         };
 
         tableHtml += `<th class="col-no">NO.</th>` + generateHeader(true) + `<th class="col-no">NO.</th>` + generateHeader(false) + `</tr></thead><tbody>`;
-
         // 内部ヘルパー: アドレスフォーマット
         const formatAddress = (idx) => {
             if (idx === null || idx === undefined) return '';
@@ -292,7 +286,6 @@ function generateRollsTable() {
         // 内部ヘルパー: 詳細計算セルの生成
         const generateDetailedCalcCells = (seedIndex) => {
             if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
-
             const firstGachaIdWithSuffix = tableGachaIds[0];
             if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
             
@@ -311,7 +304,6 @@ function generateRollsTable() {
             }
 
             if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
-
             const sNum1 = seedIndex + 1;
             const sNum2 = seedIndex + 2;
             const sVal_0 = seeds[seedIndex];
@@ -328,7 +320,6 @@ function generateRollsTable() {
             else if (rVal < rareRate + superRate + uberRate + legendRate) rType = 'legend';
             
             const colRarity = `<td>(S${sNum1})<br>${rVal}<br>(${rType})</td>`;
-
             const pool = config.pool[rType] || [];
             let colSlot = '<td>-</td>';
             let slotVal = '-';
@@ -357,7 +348,8 @@ function generateRollsTable() {
             let tempDraw = null;
             let validSim = true;
             for(let k=0; k<10; k++) {
-                if (tempSeedIdx + 1 >= seeds.length) { validSim = false; break; }
+                if (tempSeedIdx + 1 >= seeds.length) { validSim = false;
+                break; }
                 const rr = rollWithSeedConsumptionFixed(tempSeedIdx, config, seeds, tempDraw);
                 if (rr.seedsConsumed === 0) { validSim = false; break; }
                 tempSeedIdx += rr.seedsConsumed;
@@ -379,15 +371,18 @@ function generateRollsTable() {
         // 内部ヘルパー: セル生成
         const generateCell = (seedIndex, id, colIndex) => {
             if(!tableData[seedIndex] || !tableData[seedIndex][colIndex]) return `<td class="gacha-cell gacha-column">N/A</td>`;
-
             const fullRoll = tableData[seedIndex][colIndex].roll;
             if(!fullRoll) return `<td>N/A</td>`;
             const gachaConfig = gachaMasterData.gachas[id];
             const gachaName = gachaConfig ? gachaConfig.name : "";
             const isPlatOrLegend = gachaName.includes("プラチナ") || gachaName.includes("レジェンド");
             let isLimited = false;
+            // 限定キャラ判定
+            const charId = fullRoll.finalChar.id; // ID取得
+            const charIdStr = String(charId);     // 文字列ID
+
             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-                if (limitedCats.includes(parseInt(fullRoll.finalChar.id)) || limitedCats.includes(fullRoll.finalChar.id.toString())) {
+                if (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charIdStr)) {
                     isLimited = true;
                 }
             }
@@ -403,10 +398,13 @@ function generateRollsTable() {
             }
 
             let style = '';
+            // --- 背景色の決定 ---
             if (isSimRoute) {
+                // シミュレーションルート上のハイライト
                 if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend') style = 'background-color: #32CD32;';
                 else style = 'background-color: #98FB98;';
             } else {
+                // 通常モードの色分け
                 if (isLimited) style = 'background-color: #66FFFF;';
                 else if (isPlatOrLegend) style = '';
                 else {
@@ -422,20 +420,44 @@ function generateRollsTable() {
                 }
             }
 
+            // ▼▼▼ 追加: Find機能がONの時、ターゲット（取得可能として表示されているキャラ）を黄緑にする ▼▼▼
+            if (typeof showFindInfo !== 'undefined' && showFindInfo && !isSimRoute) {
+                // 1. 自動ターゲット（伝説、限定、新規）かどうか
+                let isAuto = false;
+                if (fullRoll.rarity === 'legend') isAuto = true;
+                else if (isLimited) isAuto = true;
+                else if (charIdStr.startsWith('sim-new-')) isAuto = true;
+
+                // 2. 非表示リストに入っているか
+                const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
+                
+                // 3. 手動ターゲットに入っているか
+                const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
+
+                // 「自動ターゲットかつ非表示でない」または「手動ターゲット」の場合にハイライト
+                if ((isAuto && !isHidden) || isManual) {
+                    style = 'background-color: #adff2f; font-weight: bold;'; // 黄緑色 (GreenYellow)
+                }
+            }
+            // ▲▲▲ 追加終了 ▲▲▲
+
             let content = fullRoll.finalChar.name;
             if (!isSimulationMode) {
                 if (fullRoll.isRerolled) {
                     const s2Val = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
                     const s3Val = (seedIndex + 2 < seeds.length) ? seeds[seedIndex + 2] : null;
-
                     const originalName = fullRoll.originalChar.name;
                     const finalName = fullRoll.finalChar.name;
                     let originalHtml = originalName;
                     if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
                     let finalHtml = finalName;
                     if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
+                    
                     const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-                    const addr = formatAddress(nextSeedIdx);
+                    let addr = formatAddress(nextSeedIdx);
+                    if (fullRoll.isForceDuplicate) {
+                        addr = 'R' + addr;
+                    }
                     content = `${originalHtml}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${finalHtml}`;
                 } else {
                     const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
@@ -444,17 +466,77 @@ function generateRollsTable() {
             } else {
                 if (fullRoll.isRerolled) {
                     const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-                    const addr = formatAddress(nextSeedIdx);
+                    let addr = formatAddress(nextSeedIdx);
+                    if (fullRoll.isForceDuplicate) {
+                        addr = 'R' + addr;
+                    }
                     content = `${fullRoll.originalChar.name}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${fullRoll.finalChar.name}`;
                 }
             }
             return `<td class="gacha-cell gacha-column${hlClass}" style="${style}">${content}</td>`;
         };
 
+        // --- No列ハイライト判定関数 (単純被り: Sn vs Sn+2) ---
+        const isSimpleYellow = (currIdx) => {
+            if (currIdx < 2) return false;
+            const n = currIdx - 2; 
+            if (n + 3 >= seeds.length) return false;
+            if (seeds[n] % 10000 > 6969 || seeds[n+2] % 10000 > 6969) return false;
+            return (seeds[n+1] % 25) === (seeds[n+3] % 25);
+        };
+
+        const isSimpleOrange = (currIdx) => {
+            if (currIdx < 2) return false;
+            const n = currIdx - 2; 
+            if (n + 3 >= seeds.length) return false;
+            if (seeds[n] % 10000 > 6969 || seeds[n+2] % 10000 > 6969) return false;
+            return (seeds[n+1] % 25) === (24 - (seeds[n+3] % 25));
+        };
+        // --- No列ハイライト判定関数 (連続被り: Sn vs Sn+2 vs Sn+5) ---
+        // currIdx は Sn+5 (Row 3) に相当
+        const isConsecutiveYellow = (currIdx) => {
+            if (currIdx < 5) return false;
+            const n = currIdx - 5;
+            if (currIdx + 1 >= seeds.length) return false;
+            // Rarity checks
+            if (seeds[n] % 10000 > 6969) return false;
+            if (seeds[n+2] % 10000 > 6969) return false;
+            if (seeds[currIdx] % 10000 > 6969) return false;
+            // 1st Dupe must be Normal (Yellow-type) logic as per spec: "Sn+1 % 25 == Sn+3 % 25"
+            if (seeds[n+1] % 25 !== seeds[n+3] % 25) return false;
+            // 2nd Dupe Yellow check: Sn+4 (re-roll slot using reduced pool 24) vs Sn+6 (current row slot 25)
+            // seeds[n+4] is reroll seed for 2nd row (Sn+2), used with pool size 24
+            // seeds[currIdx+1] is slot seed for 3rd row (Sn+5), used with pool size 25
+            return seeds[n+4] % 24 === seeds[currIdx+1] % 25;
+        };
+
+        const isConsecutiveOrange = (currIdx) => {
+            if (currIdx < 5) return false;
+            const n = currIdx - 5;
+            if (currIdx + 1 >= seeds.length) return false;
+            // Rarity checks
+            if (seeds[n] % 10000 > 6969) return false;
+            if (seeds[n+2] % 10000 > 6969) return false;
+            if (seeds[currIdx] % 10000 > 6969) return false;
+            // 1st Dupe Normal check
+            if (seeds[n+1] % 25 !== seeds[n+3] % 25) return false;
+            // 2nd Dupe Orange check: Sn+4 % 24 == 24 - (Sn+6 % 25)
+            return seeds[n+4] % 24 === (24 - (seeds[currIdx+1] % 25));
+        };
+        // ------------------------------------
+
         // 行の生成ループ
         for(let i=0; i<numRolls; i++){
             const seedIndexA = i*2, seedIndexB = i*2+1;
-            let rowHtml = `<tr><td class="col-no">${i+1}</td>`;
+            // スタイル判定 (Orange優先)
+            let styleNoA = '';
+            if (isSimpleOrange(seedIndexA) || isConsecutiveOrange(seedIndexA)) styleNoA = 'style="background-color: #ff9800;"';
+            else if (isSimpleYellow(seedIndexA) || isConsecutiveYellow(seedIndexA)) styleNoA = 'style="background-color: #ffeb3b;"';
+            let styleNoB = '';
+            if (isSimpleOrange(seedIndexB) || isConsecutiveOrange(seedIndexB)) styleNoB = 'style="background-color: #ff9800;"';
+            else if (isSimpleYellow(seedIndexB) || isConsecutiveYellow(seedIndexB)) styleNoB = 'style="background-color: #ffeb3b;"';
+
+            let rowHtml = `<tr><td class="col-no" ${styleNoA}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexA);
             tableGachaIds.forEach((idWithSuffix, colIndex) => {
                 let id = idWithSuffix.replace(/[gfs]$/, '');
@@ -471,6 +553,8 @@ function generateRollsTable() {
                     let gContent = '---';
                     let cellStyle = '';
                     if (isSimulationMode && guarHighlightMap.get(seedIndexA) === id) cellStyle = 'background-color: #98FB98;'; 
+             
+        
                     if (typeof calculateGuaranteedLookahead !== 'undefined') {
                          const config = columnConfigs[colIndex];
                          const normalRolls = config._guaranteedNormalRolls || 10;
@@ -512,7 +596,8 @@ function generateRollsTable() {
                     rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
                 }
             });
-            rowHtml += `<td class="col-no">${i+1}</td>`;
+            
+            rowHtml += `<td class="col-no" ${styleNoB}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexB);
             tableGachaIds.forEach((idWithSuffix, colIndex) => {
                 let id = idWithSuffix.replace(/[gfs]$/, '');
@@ -532,7 +617,7 @@ function generateRollsTable() {
                         const config = columnConfigs[colIndex];
                         const normalRolls = config._guaranteedNormalRolls || 10;
                         let lastDraw = (i>0 && tableData[seedIndexB-2]?.[colIndex]?.roll) ?
-                                       {rarity: tableData[seedIndexB-2][colIndex].roll.rarity, charId: tableData[seedIndexB-2][colIndex].roll.charId} : null;
+                        {rarity: tableData[seedIndexB-2][colIndex].roll.rarity, charId: tableData[seedIndexB-2][colIndex].roll.charId} : null;
                         const gRes = calculateGuaranteedLookahead(seedIndexB, config, seeds, lastDraw, normalRolls);
                         const addr = formatAddress(gRes.nextRollStartSeedIndex);
                         let charName = gRes.name;
@@ -574,7 +659,8 @@ function generateRollsTable() {
         }
 
         const resultDiv = document.getElementById('result');
-        if(resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
+        if(resultDiv) resultDiv.textContent = isSimulationMode ?
+            "Simulation active..." : "Display Mode";
         
         updateUrlParams();
 

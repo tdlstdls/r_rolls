@@ -45,15 +45,18 @@ function prepareScheduleInfo() {
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                        if (gachaMasterData && 
+                            gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
          
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
+                           
                                 gachaMasterData.gachas[gId].name += " [確定]";
              
                            }
                         }
                     }
+        
                 }
             });
             isScheduleAnalyzed = true;
@@ -237,10 +240,8 @@ function addGachasFromSchedule() {
     const m = String(yesterday.getMonth() + 1).padStart(2, '0');
     const d = String(yesterday.getDate()).padStart(2, '0');
     const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
-
     // 2. フィルタリング: 昨日以降に終了するもの（開催中・未来含む）
     let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
     if (activeScheduleItems.length === 0) {
         alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
         return;
@@ -265,11 +266,9 @@ function addGachasFromSchedule() {
         // どちらも同じ属性なら開始日順
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     // 4. 現在のテーブル情報から「スケジュールにないもの」を抽出して保持
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
-    
     tableGachaIds.forEach((idWithSuffix, index) => {
         const baseId = idWithSuffix.replace(/[gfs]$/, '');
         if (!scheduleIds.has(baseId)) {
@@ -279,7 +278,6 @@ function addGachasFromSchedule() {
             });
         }
     });
-
     // 5. スケジュール分をリスト化
     const newScheduleGachas = activeScheduleItems.map(item => {
         let newId = item.id.toString();
@@ -290,14 +288,11 @@ function addGachasFromSchedule() {
             count: 0 // 新規追加なので追加数は0
         };
     });
-
     // ▼▼▼ 修正: 結合順序を変更 (残した分を左、スケジュール分を右) ▼▼▼
     const finalGachaList = [...keptGachas, ...newScheduleGachas];
-
     // 7. グローバル変数に反映
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
-
     // 8. 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
@@ -379,10 +374,12 @@ function addGachaById() {
     const inp = document.getElementById('gacha-id-input');
     if(!inp) return;
     const val = inp.value.trim();
-    if(!val) return; // 空なら何もしない（あるいは閉じる処理を入れても良い）
+    if(!val) return;
+    // 空なら何もしない（あるいは閉じる処理を入れても良い）
 
     const id = parseInt(val, 10);
-    if(isNaN(id)) { alert("数値を入力してください"); return; }
+    if(isNaN(id)) { alert("数値を入力してください"); return;
+    }
 
     if(!gachaMasterData.gachas[id]) {
         alert(`ガチャID: ${id} のデータが見つかりません。`);
@@ -392,7 +389,6 @@ function addGachaById() {
     // 追加
     tableGachaIds.push(id.toString());
     uberAdditionCounts.push(0);
-
     // 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
@@ -405,7 +401,6 @@ function addGachaById() {
 function showSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
-    
     if (container) container.classList.remove('hidden');
     if (trigger) trigger.classList.add('hidden');
     
@@ -418,7 +413,6 @@ function applySeedInput() {
     // データ更新と再描画
     updateUrlParams();
     resetAndGenerateTable();
-    
     // 閉じる処理
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
@@ -445,7 +439,8 @@ function toggleDescription() {
     const toggle = document.getElementById('toggle-description');
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ? '概要を表示' : '概要を非表示';
+        toggle.textContent = isHidden ?
+            '概要を表示' : '概要を非表示';
     }
 }
 
@@ -459,6 +454,11 @@ function toggleFindInfo() {
         else container.classList.add('hidden');
     }
     if (btn) btn.textContent = showFindInfo ? 'Findを非表示' : 'Findを表示';
+    
+    // ▼ 追加: ボタン切り替え時にメインテーブルも再描画してハイライトを反映させる
+    if (typeof generateRollsTable === 'function') {
+        generateRollsTable();
+    }
 }
 
 // --- マスタ情報表示 ---
@@ -548,19 +548,22 @@ function toggleAllFindVisibility() {
                     {
                         const cid = c.id;
                         if (isAutomaticTarget(cid)) {
+                           
                             hiddenFindIds.add(cid);
                    
                         }
                     });
                 }
             });
-            
+        
+    
             const colIndex = tableGachaIds.findIndex(tid => tid.startsWith(id));
             const addCount = (colIndex >= 0 
             && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
             for(let k=1; k<=addCount; k++){
                 hiddenFindIds.add(`sim-new-${k}`);
             }
+ 
         });
         userTargetIds.clear();
         isFindListCleared = true;
