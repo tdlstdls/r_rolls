@@ -63,18 +63,6 @@
                 line-height: 20px;
             }
 
-            /* SEED入力欄のポップアップ調整 */
-            #seed-input-container {
-                position: absolute;
-                top: 40px;
-                left: 10px;
-                background: white;
-                padding: 5px;
-                border: 1px solid #ccc;
-                z-index: 100;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            }
-
             /* テーブルコンテナを残りの領域いっぱいに広げる */
             #rolls-table-container {
                 flex-grow: 1;
@@ -109,12 +97,6 @@
             <div class="header-actions">
                 <span id="seed-input-trigger" class="text-btn" onclick="showSeedInput()">SEED</span>
                 
-                <span id="seed-input-container" class="hidden">
-                    <label for="seed" style="font-size:0.8em;">Seed:</label>
-                    <input type="number" id="seed" placeholder="Seed" value="12345" style="width:80px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
-                    <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 10px;">OK</button>
-                </span>
-
                 <span class="separator">|</span>
                 <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
                 
@@ -165,7 +147,6 @@
                         ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。
                     </span>
                 </dd>
-                
             </dl>
 
             <h3 style="margin-top:0;">【表示・用語について】</h3>
@@ -178,6 +159,13 @@
         
         <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
             
+            <div id="seed-input-container" class="control-group hidden" style="margin-bottom: 0; display: flex; align-items: center; gap: 5px;">
+                <label for="seed" style="font-size:0.9em;">Seed:</label>
+                <input type="number" id="seed" placeholder="Seed" value="12345" style="width:100px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
+                <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 11px;">OK</button>
+                <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Copy to Clipboard">Copy</button>
+            </div>
+
             <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; width: 100%;">
                 <label for="sim-config" style="font-size:0.9em;">Config:</label>
                 <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">

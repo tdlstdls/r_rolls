@@ -183,6 +183,15 @@ function applySeedInput() {
     if (trigger) trigger.classList.remove('hidden');
 }
 
+// 追加: SEEDをクリップボードにコピー
+function copySeedToClipboard() {
+    const seedInput = document.getElementById('seed');
+    if (!seedInput) return;
+    navigator.clipboard.writeText(seedInput.value).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+
 
 // --- 表示切替 ---
 
