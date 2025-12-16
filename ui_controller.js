@@ -22,12 +22,14 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
+              
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
+                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); 
                     });
@@ -99,7 +101,7 @@ function updateModeButtonState() {
 function refreshModeView() {
     const simWrapper = document.getElementById('sim-control-wrapper');
     if (simWrapper) {
-        if (isSimulationMode && !isScheduleMode) {
+        if (isSimulationMode && !isScheduleMode && !isDescriptionMode) {
             simWrapper.classList.remove('hidden');
         } else {
             simWrapper.classList.add('hidden');
@@ -111,7 +113,7 @@ function refreshModeView() {
 // --- テーブル更新・リセット ---
 
 function resetAndGenerateTable() {
-    if (isScheduleMode) return;
+    if (isScheduleMode || isDescriptionMode) return;
     finalSeedForUpdate = null;
     const simConf = document.getElementById('sim-config');
     if (simConf && simConf.value.trim() === '') {
@@ -198,9 +200,70 @@ function updateToggleButtons() {
 function toggleDescription() {
     const content = document.getElementById('description-content');
     const toggle = document.getElementById('toggle-description');
-    if(content && toggle) {
-        const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ? '概要' : '概要を隠す';
+    
+    // UI要素の取得
+    const tableContainer = document.getElementById('rolls-table-container');
+    const simWrapper = document.getElementById('sim-control-wrapper');
+    const resultDiv = document.getElementById('result');
+    const mainControls = document.getElementById('main-controls');
+    const scheduleContainer = document.getElementById('schedule-container');
+
+    // モード切替
+    isDescriptionMode = !isDescriptionMode;
+
+    if (isDescriptionMode) {
+        // --- 概要モード ON ---
+
+        // 1. スケジュールモードが開いていれば閉じる
+        if (typeof isScheduleMode !== 'undefined' && isScheduleMode && typeof toggleSchedule === 'function') {
+            toggleSchedule(); 
+        }
+
+        // 2. ボタン状態更新
+        if (toggle) {
+            toggle.textContent = 'Back';
+            toggle.classList.add('active');
+        }
+
+        // 3. メイン画面の要素を隠す
+        if (tableContainer) tableContainer.classList.add('hidden');
+        if (simWrapper) simWrapper.classList.add('hidden');
+        if (resultDiv) resultDiv.classList.add('hidden');
+        if (mainControls) mainControls.classList.add('hidden');
+        if (scheduleContainer) scheduleContainer.classList.add('hidden');
+
+        // 4. 概要コンテンツを表示＆スタイル調整 (画面いっぱいに広げる)
+        if (content) {
+            content.classList.remove('hidden');
+            content.style.flexGrow = '1';       // 残りの領域を埋める
+            content.style.overflowY = 'auto';   // スクロール許可
+            content.style.height = 'auto';
+            content.style.maxHeight = 'none';   // 高さ制限解除
+        }
+
+    } else {
+        // --- 概要モード OFF ---
+
+        // 1. ボタン状態更新
+        if (toggle) {
+            toggle.textContent = '概要';
+            toggle.classList.remove('active');
+        }
+
+        // 2. 概要コンテンツを隠す＆スタイルリセット
+        if (content) {
+            content.classList.add('hidden');
+            content.style.flexGrow = '';
+            content.style.overflowY = '';
+            content.style.maxHeight = '';
+        }
+
+        // 3. メイン画面の要素を復帰
+        if (tableContainer) tableContainer.classList.remove('hidden');
+        if (mainControls) mainControls.classList.remove('hidden');
+        
+        if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
+        if (showResultDisplay && resultDiv) resultDiv.classList.remove('hidden');
     }
 }
 

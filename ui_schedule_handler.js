@@ -6,7 +6,6 @@
 // スケジュール情報の事前解析
 function prepareScheduleInfo() {
     if (isScheduleAnalyzed) return;
-
     if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
         typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
         try {
@@ -19,13 +18,16 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
+            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+         
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                 gachaMasterData.gachas[gId].name += " [確定]";
+             
                             }
                         }
                     }
@@ -46,7 +48,6 @@ function setupScheduleUI() {
         scheduleContainer = document.createElement('div');
         scheduleContainer.id = 'schedule-container';
         scheduleContainer.className = 'hidden';
-        
         const tableContainer = document.getElementById('rolls-table-container');
         if (tableContainer) {
             tableContainer.parentNode.insertBefore(scheduleContainer, tableContainer.nextSibling);
@@ -62,6 +63,12 @@ function toggleSchedule() {
         alert("スケジュールの読み込みに失敗しました。");
         return;
     }
+
+    // もし概要モードが開いていれば、先に閉じる (排他制御)
+    if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function') {
+        toggleDescription(); 
+    }
+
     isScheduleMode = !isScheduleMode;
     const scheduleBtn = document.getElementById('toggle-schedule-btn');
     const simWrapper = document.getElementById('sim-control-wrapper');
@@ -69,7 +76,7 @@ function toggleSchedule() {
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const mainControls = document.getElementById('main-controls');
-
+    
     if (isScheduleMode) {
         scheduleBtn.textContent = 'Back';
         scheduleBtn.classList.add('active');
@@ -113,7 +120,6 @@ function addGachasFromSchedule() {
     const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
 
     let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
     if (activeScheduleItems.length === 0) {
         alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
         return;
@@ -127,16 +133,15 @@ function addGachasFromSchedule() {
         };
 
         const isSpecialA = checkSpecial(a);
+        
         const isSpecialB = checkSpecial(b);
         
         if (isSpecialA && !isSpecialB) return 1; 
         if (!isSpecialA && isSpecialB) return -1; 
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
-    
     // 既存の手動追加分を残すかどうかのロジック（ここではスケジュールにないものは残す）
     tableGachaIds.forEach((idWithSuffix, index) => {
         const baseId = idWithSuffix.replace(/[gfs]$/, '');
@@ -146,6 +151,7 @@ function addGachasFromSchedule() {
                 count: uberAdditionCounts[index] || 0
             });
         }
+  
     });
 
     const newScheduleGachas = activeScheduleItems.map(item => {
@@ -156,11 +162,9 @@ function addGachasFromSchedule() {
             count: 0
         };
     });
-
     const finalGachaList = [...keptGachas, ...newScheduleGachas];
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
-
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();

@@ -13,6 +13,7 @@ let finalSeedForUpdate = null;
 
 let isSimulationMode = false;
 let isScheduleMode = false;
+let isDescriptionMode = false; // 追加: 概要表示モードフラグ
 let activeGuaranteedIds = new Set();
 let isScheduleAnalyzed = false;
 
