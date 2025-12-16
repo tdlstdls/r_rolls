@@ -241,14 +241,20 @@ function toggleDescription() {
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
 
-        // 4. 概要コンテンツを表示＆スタイル調整 (画面いっぱいに広げる)
+        // 4. 概要コンテンツを表示＆スタイル調整
         if (content) {
             content.classList.remove('hidden');
-            content.style.flexGrow = '1';       // 残りの領域を埋める
-            content.style.overflowY = 'auto';   // スクロール許可
-            content.style.height = 'auto';      // 高さ自動調整 (0だと潰れるため修正)
-            content.style.minHeight = '0';      // 縮小可能にする設定は維持
-            content.style.maxHeight = 'none';   // 高さ制限解除
+            content.style.flexGrow = '1';       
+            content.style.overflowY = 'auto';   
+            
+            // --- 修正箇所: ここを変更 ---
+            // content.style.height = 'auto';  // ← これが原因でスクロールしなくなることがあります
+            content.style.height = '100%';     // ← 親要素(Flex)の高さに合わせる
+            content.style.webkitOverflowScrolling = 'touch'; // ← iPhoneでの慣性スクロールを有効化
+            // ------------------------
+
+            content.style.minHeight = '0';      
+            content.style.maxHeight = 'none';   
         }
 
     } else {
@@ -268,6 +274,7 @@ function toggleDescription() {
             content.style.height = '';
             content.style.minHeight = '';
             content.style.maxHeight = '';
+            content.style.webkitOverflowScrolling = ''; // リセット
         }
 
         // 3. メイン画面の要素を復帰
