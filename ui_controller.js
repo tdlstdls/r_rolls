@@ -22,14 +22,13 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
-              
                     return now >= startDt && now <= endDt;
                 });
+
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
-                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); 
                     });
@@ -209,7 +208,6 @@ function updateToggleButtons() {
 function toggleDescription() {
     const content = document.getElementById('description-content');
     const toggle = document.getElementById('toggle-description');
-    
     // UI要素の取得
     const tableContainer = document.getElementById('rolls-table-container');
     const simWrapper = document.getElementById('sim-control-wrapper');
@@ -219,13 +217,12 @@ function toggleDescription() {
 
     // モード切替
     isDescriptionMode = !isDescriptionMode;
-
     if (isDescriptionMode) {
         // --- 概要モード ON ---
 
         // 1. スケジュールモードが開いていれば閉じる
         if (typeof isScheduleMode !== 'undefined' && isScheduleMode && typeof toggleSchedule === 'function') {
-            toggleSchedule(); 
+            toggleSchedule();
         }
 
         // 2. ボタン状態更新
@@ -240,20 +237,14 @@ function toggleDescription() {
         if (resultDiv) resultDiv.classList.add('hidden');
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
-
         // 4. 概要コンテンツを表示＆スタイル調整
         if (content) {
             content.classList.remove('hidden');
             content.style.flexGrow = '1';       
             content.style.overflowY = 'auto';   
-            
-            // --- 修正箇所: ここを変更 ---
-            // content.style.height = 'auto';  // ← これが原因でスクロールしなくなることがあります
-            content.style.height = '100%';     // ← 親要素(Flex)の高さに合わせる
-            content.style.webkitOverflowScrolling = 'touch'; // ← iPhoneでの慣性スクロールを有効化
-            // ------------------------
-
-            content.style.minHeight = '0';      
+            content.style.height = '100%';
+            content.style.webkitOverflowScrolling = 'touch';
+            content.style.minHeight = '0';
             content.style.maxHeight = 'none';   
         }
 
@@ -274,7 +265,7 @@ function toggleDescription() {
             content.style.height = '';
             content.style.minHeight = '';
             content.style.maxHeight = '';
-            content.style.webkitOverflowScrolling = ''; // リセット
+            content.style.webkitOverflowScrolling = '';
         }
 
         // 3. メイン画面の要素を復帰
@@ -300,4 +291,48 @@ function toggleFindInfo() {
 function updateMasterInfoView() {
     // マスター情報は generateRollsTable 内で生成されるため、ここでは何もしない
     // (将来的に分離する場合はここにロジックを追加)
+}
+
+/**
+ * セルクリック時のハンドラ
+ * Simモード時: ルートを計算してConfigに入力
+ * 通常時: キャラ名をクリップボードにコピー（またはSimモードへ誘導）
+ */
+function onGachaCellClick(targetSeedIndex, gachaId, charName) {
+    if (isSimulationMode) {
+        const visibleIds = tableGachaIds.map(id => id);
+        
+        // Config欄の現在の値を取得
+        const configInput = document.getElementById('sim-config');
+        const currentConfig = configInput ? configInput.value : "";
+
+        // ルート計算 (simulation.js)
+        if (typeof calculateRouteToCell === 'function') {
+            // 第4引数に currentConfig を渡す
+            const routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
+            
+            if (configInput) {
+                if (routeConfig) {
+                    // 成功: Configに入力して更新
+                    configInput.value = routeConfig;
+                    if (typeof updateUrlParams === 'function') updateUrlParams();
+                    resetAndGenerateTable();
+                } else {
+                    // 失敗(ルート見つからない、または計算不能): キャラ名を設定
+                    // 既存値がある場合は末尾に追記する
+                    configInput.value = currentConfig ? (currentConfig + " " + charName) : charName;
+                    console.warn("Route not found. Set character name.");
+                }
+            }
+        }
+    } else {
+        // 通常モード時の挙動
+        const confirmSwitch = confirm(`Simモードに切り替えて、このセル(${charName})へのルートを計算しますか？`);
+        if (confirmSwitch) {
+            toggleAppMode(); 
+            setTimeout(() => {
+                onGachaCellClick(targetSeedIndex, gachaId, charName);
+            }, 100);
+        }
+    }
 }

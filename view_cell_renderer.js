@@ -1,3 +1,4 @@
+
 /**
  * view_cell_renderer.js
  * セル単位のHTML生成ロジック
@@ -18,7 +19,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     
     const firstGachaIdWithSuffix = tableGachaIds[0];
     if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
-    
     let firstId = firstGachaIdWithSuffix.replace(/[gfs]$/, '');
     const originalConfig = gachaMasterData.gachas[firstId];
     if(!originalConfig) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
@@ -34,7 +34,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     }
 
     if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
-    
     const sNum1 = seedIndex + 1;
     const sNum2 = seedIndex + 2;
     const sVal_0 = seeds[seedIndex];
@@ -155,7 +154,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         if (fullRoll.rarity === 'legend') isAuto = true;
         else if (isLimited) isAuto = true;
         else if (charIdStr.startsWith('sim-new-')) isAuto = true;
-        
         const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
         const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
 
@@ -163,6 +161,12 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             style = 'background-color: #adff2f; font-weight: bold;';
         }
     }
+
+    // --- クリックイベント設定 (経路計算用) ---
+    // キャラ名のエスケープ処理 (簡易)
+    const charNameForCopy = fullRoll.finalChar.name.replace(/'/g, "\\'");
+    const clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${charNameForCopy}')"`;
+    style += ' cursor: pointer;';
 
     let content = fullRoll.finalChar.name;
     if (!isSimulationMode) {
@@ -172,9 +176,10 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             const originalName = fullRoll.originalChar.name;
             const finalName = fullRoll.finalChar.name;
             let originalHtml = originalName;
-            if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
+            // 内部リンクには stopPropagation を追加してセルのonclick発火を防止
+            if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
             let finalHtml = finalName;
-            if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
+            if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
             
             const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
             let addr = formatAddress(nextSeedIdx);
@@ -184,7 +189,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             content = `${originalHtml}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${finalHtml}`;
         } else {
             const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
-            if(slotSeedVal !== null) content = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
+            if(slotSeedVal !== null) content = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
         }
     } else {
         if (fullRoll.isRerolled) {
@@ -196,5 +201,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             content = `${fullRoll.originalChar.name}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${fullRoll.finalChar.name}`;
         }
     }
-    return `<td class="gacha-cell gacha-column${hlClass}" style="${style}">${content}</td>`;
+    
+    return `<td class="gacha-cell gacha-column${hlClass}" style="${style}" ${clickHandler}>${content}</td>`;
 }

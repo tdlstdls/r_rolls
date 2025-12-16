@@ -842,6 +842,8 @@ const cats = [
 
 ]
 
+//837は、2026新年超極_新規の予測のため手動で入力したもののためアップデートされた際には削除すること
+
 ====================
 FILE: data_loader.js
 ====================
@@ -1363,18 +1365,6 @@ FILE: index.html
                 line-height: 20px;
             }
 
-            /* SEED入力欄のポップアップ調整 */
-            #seed-input-container {
-                position: absolute;
-                top: 40px;
-                left: 10px;
-                background: white;
-                padding: 5px;
-                border: 1px solid #ccc;
-                z-index: 100;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            }
-
             /* テーブルコンテナを残りの領域いっぱいに広げる */
             #rolls-table-container {
                 flex-grow: 1;
@@ -1409,23 +1399,17 @@ FILE: index.html
             <div class="header-actions">
                 <span id="seed-input-trigger" class="text-btn" onclick="showSeedInput()">SEED</span>
                 
-                <span id="seed-input-container" class="hidden">
-                    <label for="seed" style="font-size:0.8em;">Seed:</label>
-                    <input type="number" id="seed" placeholder="Seed" value="12345" style="width:80px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
-                    <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 10px;">OK</button>
-                </span>
-
                 <span class="separator">|</span>
                 <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
-                
-                <span class="separator">|</span>
-                <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
                 
                 <span class="separator">|</span>
                 <span id="mode-toggle-btn" class="text-btn" onclick="toggleAppMode()">Sim</span>
                 
                 <span class="separator">|</span>
                 <span id="toggle-schedule-btn" class="text-btn" onclick="toggleSchedule()">skd</span>
+
+                <span class="separator">|</span>
+                <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
             </div>
         </div>
 
@@ -1462,10 +1446,15 @@ FILE: index.html
                     「Config」欄に <code>ガチャID 回数 ガチャID 回数</code> の形式で入力してください。<br>
                     <span style="font-size:0.9em; color:#666;">
                         (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
-                        ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。
+                        ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
+
+                        また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
+                        ・自動回避・誘発: レア被りによる再抽選（Reroll）の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
+                        ・A列⇔B列のルート切り替え: 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列、B列からA列へ移動するルートを計算します。<br>
+                        ・追記機能: 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
+                        ※自動計算では「超激レア確定」「プラチナ」「レジェンド」ガチャは使用しません。<br>
                     </span>
                 </dd>
-                
             </dl>
 
             <h3 style="margin-top:0;">【表示・用語について】</h3>
@@ -1478,6 +1467,13 @@ FILE: index.html
         
         <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
             
+            <div id="seed-input-container" class="control-group hidden" style="margin-bottom: 0; display: flex; align-items: center; gap: 5px;">
+                <label for="seed" style="font-size:0.9em;">Seed:</label>
+                <input type="number" id="seed" placeholder="Seed" value="12345" style="width:100px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
+                <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 11px;">OK</button>
+                <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Copy to Clipboard">Copy</button>
+            </div>
+
             <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; width: 100%;">
                 <label for="sim-config" style="font-size:0.9em;">Config:</label>
                 <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
@@ -1498,6 +1494,7 @@ FILE: index.html
     <script src="logic.js"></script>
     <script src="simulation.js"></script>
     <script src="schedule_logic.js"></script>
+    <script src="view_schedule.js"></script>
     <script src="data_loader.js"></script> 
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
@@ -1521,6 +1518,8 @@ FILE: limited_cats.js
 ====================
 const limitedCats = [283,286,318,333,378,380,397,435,441,484,529,543,559,585,586,609,612,641,657,690,705,758,779,783,787,810,837];
 const AnniversaryLimited = [435,484,758,783,810,837];
+
+//837は、2026新年超極_新規の予測のため手動で入力したもののためアップデートされた際には削除すること
 
 ====================
 FILE: logic.js
@@ -1822,13 +1821,12 @@ FILE: schedule_logic.js
 ====================
 /**
  * schedule_logic.js
- * gatya.tsvの解析とスケジュール表・ガントチャートのレンダリング
+ * gatya.tsvの解析、日付処理、初期データ決定などのロジックを担当
  */
 
 // YYYYMMDD -> M/D (年は無視、20300101は「永続」)
 function formatDateJP(dateStr) {
     if (!dateStr || dateStr.length < 8) return dateStr;
-    
     // 特殊対応: 2030/1/1 (20300101) は「永続」と表示
     if (dateStr === '20300101') {
         return '永続';
@@ -1885,21 +1883,6 @@ function getShortDateStr(dateObj) {
 function isPlatinumOrLegend(item) {
     const name = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
     return name.includes("プラチナガチャ") || name.includes("レジェンドガチャ");
-}
-
-// 文字列の表示幅を概算する関数 (動的幅調整用)
-function calcTextWidth(text) {
-    let width = 0;
-    for (let i = 0; i < text.length; i++) {
-        const code = text.charCodeAt(i);
-        // 半角文字(ASCII範囲)は約8px、それ以外(全角)は約13pxと仮定
-        if ((code >= 0x00 && code < 0x81) || (code === 0xf8f0) || (code >= 0xff61 && code < 0xffa0) || (code >= 0xf8f1 && code < 0xf8f4)) {
-            width += 8;
-        } else {
-            width += 13;
-        }
-    }
-    return width;
 }
 
 // TSVデータのパース処理
@@ -2016,350 +1999,18 @@ function findDefaultGachaState(data) {
     };
 }
 
-// 画像保存処理
-function saveGanttImage() {
-    const element = document.querySelector('.gantt-chart-container');
-    if (!element) return;
-    // ガントチャートのコンテンツ幅を取得
-    const header = element.querySelector('.gantt-header');
-    if (!header) return;
-    const contentWidth = header.style.width;
-
-    const originalOverflow = element.style.overflow;
-    const originalWidth = element.style.width; 
-    
-    const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
-    const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-    // キャプチャ用に一時的にスタイル変更
-    element.style.overflow = 'visible';
-    element.style.width = contentWidth; 
-    
-    if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
-    html2canvas(element).then(canvas => {
-        // スタイル復元
-        element.style.overflow = originalOverflow;
-        element.style.width = originalWidth;
-        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
-
-        const link = document.createElement('a');
-        link.download = 'gacha_schedule.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    }).catch(err => {
-        console.error("Image capture failed:", err);
-        alert("画像の保存に失敗しました。");
-        element.style.overflow = originalOverflow;
-        element.style.width = originalWidth;
-        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
-    });
-}
-
-// ガントチャート生成ロジック
-function renderGanttChart(data) {
-    const filteredData = data.filter(item => !isPlatinumOrLegend(item));
-
-    if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0); 
-    const yesterdayInt = getDateInt(yesterday);
-    const activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-    
-    if (activeData.length === 0) {
-        return '<p>現在開催中または予定されているガチャはありません。</p>';
-    }
-
-    // 表示範囲の決定
-    let minDateInt = parseInt(activeData[0].rawStart);
-    let maxEndDateTime = new Date(0);
-    // 動的幅計算用の最大幅変数
-    let maxLabelTextWidth = 0;
-
-    activeData.forEach(item => {
-        const s = parseInt(item.rawStart);
-        if (s < minDateInt) minDateInt = s;
-        
-        const eDt = parseDateTime(item.rawEnd, item.endTime);
-        if (eDt > maxEndDateTime) maxEndDateTime = eDt;
-
-        // --- 幅計算ロジック ---
-        let displayName = item.seriesName;
-        
-        if (item.guaranteed) displayName += " [確定]";
-        // 表示名の長さを計算
-        const textW = calcTextWidth(displayName);
-        if (textW > maxLabelTextWidth) {
-            maxLabelTextWidth = textW;
-        }
-    });
-    // 幅の設定
-    // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
-    let labelWidth = Math.max(160, maxLabelTextWidth + 20);
-    if (labelWidth > 320) labelWidth = 320; // 上限設定
-
-    let minDate = parseDateStr(String(minDateInt));
-    // 表示開始日を調整
-    const viewStartDate = new Date(yesterday);
-    viewStartDate.setDate(viewStartDate.getDate() - 2);
-    if (minDate < viewStartDate) {
-        minDate = viewStartDate;
-    }
-
-    // --- 終了日の決定 ---
-    let limitDate = new Date(minDate);
-    limitDate.setDate(limitDate.getDate() + 35);
-    let chartEnd = new Date(maxEndDateTime);
-    if (chartEnd > limitDate) {
-        chartEnd = limitDate;
-    }
-
-    // 右端
-    chartEnd.setHours(0, 0, 0, 0);
-    chartEnd.setDate(chartEnd.getDate() + 1);
-    const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
-    
-    if (totalDays <= 0) return '';
-    const dayWidth = 50; 
-    const msPerDay = 1000 * 60 * 60 * 24;
-    // 全体幅計算
-    const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
-    // 現在時刻線の位置計算
-    const now = new Date();
-    let currentLineHtml = '';
-    if (now >= minDate && now < chartEnd) {
-        const diffNowMs = now - minDate;
-        const currentLineLeftPx = (diffNowMs / msPerDay) * dayWidth;
-        currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
-    }
-
-    let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
-        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
-    for (let i = 0; i < totalDays; i++) {
-        const d = new Date(minDate);
-        d.setDate(d.getDate() + i);
-        const dateStr = getShortDateStr(d);
-        const isToday = getDateInt(d) === getDateInt(new Date());
-        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
-        headerHtml += `<div class="${cls}" style="width:${dayWidth}px;">${dateStr}</div>`;
-    }
-    headerHtml += `<div class="gantt-date-cell" style="width:${dayWidth/2}px; border-right:none;"></div>`;
-    headerHtml += '</div>';
-
-    let bodyHtml = '';
-    activeData.forEach(item => {
-        const startDateTime = parseDateTime(item.rawStart, item.startTime);
-        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
-
-        const diffStartMs = startDateTime - minDate;
-        const durationMs = endDateTime - startDateTime;
-
-        let offsetPx = (diffStartMs / msPerDay) * dayWidth;
-        let widthPx = (durationMs / msPerDay) * dayWidth;
-
-        if (offsetPx < 0) {
-            widthPx += offsetPx; 
-            offsetPx = 0;
-        }
-        
-        const maxPx = totalDays * dayWidth;
-        if (offsetPx >= maxPx) return;
-        if (offsetPx + widthPx > maxPx) {
-            widthPx = maxPx - offsetPx; 
-        }
-        
-        if (widthPx <= 0) return;
-
-        let displayName = item.seriesName;
-        // 確定なら表記追加
-        if (item.guaranteed) {
-            displayName += " [確定]";
-        }
-
-        let barClass = 'gantt-bar';
-        if (displayName.includes("極選抜")) barClass += ' g-kyoku';
-        else if (displayName.includes("超選抜")) barClass += ' g-cho';
-        else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
-        else if (displayName.includes("コラボ")) barClass += ' g-collab';
-        const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
-
-        // 行のスタイル判定
-        let rowClass = 'gantt-row';
-        if (now > endDateTime) {
-            rowClass += ' row-ended';
-        } else if (item.guaranteed) {
-            rowClass += ' row-guaranteed';
-        }
-
-        bodyHtml += `
-            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
-                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;" title="${displayName} (ID:${item.id})">${displayName}</div>
-                <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
-                    ${generateGridLines(totalDays, dayWidth, minDate)}
-                    <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
-                        <span class="gantt-bar-text">${durationDays}日間</span>
-                    </div>
-                    ${currentLineHtml}
-                </div>
-            </div>
-        `;
-    });
-
-    return `
-        <div class="gantt-outer-wrapper">
-            <div style="margin-bottom: 5px; text-align: right;">
-                <button onclick="saveGanttImage()" class="secondary" style="font-size: 11px; padding: 4px 8px;">画像として保存</button>
-            </div>
-            <div class="gantt-chart-container">
-                <div class="gantt-scroll-wrapper">
-                    ${headerHtml}
-                    <div class="gantt-body">
-                        ${bodyHtml}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function generateGridLines(days, width, startDate) {
-    let html = '';
-    for (let i = 0; i < days; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i);
-        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        const style = `left:${i * width}px; width:${width}px;`;
-        const cls = isWeekend ? 'gantt-grid-line weekend' : 'gantt-grid-line';
-        html += `<div class="${cls}" style="${style}"></div>`;
-    }
-    return html;
-}
-
-function fmtRate(val) {
-    if (!val) return "0%";
-    return (parseInt(val) / 100) + "%";
-}
-
-function renderScheduleTable(tsvContent, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const data = parseGachaTSV(tsvContent);
-    const ganttHtml = renderGanttChart(data);
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayInt = getDateInt(yesterday);
-    let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
-    filteredData.sort((a, b) => {
-        const isSpecialA = isPlatinumOrLegend(a);
-        const isSpecialB = isPlatinumOrLegend(b);
-        
-        if (isSpecialA && !isSpecialB) return 1; 
-        if (!isSpecialA && isSpecialB) return -1; 
-        
-        return parseInt(a.rawStart) - parseInt(b.rawStart);
-    });
-    let html = `
-        <h3 style="margin-top:0;">開催スケジュール</h3>
-        ${ganttHtml}
-        <div style="margin-top: 20px;"></div>
-        <div class="schedule-scroll-wrapper">
-        <table class="schedule-table">
-        <thead>
-            <tr>
-                <th style="min-width:50px;">自</th>
-                <th style="min-width:50px;">至</th>
-                <th>ガチャ名 / 詳細</th>
-                <th>レア</th>
-                <th>激レア</th>
-                <th>超激</th>
-                <th>伝説</th>
-                <th>確定</th>
-            </tr>
-        </thead>
-        <tbody>
-    `;
-    const now = new Date();
-
-    filteredData.forEach(item => {
-        let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
-        
-        if (item.guaranteed) {
-            seriesDisplay += " [確定]";
-        }
-
-        const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
-        
-        const endDateFormatted = formatDateJP(item.rawEnd);
-        let endStr = endDateFormatted;
-        if (endDateFormatted !== '永続') {
-            endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
-        }
-        
-        const isPlatLeg = isPlatinumOrLegend(item);
-
-        const uberRateVal = parseInt(item.uber);
-        let uberStyle = '';
-        if (!isPlatLeg && uberRateVal !== 500) {
-            uberStyle = 'color:red; font-weight:bold;';
-        }
-
-        const legendRateVal = parseInt(item.legend);
-        let legendStyle = '';
-        if (!isPlatLeg && legendRateVal > 30) {
-            legendStyle = 'color:red; font-weight:bold;';
-        }
-
-        // 行の背景色決定
-        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
-        let rowClass = "";
-        
-        if (now > endDateTime) {
-            rowClass = "row-ended";
-        } else if (item.guaranteed) {
-            rowClass = "row-guaranteed";
-        }
-
-        html += `
-            <tr class="${rowClass}">
-                <td>${startStr}</td>
-                <td>${endStr}</td>
-                <td style="text-align:left; vertical-align: middle;">
-                    <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
-                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
-                </td>
-                <td>${fmtRate(item.rare)}</td>
-                <td>${fmtRate(item.supa)}</td>
-                <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
-                <td style="text-align:center; font-size:1.2em;">
-                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
-                </td>
-            </tr>
-        `;
-    });
-
-    html += `
-        </tbody>
-        </table>
-        </div>
-    `;
-    container.innerHTML = html;
-}
-
 ====================
 FILE: simulation.js
 ====================
+//simulation.js
 // --- sim-config ヘルパー関数 ---
 
 function parseSimConfig(configStr) {
     if (!configStr) return [];
-    const configs = [];
     // スペース、タブ、ハイフンで分割し、空の要素を除外
     const parts = configStr.split(/[\s\-]+/).filter(Boolean);
     
+    const configs = [];
     for (let i = 0; i < parts.length; i += 2) {
         const id = parts[i];
         const rollStr = parts[i+1];
@@ -2414,7 +2065,6 @@ function generateGuaranteedConfig(configStr, gachaId) {
     if (parsed.length === 0) return null;
     
     const lastPart = parsed.pop();
-    
     if (!lastPart.g && lastPart.rolls > 0) { 
         const newRollsForLastPart = Math.max(0, lastPart.rolls - 1);
         if (newRollsForLastPart > 0) {
@@ -2427,7 +2077,7 @@ function generateGuaranteedConfig(configStr, gachaId) {
     return null;
 }
 
-// --- 回避/誘発ロジック ---
+// --- 回避/誘発ロジック (View用) ---
 
 function getBestLink(cellSimConfigs, seedIndex, gachaConfigs) {
     if (seedIndex < 0) return null;
@@ -2470,13 +2120,11 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
     const isRerolled = currentRoll.isRerolled;
     const originalCharId = currentRoll.originalChar?.id;
     const originalRarity = currentRoll.rarity;
-
     if (originalRarity !== 'rare' || !originalCharId) {
         return { link: null, rerollCharName: null };
     }
 
     const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
-
     for (const otherConfig of gachaConfigs) {
         const otherGachaId = otherConfig.id;
         if (otherGachaId === currentGachaId) continue;
@@ -2485,7 +2133,7 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
         if (otherIndex === -1) continue;
 
         const createAltConfig = (prevIndexUsed) => {
-            const configStr = getBestLink(cellSimConfigs, prevIndexUsed, gachaConfigs); 
+            const configStr = getBestLink(cellSimConfigs, prevIndexUsed, gachaConfigs);
             if (configStr === null) return null; 
             const parts = parseSimConfig(configStr);
             const last_part = parts.length > 0 ? parts[parts.length - 1] : null;
@@ -2569,6 +2217,229 @@ function canBeAvoided(seedIndex, currentGachaId, tableData, gachaConfigs) {
     return false;
 }
 
+// --- 自動経路探索ロジック ---
+
+/**
+ * Helper: 指定されたConfigを実行した後の SeedIndex と LastDraw を取得する
+ */
+function getSimulationState(configStr, seeds) {
+    const configs = parseSimConfig(configStr);
+    let currentSeedIndex = 0;
+    let lastDraw = null;
+
+    for (const sim of configs) {
+        const conf = gachaMasterData.gachas[sim.id];
+        if (!conf) continue;
+
+        let normalRolls = sim.rolls;
+        let isGuaranteedStep = false;
+        
+        if (sim.g) {
+             if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
+             else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
+             else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
+             else { normalRolls = sim.rolls; }
+        }
+
+        // Normal Rolls
+        for(let k=0; k < normalRolls; k++) {
+            if (currentSeedIndex >= seeds.length - 5) break; // 安全策
+            const rr = rollWithSeedConsumptionFixed(currentSeedIndex, conf, seeds, lastDraw);
+            if (rr.seedsConsumed === 0) break;
+            
+            lastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
+            currentSeedIndex += rr.seedsConsumed;
+        }
+        
+        // Guaranteed Roll
+        if (isGuaranteedStep && currentSeedIndex < seeds.length) {
+            if (typeof rollGuaranteedUber !== 'undefined') {
+                const gr = rollGuaranteedUber(currentSeedIndex, conf, seeds);
+                currentSeedIndex += gr.seedsConsumed;
+                // 確定枠の結果は LastDraw に影響しない（次の通常枠の被り判定には使われない）のが一般的だが
+                // 必要ならここで更新する。今回は更新しない実装とする。
+            }
+        }
+    }
+    return { currentIndex: currentSeedIndex, lastDraw: lastDraw };
+}
+
+/**
+ * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
+ * メインテーブルに表示されているガチャのみ使用し、確定・プラチナ等は使用しない
+ * * ★追加機能: currentConfigStr がある場合、その続きから計算する
+ */
+function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr) {
+    // シード配列の準備 (Start Seedから生成)
+    const getSeeds = () => {
+        const seedEl = document.getElementById('seed');
+        const initialSeed = parseInt(seedEl ? seedEl.value : 12345);
+        const rng = new Xorshift32(initialSeed);
+        const tempSeeds = [];
+        // 必要十分な数だけ回す（targetIdx + バッファ）
+        const limit = Math.max(targetSeedIndex, 1000) + 500; 
+        for(let i=0; i < limit; i++) tempSeeds.push(rng.next());
+        return tempSeeds;
+    };
+    const simSeeds = getSeeds();
+
+    // 0. 開始地点の決定 (既存Configの続き or 最初から)
+    let startIdx = 0;
+    let initialLastDraw = null;
+    let baseConfigStr = "";
+
+    if (currentConfigStr && currentConfigStr.trim() !== "") {
+        const state = getSimulationState(currentConfigStr, simSeeds);
+        
+        // もしターゲットが既に通過した地点(過去)にある場合は、追記ではなく上書き(最初から計算)にする
+        if (targetSeedIndex > state.currentIndex) {
+            startIdx = state.currentIndex;
+            initialLastDraw = state.lastDraw;
+            baseConfigStr = currentConfigStr.trim();
+        }
+    }
+
+    // 1. 目標地点のガチャ設定を取得
+    const targetConfig = gachaMasterData.gachas[targetGachaId];
+    if (!targetConfig) return null;
+
+    // 2. 探索に使用可能なガチャConfigリスト
+    const usableConfigs = visibleGachaIds.map(idStr => {
+        const id = idStr.replace(/[gfs]$/, '');
+        const conf = gachaMasterData.gachas[id];
+        if (!conf) return null;
+        if (conf.name.includes('プラチナ') || conf.name.includes('レジェンド')) return null;
+        return conf;
+    }).filter(c => c !== null);
+
+    if (usableConfigs.length === 0) return null;
+
+    // 3. 経路探索実行 (startIdx から targetSeedIndex まで)
+    const route = findPathGreedy(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
+    
+    if (route) {
+        // ★修正: クリックしたセル自身を含めるため、最後にターゲットガチャを1回引く
+        route.push({ id: targetGachaId, rolls: 1 });
+
+        const newRouteStr = compressRoute(route);
+        if (baseConfigStr) {
+            return baseConfigStr + " " + newRouteStr;
+        } else {
+            return newRouteStr;
+        }
+    } else {
+        return null; // ルート見つからず
+    }
+}
+
+/**
+ * 貪欲法による経路探索
+ */
+function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
+    let currentIdx = startIdx;
+    let path = []; // { id: gachaId, rolls: 1 }
+    let lastDraw = initialLastDraw; // { rarity, charId, isRerolled }
+
+    // 安全装置: 無限ループ防止
+    let loopCount = 0;
+    const MAX_LOOPS = 2000;
+
+    while (currentIdx < targetIdx && loopCount < MAX_LOOPS) {
+        loopCount++;
+        const dist = targetIdx - currentIdx;
+        
+        let possibleMoves = [];
+
+        for (const conf of configs) {
+            // このガチャを引いた場合の結果を予測
+            const res = rollWithSeedConsumptionFixed(currentIdx, conf, simSeeds, lastDraw);
+            
+            // ターゲットを越える場合は除外
+            if (currentIdx + res.seedsConsumed > targetIdx) continue;
+
+            // 評価値計算 (小さいほど良い)
+            let score = 0;
+
+            // 1. パリティ（偶奇）チェック
+            const distIsOdd = (dist % 2 !== 0);
+            const moveIsOdd = (res.seedsConsumed % 2 !== 0);
+            
+            if (distIsOdd === moveIsOdd) {
+                score -= 100; // パリティが一致する手は高評価
+            } else {
+                score += 50; // パリティ不一致は後回し
+            }
+
+            // 2. ターゲットガチャ優先
+            if (conf.id == targetGachaId) score -= 10;
+            
+            // 3. 直前のガチャと同じなら優先（圧縮効率・Stickiness）
+            const prevId = path.length > 0 ? path[path.length-1].id : null;
+            if (conf.id == prevId) score -= 5;
+
+            // 4. 消費シード数による重みづけ (パリティが合うなら大きく進む)
+            score -= res.seedsConsumed;
+
+            possibleMoves.push({ config: conf, result: res, score: score });
+        }
+
+        // 候補がない（詰み）
+        if (possibleMoves.length === 0) return null;
+
+        // スコア順にソート (昇順)
+        possibleMoves.sort((a, b) => a.score - b.score);
+
+        // 最良の手を採用
+        const bestMove = possibleMoves[0];
+        
+        path.push({ id: bestMove.config.id, rolls: 1 });
+        
+        // 次のステップのために lastDraw を更新
+        lastDraw = { 
+            rarity: bestMove.result.rarity, 
+            charId: bestMove.result.charId, 
+            isRerolled: bestMove.result.isRerolled 
+        };
+        
+        currentIdx += bestMove.result.seedsConsumed;
+    }
+
+    // 到達チェック
+    if (currentIdx === targetIdx) {
+        return path;
+    }
+
+    return null;
+}
+
+/**
+ * ルート配列をConfig文字列に圧縮する
+ * [{id:A}, {id:A}, {id:B}] -> "A 2 B 1"
+ */
+function compressRoute(path) {
+    if (!path || path.length === 0) return "";
+    
+    let compressed = [];
+    if (path.length > 0) {
+        let currentId = path[0].id;
+        let count = 0;
+
+        for (const step of path) {
+            if (step.id === currentId) {
+                count++;
+            } else {
+                compressed.push(`${currentId} ${count}`);
+                currentId = step.id;
+                count = 1;
+            }
+        }
+        // 最後の一つ
+        compressed.push(`${currentId} ${count}`);
+    }
+
+    return compressed.join(" ");
+}
+
 ====================
 FILE: style.css
 ====================
@@ -2577,11 +2448,39 @@ FILE: style.css
 /* =========================================
    基本設定
    ========================================= */
+/* HTMLとBODYの高さを100%にし、スクロールは内部で行うように設定 */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden; /* Body自体のスクロールを禁止 */
+}
+
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     padding: 20px;
+    box-sizing: border-box; /* パディングを含めてサイズ計算 */
     color: #333;
     background-color: #fff;
+    /* Flexboxレイアウトに変更 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* コンテナも高さを確保し、中身をFlex配置 */
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 縮小させたくない要素（ヘッダーやコントロール） */
+.header-row, 
+.controls, 
+.description-box, 
+#result, 
+.forecast-summary-container {
+    flex-shrink: 0;
 }
 
 /* ヘッダーレイアウト */
@@ -2595,6 +2494,7 @@ body {
 }
 
 h1 {
+    font-size: 20px;
     margin: 0;
     padding: 0;
     white-space: nowrap; /* タイトルの折り返し禁止 */
@@ -2603,7 +2503,8 @@ h1 {
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 4px; /* 間隔を詰める */
+    gap: 4px;
+    /* 間隔を詰める */
     flex-wrap: nowrap;
 }
 
@@ -2731,8 +2632,11 @@ button.active {
 #rolls-table-container {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: 80vh;
+    /* max-height: 80vh;  <-- 固定制限を削除 */
+    max-height: none; 
+    flex-grow: 1; /* 残りの高さを全て埋める */
     border: 1px solid #ddd;
+    margin-bottom: 0;
 }
 
 table {
@@ -2824,11 +2728,15 @@ th {
     /* コンテナ自体が画面幅を超えないように設定 */
     max-width: 100%;
     box-sizing: border-box;
+    /* スケジュール表示時も高さを埋める設定 */
+    flex-grow: 1;
+    overflow-y: auto;
 }
 
 .schedule-scroll-wrapper {
     overflow-x: auto;
-    max-height: 80vh;
+    /* max-height: 80vh; <-- 固定制限を削除 */
+    max-height: none;
     border: 1px solid #ddd;
     /* 画面幅に収める */
     max-width: 100%;
@@ -2890,13 +2798,15 @@ th {
     display: inline-block;
     max-width: 100%;
     vertical-align: top;
-    width: 100%; /* 幅を確保 */
+    width: 100%;
+    /* 幅を確保 */
 }
 
 .gantt-chart-container {
     border: 1px solid #ccc;
     background: #fff;
-    /* overflow: hidden; を削除してスクロールバーを表示可能にする */
+    /* overflow: hidden;
+       を削除してスクロールバーを表示可能にする */
     font-size: 12px;
     margin-bottom: 20px;
     max-width: 100%; /* はみ出し防止 */
@@ -3006,7 +2916,8 @@ th {
 
 .gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
 .gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
-.gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
+.gantt-bar.g-fest { background-color: #ff9800;
+border-color: #ff9800; }
 .gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
 
 .gantt-bar-text {
@@ -3068,9 +2979,12 @@ th {
 
     /* --- ヘッダーのモバイル調整（1行表示） --- */
     .header-row {
-        flex-direction: row !important; /* 横並び強制 */
-        flex-wrap: nowrap !important; /* 折り返し禁止 */
-        overflow-x: auto; /* 幅が足りない場合はスクロール */
+        flex-direction: row !important;
+        /* 横並び強制 */
+        flex-wrap: nowrap !important;
+        /* 折り返し禁止 */
+        overflow-x: auto;
+        /* 幅が足りない場合はスクロール */
         align-items: center;
         padding-bottom: 5px;
         border-bottom: 1px solid #eee;
@@ -3104,18 +3018,6 @@ th {
         line-height: 20px;
     }
 
-    /* SEED入力欄のポップアップ調整 */
-    #seed-input-container {
-        position: absolute;
-        top: 35px;
-        left: 50px;
-        background: white;
-        padding: 5px;
-        border: 1px solid #ccc;
-        z-index: 100;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
     /* テーブルエリアの拡張 */
     #rolls-table-container {
         flex-grow: 1;
@@ -3123,7 +3025,8 @@ th {
         margin-bottom: 0 !important;
         overflow-y: auto;
         border-bottom: none;
-        width: 100%; /* 横幅いっぱい */
+        width: 100%;
+        /* 横幅いっぱい */
     }
 
     /* スケジュールコンテナのモバイル調整（見切れ対策） */
@@ -3132,12 +3035,14 @@ th {
         overflow-y: auto;
         padding-bottom: 0;
         width: 100%; /* 横幅を100%に制限 */
-        max-width: 100vw; /* 画面幅を超えない */
+        max-width: 100vw;
+        /* 画面幅を超えない */
         box-sizing: border-box;
     }
     .schedule-scroll-wrapper {
         max-height: none !important;
-        width: 100%; /* コンテナ幅に合わせる */
+        width: 100%;
+        /* コンテナ幅に合わせる */
     }
 
     /* フォント・パディングの微調整 */
@@ -3286,6 +3191,7 @@ function initializeDefaultGachas() {
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
                     return now >= startDt && now <= endDt;
                 });
+
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
@@ -3361,7 +3267,7 @@ function updateModeButtonState() {
 function refreshModeView() {
     const simWrapper = document.getElementById('sim-control-wrapper');
     if (simWrapper) {
-        if (isSimulationMode && !isScheduleMode) {
+        if (isSimulationMode && !isScheduleMode && !isDescriptionMode) {
             simWrapper.classList.remove('hidden');
         } else {
             simWrapper.classList.add('hidden');
@@ -3373,7 +3279,7 @@ function refreshModeView() {
 // --- テーブル更新・リセット ---
 
 function resetAndGenerateTable() {
-    if (isScheduleMode) return;
+    if (isScheduleMode || isDescriptionMode) return;
     finalSeedForUpdate = null;
     const simConf = document.getElementById('sim-config');
     if (simConf && simConf.value.trim() === '') {
@@ -3443,6 +3349,15 @@ function applySeedInput() {
     if (trigger) trigger.classList.remove('hidden');
 }
 
+// 追加: SEEDをクリップボードにコピー
+function copySeedToClipboard() {
+    const seedInput = document.getElementById('seed');
+    if (!seedInput) return;
+    navigator.clipboard.writeText(seedInput.value).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+
 
 // --- 表示切替 ---
 
@@ -3460,9 +3375,72 @@ function updateToggleButtons() {
 function toggleDescription() {
     const content = document.getElementById('description-content');
     const toggle = document.getElementById('toggle-description');
-    if(content && toggle) {
-        const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ? '概要' : '概要を隠す';
+    // UI要素の取得
+    const tableContainer = document.getElementById('rolls-table-container');
+    const simWrapper = document.getElementById('sim-control-wrapper');
+    const resultDiv = document.getElementById('result');
+    const mainControls = document.getElementById('main-controls');
+    const scheduleContainer = document.getElementById('schedule-container');
+
+    // モード切替
+    isDescriptionMode = !isDescriptionMode;
+    if (isDescriptionMode) {
+        // --- 概要モード ON ---
+
+        // 1. スケジュールモードが開いていれば閉じる
+        if (typeof isScheduleMode !== 'undefined' && isScheduleMode && typeof toggleSchedule === 'function') {
+            toggleSchedule();
+        }
+
+        // 2. ボタン状態更新
+        if (toggle) {
+            toggle.textContent = 'Back';
+            toggle.classList.add('active');
+        }
+
+        // 3. メイン画面の要素を隠す
+        if (tableContainer) tableContainer.classList.add('hidden');
+        if (simWrapper) simWrapper.classList.add('hidden');
+        if (resultDiv) resultDiv.classList.add('hidden');
+        if (mainControls) mainControls.classList.add('hidden');
+        if (scheduleContainer) scheduleContainer.classList.add('hidden');
+        // 4. 概要コンテンツを表示＆スタイル調整
+        if (content) {
+            content.classList.remove('hidden');
+            content.style.flexGrow = '1';       
+            content.style.overflowY = 'auto';   
+            content.style.height = '100%';
+            content.style.webkitOverflowScrolling = 'touch';
+            content.style.minHeight = '0';
+            content.style.maxHeight = 'none';   
+        }
+
+    } else {
+        // --- 概要モード OFF ---
+
+        // 1. ボタン状態更新
+        if (toggle) {
+            toggle.textContent = '概要';
+            toggle.classList.remove('active');
+        }
+
+        // 2. 概要コンテンツを隠す＆スタイルリセット
+        if (content) {
+            content.classList.add('hidden');
+            content.style.flexGrow = '';
+            content.style.overflowY = '';
+            content.style.height = '';
+            content.style.minHeight = '';
+            content.style.maxHeight = '';
+            content.style.webkitOverflowScrolling = '';
+        }
+
+        // 3. メイン画面の要素を復帰
+        if (tableContainer) tableContainer.classList.remove('hidden');
+        if (mainControls) mainControls.classList.remove('hidden');
+        
+        if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
+        if (showResultDisplay && resultDiv) resultDiv.classList.remove('hidden');
     }
 }
 
@@ -3480,6 +3458,50 @@ function toggleFindInfo() {
 function updateMasterInfoView() {
     // マスター情報は generateRollsTable 内で生成されるため、ここでは何もしない
     // (将来的に分離する場合はここにロジックを追加)
+}
+
+/**
+ * セルクリック時のハンドラ
+ * Simモード時: ルートを計算してConfigに入力
+ * 通常時: キャラ名をクリップボードにコピー（またはSimモードへ誘導）
+ */
+function onGachaCellClick(targetSeedIndex, gachaId, charName) {
+    if (isSimulationMode) {
+        const visibleIds = tableGachaIds.map(id => id);
+        
+        // Config欄の現在の値を取得
+        const configInput = document.getElementById('sim-config');
+        const currentConfig = configInput ? configInput.value : "";
+
+        // ルート計算 (simulation.js)
+        if (typeof calculateRouteToCell === 'function') {
+            // 第4引数に currentConfig を渡す
+            const routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
+            
+            if (configInput) {
+                if (routeConfig) {
+                    // 成功: Configに入力して更新
+                    configInput.value = routeConfig;
+                    if (typeof updateUrlParams === 'function') updateUrlParams();
+                    resetAndGenerateTable();
+                } else {
+                    // 失敗(ルート見つからない、または計算不能): キャラ名を設定
+                    // 既存値がある場合は末尾に追記する
+                    configInput.value = currentConfig ? (currentConfig + " " + charName) : charName;
+                    console.warn("Route not found. Set character name.");
+                }
+            }
+        }
+    } else {
+        // 通常モード時の挙動
+        const confirmSwitch = confirm(`Simモードに切り替えて、このセル(${charName})へのルートを計算しますか？`);
+        if (confirmSwitch) {
+            toggleAppMode(); 
+            setTimeout(() => {
+                onGachaCellClick(targetSeedIndex, gachaId, charName);
+            }, 100);
+        }
+    }
 }
 
 ====================
@@ -3500,6 +3522,7 @@ let finalSeedForUpdate = null;
 
 let isSimulationMode = false;
 let isScheduleMode = false;
+let isDescriptionMode = false; // 追加: 概要表示モードフラグ
 let activeGuaranteedIds = new Set();
 let isScheduleAnalyzed = false;
 
@@ -3522,7 +3545,6 @@ FILE: ui_schedule_handler.js
 // スケジュール情報の事前解析
 function prepareScheduleInfo() {
     if (isScheduleAnalyzed) return;
-
     if (typeof loadedTsvContent === 'string' && loadedTsvContent && 
         typeof parseGachaTSV === 'function' && typeof parseDateTime === 'function') {
         try {
@@ -3535,13 +3557,16 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
+            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+         
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                 gachaMasterData.gachas[gId].name += " [確定]";
+             
                             }
                         }
                     }
@@ -3562,7 +3587,6 @@ function setupScheduleUI() {
         scheduleContainer = document.createElement('div');
         scheduleContainer.id = 'schedule-container';
         scheduleContainer.className = 'hidden';
-        
         const tableContainer = document.getElementById('rolls-table-container');
         if (tableContainer) {
             tableContainer.parentNode.insertBefore(scheduleContainer, tableContainer.nextSibling);
@@ -3578,6 +3602,12 @@ function toggleSchedule() {
         alert("スケジュールの読み込みに失敗しました。");
         return;
     }
+
+    // もし概要モードが開いていれば、先に閉じる (排他制御)
+    if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function') {
+        toggleDescription(); 
+    }
+
     isScheduleMode = !isScheduleMode;
     const scheduleBtn = document.getElementById('toggle-schedule-btn');
     const simWrapper = document.getElementById('sim-control-wrapper');
@@ -3585,7 +3615,7 @@ function toggleSchedule() {
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const mainControls = document.getElementById('main-controls');
-
+    
     if (isScheduleMode) {
         scheduleBtn.textContent = 'Back';
         scheduleBtn.classList.add('active');
@@ -3629,7 +3659,6 @@ function addGachasFromSchedule() {
     const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
 
     let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
     if (activeScheduleItems.length === 0) {
         alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
         return;
@@ -3643,16 +3672,15 @@ function addGachasFromSchedule() {
         };
 
         const isSpecialA = checkSpecial(a);
+        
         const isSpecialB = checkSpecial(b);
         
         if (isSpecialA && !isSpecialB) return 1; 
         if (!isSpecialA && isSpecialB) return -1; 
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
-    
     // 既存の手動追加分を残すかどうかのロジック（ここではスケジュールにないものは残す）
     tableGachaIds.forEach((idWithSuffix, index) => {
         const baseId = idWithSuffix.replace(/[gfs]$/, '');
@@ -3662,6 +3690,7 @@ function addGachasFromSchedule() {
                 count: uberAdditionCounts[index] || 0
             });
         }
+  
     });
 
     const newScheduleGachas = activeScheduleItems.map(item => {
@@ -3672,11 +3701,9 @@ function addGachasFromSchedule() {
             count: 0
         };
     });
-
     const finalGachaList = [...keptGachas, ...newScheduleGachas];
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
-
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
@@ -4104,6 +4131,7 @@ const RowAnalysis = {
 ====================
 FILE: view_cell_renderer.js
 ====================
+
 /**
  * view_cell_renderer.js
  * セル単位のHTML生成ロジック
@@ -4124,7 +4152,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     
     const firstGachaIdWithSuffix = tableGachaIds[0];
     if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
-    
     let firstId = firstGachaIdWithSuffix.replace(/[gfs]$/, '');
     const originalConfig = gachaMasterData.gachas[firstId];
     if(!originalConfig) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
@@ -4140,7 +4167,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     }
 
     if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
-    
     const sNum1 = seedIndex + 1;
     const sNum2 = seedIndex + 2;
     const sVal_0 = seeds[seedIndex];
@@ -4261,7 +4287,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         if (fullRoll.rarity === 'legend') isAuto = true;
         else if (isLimited) isAuto = true;
         else if (charIdStr.startsWith('sim-new-')) isAuto = true;
-        
         const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
         const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
 
@@ -4269,6 +4294,12 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             style = 'background-color: #adff2f; font-weight: bold;';
         }
     }
+
+    // --- クリックイベント設定 (経路計算用) ---
+    // キャラ名のエスケープ処理 (簡易)
+    const charNameForCopy = fullRoll.finalChar.name.replace(/'/g, "\\'");
+    const clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${charNameForCopy}')"`;
+    style += ' cursor: pointer;';
 
     let content = fullRoll.finalChar.name;
     if (!isSimulationMode) {
@@ -4278,9 +4309,10 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             const originalName = fullRoll.originalChar.name;
             const finalName = fullRoll.finalChar.name;
             let originalHtml = originalName;
-            if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
+            // 内部リンクには stopPropagation を追加してセルのonclick発火を防止
+            if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
             let finalHtml = finalName;
-            if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
+            if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
             
             const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
             let addr = formatAddress(nextSeedIdx);
@@ -4290,7 +4322,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             content = `${originalHtml}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${finalHtml}`;
         } else {
             const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
-            if(slotSeedVal !== null) content = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
+            if(slotSeedVal !== null) content = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
         }
     } else {
         if (fullRoll.isRerolled) {
@@ -4302,7 +4334,8 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             content = `${fullRoll.originalChar.name}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${fullRoll.finalChar.name}`;
         }
     }
-    return `<td class="gacha-cell gacha-column${hlClass}" style="${style}">${content}</td>`;
+    
+    return `<td class="gacha-cell gacha-column${hlClass}" style="${style}" ${clickHandler}>${content}</td>`;
 }
 
 ====================
@@ -4742,6 +4775,366 @@ function generateMasterInfoHtml() {
     });
 
     return html;
+}
+
+====================
+FILE: view_schedule.js
+====================
+/**
+ * view_schedule.js
+ * スケジュール表・ガントチャートのレンダリング及び画像保存を担当
+ * 依存: schedule_logic.js (Utility functions)
+ */
+
+// 文字列の表示幅を概算する関数 (動的幅調整用)
+function calcTextWidth(text) {
+    let width = 0;
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        // 半角文字(ASCII範囲)は約8px、それ以外(全角)は約13pxと仮定
+        if ((code >= 0x00 && code < 0x81) || (code === 0xf8f0) || (code >= 0xff61 && code < 0xffa0) || (code >= 0xf8f1 && code < 0xf8f4)) {
+            width += 8;
+        } else {
+            width += 13;
+        }
+    }
+    return width;
+}
+
+// 画像保存処理
+function saveGanttImage() {
+    const element = document.querySelector('.gantt-chart-container');
+    if (!element) return;
+    // ガントチャートのコンテンツ幅を取得
+    const header = element.querySelector('.gantt-header');
+    if (!header) return;
+    const contentWidth = header.style.width;
+
+    const originalOverflow = element.style.overflow;
+    const originalWidth = element.style.width; 
+    
+    const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
+    const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
+    // キャプチャ用に一時的にスタイル変更
+    element.style.overflow = 'visible';
+    element.style.width = contentWidth; 
+    
+    if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
+    html2canvas(element).then(canvas => {
+        // スタイル復元
+        element.style.overflow = originalOverflow;
+        element.style.width = originalWidth;
+        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+
+        const link = document.createElement('a');
+        link.download = 'gacha_schedule.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }).catch(err => {
+        console.error("Image capture failed:", err);
+        alert("画像の保存に失敗しました。");
+        element.style.overflow = originalOverflow;
+        element.style.width = originalWidth;
+        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+    });
+}
+
+// ガントチャート生成ロジック
+function renderGanttChart(data) {
+    const filteredData = data.filter(item => !isPlatinumOrLegend(item));
+
+    if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0); 
+    const yesterdayInt = getDateInt(yesterday);
+    const activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+    
+    if (activeData.length === 0) {
+        return '<p>現在開催中または予定されているガチャはありません。</p>';
+    }
+
+    // 表示範囲の決定
+    let minDateInt = parseInt(activeData[0].rawStart);
+    let maxEndDateTime = new Date(0);
+    // 動的幅計算用の最大幅変数
+    let maxLabelTextWidth = 0;
+
+    activeData.forEach(item => {
+        const s = parseInt(item.rawStart);
+        if (s < minDateInt) minDateInt = s;
+        
+        const eDt = parseDateTime(item.rawEnd, item.endTime);
+        if (eDt > maxEndDateTime) maxEndDateTime = eDt;
+
+        // --- 幅計算ロジック ---
+        let displayName = item.seriesName;
+        
+        if (item.guaranteed) displayName += " [確定]";
+        // 表示名の長さを計算
+        const textW = calcTextWidth(displayName);
+        if (textW > maxLabelTextWidth) {
+            maxLabelTextWidth = textW;
+        }
+    });
+    // 幅の設定
+    // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
+    let labelWidth = Math.max(160, maxLabelTextWidth + 20);
+    if (labelWidth > 320) labelWidth = 320; // 上限設定
+
+    let minDate = parseDateStr(String(minDateInt));
+    // 表示開始日を調整
+    const viewStartDate = new Date(yesterday);
+    viewStartDate.setDate(viewStartDate.getDate() - 2);
+    if (minDate < viewStartDate) {
+        minDate = viewStartDate;
+    }
+
+    // --- 終了日の決定 ---
+    let limitDate = new Date(minDate);
+    limitDate.setDate(limitDate.getDate() + 35);
+    let chartEnd = new Date(maxEndDateTime);
+    if (chartEnd > limitDate) {
+        chartEnd = limitDate;
+    }
+
+    // 右端
+    chartEnd.setHours(0, 0, 0, 0);
+    chartEnd.setDate(chartEnd.getDate() + 1);
+    const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
+    
+    if (totalDays <= 0) return '';
+    const dayWidth = 50; 
+    const msPerDay = 1000 * 60 * 60 * 24;
+    // 全体幅計算
+    const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
+    // 現在時刻線の位置計算
+    const now = new Date();
+    let currentLineHtml = '';
+    if (now >= minDate && now < chartEnd) {
+        const diffNowMs = now - minDate;
+        const currentLineLeftPx = (diffNowMs / msPerDay) * dayWidth;
+        currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
+    }
+
+    let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
+    for (let i = 0; i < totalDays; i++) {
+        const d = new Date(minDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = getShortDateStr(d);
+        const isToday = getDateInt(d) === getDateInt(new Date());
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
+        headerHtml += `<div class="${cls}" style="width:${dayWidth}px;">${dateStr}</div>`;
+    }
+    headerHtml += `<div class="gantt-date-cell" style="width:${dayWidth/2}px; border-right:none;"></div>`;
+    headerHtml += '</div>';
+
+    let bodyHtml = '';
+    activeData.forEach(item => {
+        const startDateTime = parseDateTime(item.rawStart, item.startTime);
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+
+        const diffStartMs = startDateTime - minDate;
+        const durationMs = endDateTime - startDateTime;
+
+        let offsetPx = (diffStartMs / msPerDay) * dayWidth;
+        let widthPx = (durationMs / msPerDay) * dayWidth;
+
+        if (offsetPx < 0) {
+            widthPx += offsetPx; 
+            offsetPx = 0;
+        }
+        
+        const maxPx = totalDays * dayWidth;
+        if (offsetPx >= maxPx) return;
+        if (offsetPx + widthPx > maxPx) {
+            widthPx = maxPx - offsetPx; 
+        }
+        
+        if (widthPx <= 0) return;
+
+        let displayName = item.seriesName;
+        // 確定なら表記追加
+        if (item.guaranteed) {
+            displayName += " [確定]";
+        }
+
+        let barClass = 'gantt-bar';
+        if (displayName.includes("極選抜")) barClass += ' g-kyoku';
+        else if (displayName.includes("超選抜")) barClass += ' g-cho';
+        else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
+        else if (displayName.includes("コラボ")) barClass += ' g-collab';
+        const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
+
+        // 行のスタイル判定
+        let rowClass = 'gantt-row';
+        if (now > endDateTime) {
+            rowClass += ' row-ended';
+        } else if (item.guaranteed) {
+            rowClass += ' row-guaranteed';
+        }
+
+        bodyHtml += `
+            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;"
+                title="${displayName} (ID:${item.id})">${displayName}</div>
+                <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
+                    ${generateGridLines(totalDays, dayWidth, minDate)}
+                    <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
+                        <span class="gantt-bar-text">${durationDays}日間</span>
+                    </div>
+                    ${currentLineHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    return `
+        <div class="gantt-outer-wrapper">
+            <div style="margin-bottom: 5px; text-align: right;">
+                <button onclick="saveGanttImage()" class="secondary" style="font-size: 11px; padding: 4px 8px;">画像として保存</button>
+            </div>
+            <div class="gantt-chart-container">
+                <div class="gantt-scroll-wrapper">
+                    ${headerHtml}
+                    <div class="gantt-body">
+                        ${bodyHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateGridLines(days, width, startDate) {
+    let html = '';
+    for (let i = 0; i < days; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const style = `left:${i * width}px; width:${width}px;`;
+        const cls = isWeekend ? 'gantt-grid-line weekend' : 'gantt-grid-line';
+        html += `<div class="${cls}" style="${style}"></div>`;
+    }
+    return html;
+}
+
+function fmtRate(val) {
+    if (!val) return "0%";
+    return (parseInt(val) / 100) + "%";
+}
+
+function renderScheduleTable(tsvContent, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // parseGachaTSV等は schedule_logic.js に依存
+    const data = parseGachaTSV(tsvContent);
+    const ganttHtml = renderGanttChart(data);
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayInt = getDateInt(yesterday);
+    let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+
+    filteredData.sort((a, b) => {
+        const isSpecialA = isPlatinumOrLegend(a);
+        const isSpecialB = isPlatinumOrLegend(b);
+        
+        if (isSpecialA && !isSpecialB) return 1; 
+        if (!isSpecialA && isSpecialB) return -1; 
+        
+        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    });
+    let html = `
+        <h3 style="margin-top:0;">開催スケジュール</h3>
+        ${ganttHtml}
+        <div style="margin-top: 20px;"></div>
+        <div class="schedule-scroll-wrapper">
+        <table class="schedule-table">
+        <thead>
+            <tr>
+                <th style="min-width:50px;">自</th>
+                <th style="min-width:50px;">至</th>
+                <th>ガチャ名 / 詳細</th>
+                <th>レア</th>
+                <th>激レア</th>
+                <th>超激</th>
+                <th>伝説</th>
+                <th>確定</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    const now = new Date();
+
+    filteredData.forEach(item => {
+        let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
+        
+        if (item.guaranteed) {
+            seriesDisplay += " [確定]";
+        }
+
+        const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
+        
+        const endDateFormatted = formatDateJP(item.rawEnd);
+        let endStr = endDateFormatted;
+        if (endDateFormatted !== '永続') {
+            endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        }
+        
+        const isPlatLeg = isPlatinumOrLegend(item);
+
+        const uberRateVal = parseInt(item.uber);
+        let uberStyle = '';
+        if (!isPlatLeg && uberRateVal !== 500) {
+            uberStyle = 'color:red; font-weight:bold;';
+        }
+
+        const legendRateVal = parseInt(item.legend);
+        let legendStyle = '';
+        if (!isPlatLeg && legendRateVal > 30) {
+            legendStyle = 'color:red; font-weight:bold;';
+        }
+
+        // 行の背景色決定
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+        let rowClass = "";
+        
+        if (now > endDateTime) {
+            rowClass = "row-ended";
+        } else if (item.guaranteed) {
+            rowClass = "row-guaranteed";
+        }
+
+        html += `
+            <tr class="${rowClass}">
+                <td>${startStr}</td>
+                <td>${endStr}</td>
+                <td style="text-align:left; vertical-align: middle;">
+                    <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; 
+                    color:#555; user-select: text;">(ID: ${item.id})</span></div>
+                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+                </td>
+                <td>${fmtRate(item.rare)}</td>
+                <td>${fmtRate(item.supa)}</td>
+                <td style="${uberStyle}">${fmtRate(item.uber)}</td>
+                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
+                <td style="text-align:center; font-size:1.2em;">
+                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+        </tbody>
+        </table>
+        </div>
+    `;
+    container.innerHTML = html;
 }
 
 ====================
