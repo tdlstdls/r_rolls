@@ -237,8 +237,8 @@ function toggleDescription() {
             content.classList.remove('hidden');
             content.style.flexGrow = '1';       // 残りの領域を埋める
             content.style.overflowY = 'auto';   // スクロール許可
-            content.style.height = '0';         // Flexbox内での高さをリセット (autoだと中身に引っ張られる)
-            content.style.minHeight = '0';      // 最小高さを0にして縮小可能にする
+            content.style.height = 'auto';      // 高さ自動調整 (0だと潰れるため修正)
+            content.style.minHeight = '0';      // 縮小可能にする設定は維持
             content.style.maxHeight = 'none';   // 高さ制限解除
         }
 
