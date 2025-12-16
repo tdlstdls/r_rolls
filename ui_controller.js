@@ -9,19 +9,19 @@ let tableGachaIds = [];
 let currentRolls = 300;
 let showSeedColumns = false;
 let showResultDisplay = false;
-let showMasterInfo = false;
-let showFindInfo = false;
+let showFindInfo = false; // Findエリア（予報＋マスター情報）の表示フラグ
 let finalSeedForUpdate = null;
 let isSimulationMode = false;
 let isScheduleMode = false;
 let activeGuaranteedIds = new Set();
 let isScheduleAnalyzed = false;
+
 // Find機能の状態管理
 let hiddenFindIds = new Set(); // 自動ターゲットのうち、非表示にするID
 let userTargetIds = new Set(); // 自動ターゲット以外で、表示するID (手動ターゲット)
-let isFindListCleared = false; // 一括非表示状態のフラグ
+let isFindListCleared = false; 
 
-// 超激レア追加シミュレーション用 (配列に変更してindex管理を容易にする)
+// 超激レア追加シミュレーション用
 let uberAdditionCounts = [];
 
 // --- 初期化 & データ処理 ---
@@ -43,8 +43,7 @@ function prepareScheduleInfo() {
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-                        if (gachaMasterData && 
-                            gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                 gachaMasterData.gachas[gId].name += " [確定]";
@@ -80,7 +79,7 @@ function initializeDefaultGachas() {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
                         tableGachaIds.push(newId);
-                        uberAdditionCounts.push(0); // 初期化
+                        uberAdditionCounts.push(0); 
                     });
                     scheduleFound = true;
                 }
@@ -113,7 +112,6 @@ function initializeDefaultGachas() {
         }
     }
 
-    // ▼▼▼ 修正: SEED値がデフォルト(12345)の場合は入力欄を表示する ▼▼▼
     const seedEl = document.getElementById('seed');
     if (seedEl && (seedEl.value === '12345' || seedEl.value === '')) {
         showSeedInput();
@@ -136,10 +134,10 @@ function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
         if (isSimulationMode) {
-            btn.textContent = "表示モードへ";
+            btn.textContent = "View";
             btn.classList.add('active');
         } else {
-            btn.textContent = "SIMモードへ（未実装）";
+            btn.textContent = "Sim";
             btn.classList.remove('active');
         }
     }
@@ -209,13 +207,12 @@ function addGachaColumn() {
         let val = options[0].value;
         if (activeGuaranteedIds.has(parseInt(val))) val += 'g';
         tableGachaIds.push(val);
-        uberAdditionCounts.push(0); // 新規列用に0を追加
+        uberAdditionCounts.push(0); 
         if (typeof generateRollsTable === 'function') generateRollsTable();
         updateMasterInfoView();
     }
 }
 
-// ▼▼▼ 修正: スケジュールから一括追加（IDで追加機能は維持） ▼▼▼
 function addGachasFromSchedule() {
     if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
         alert("スケジュールデータがありません。");
@@ -223,8 +220,6 @@ function addGachasFromSchedule() {
     }
 
     const scheduleData = parseGachaTSV(loadedTsvContent);
-    
-    // 1. 日付計算 (昨日) - schedule_logic.js の renderScheduleTable と同じ基準
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -233,18 +228,13 @@ function addGachasFromSchedule() {
     const d = String(yesterday.getDate()).padStart(2, '0');
     const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
 
-    // 2. フィルタリング: 昨日以降に終了するもの（開催中・未来含む）
     let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
     if (activeScheduleItems.length === 0) {
         alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
         return;
     }
 
-    // 3. ソート: スケジュール表の並び順に合わせる
-    // (プラチナ/レジェンドは最後、それ以外は日付順)
     activeScheduleItems.sort((a, b) => {
-        // schedule_logic.js の isPlatinumOrLegend が参照できる前提、なければ簡易判定
         const checkSpecial = (item) => {
             if (typeof isPlatinumOrLegend === 'function') return isPlatinumOrLegend(item);
             const n = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
@@ -254,14 +244,11 @@ function addGachasFromSchedule() {
         const isSpecialA = checkSpecial(a);
         const isSpecialB = checkSpecial(b);
         
-        if (isSpecialA && !isSpecialB) return 1; // Aが特殊なら後ろ
-        if (!isSpecialA && isSpecialB) return -1; // Bが特殊ならAは前
-        
-        // どちらも同じ属性なら開始日順
+        if (isSpecialA && !isSpecialB) return 1; 
+        if (!isSpecialA && isSpecialB) return -1; 
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
 
-    // 4. 現在のテーブル情報から「スケジュールにないもの」を抽出して保持
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
     tableGachaIds.forEach((idWithSuffix, index) => {
@@ -274,25 +261,19 @@ function addGachasFromSchedule() {
         }
     });
 
-    // 5. スケジュール分をリスト化
     const newScheduleGachas = activeScheduleItems.map(item => {
         let newId = item.id.toString();
-        // 確定フラグがあれば 'g' を付与
         if (item.guaranteed) newId += 'g';
         return {
             fullId: newId,
-            count: 0 // 新規追加なので追加数は0
+            count: 0
         };
     });
 
-    // 6. 結合 (残した分を左、スケジュール分を右)
     const finalGachaList = [...keptGachas, ...newScheduleGachas];
-
-    // 7. グローバル変数に反映
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
 
-    // 8. 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
     updateUrlParams();
@@ -301,23 +282,16 @@ function addGachasFromSchedule() {
 function removeGachaColumn(index) {
     tableGachaIds.splice(index, 1);
     uberAdditionCounts.splice(index, 1);
-    // 対応する追加数データも削除して詰める
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
 }
 
-// ★★★ 追加: 一番左以外を削除する機能 ★★★
 function resetToFirstGacha() {
     if (tableGachaIds.length <= 1) {
-        // 1つ以下なら何もしない
         return;
     }
-
-    // 0番目の要素だけ残して新しい配列にする
     tableGachaIds = [tableGachaIds[0]];
     uberAdditionCounts = [uberAdditionCounts[0]];
-
-    // 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
     updateUrlParams();
@@ -335,7 +309,6 @@ function updateGachaSelection(selectElement, index) {
         else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
         tableGachaIds[index] = newBaseId + suffix;
     }
-    // ガチャ変更時はadd設定をリセットしない（既存の値を維持する場合）
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
 }
@@ -344,12 +317,9 @@ function toggleGuaranteedColumn(index) {
     const currentVal = tableGachaIds[index];
     let baseId = currentVal;
     let suffix = '';
-    if (currentVal.endsWith('f')) { suffix = 'f'; baseId = currentVal.slice(0, -1);
-    } 
-    else if (currentVal.endsWith('s')) { suffix = 's'; baseId = currentVal.slice(0, -1);
-    } 
-    else if (currentVal.endsWith('g')) { suffix = 'g'; baseId = currentVal.slice(0, -1);
-    }
+    if (currentVal.endsWith('f')) { suffix = 'f'; baseId = currentVal.slice(0, -1); } 
+    else if (currentVal.endsWith('s')) { suffix = 's'; baseId = currentVal.slice(0, -1); } 
+    else if (currentVal.endsWith('g')) { suffix = 'g'; baseId = currentVal.slice(0, -1); }
 
     let nextSuffix = '';
     if (suffix === '') nextSuffix = 'g';
@@ -366,7 +336,6 @@ function updateUberAddition(selectElement, index) {
     if (typeof generateRollsTable === 'function') generateRollsTable();
 }
 
-// add入力欄の表示切替
 function showAddInput(index) {
     const trigger = document.getElementById(`add-trigger-${index}`);
     const wrapper = document.getElementById(`add-select-wrapper-${index}`);
@@ -374,7 +343,6 @@ function showAddInput(index) {
     if(wrapper) wrapper.style.display = 'inline-block';
 }
 
-// --- ID入力欄の制御 ---
 function showIdInput() {
     const trigger = document.getElementById('add-id-trigger');
     const container = document.getElementById('add-id-container');
@@ -391,21 +359,17 @@ function addGachaById() {
     if(!inp) return;
     const val = inp.value.trim();
     if(!val) return;
-    // 空なら何もしない（あるいは閉じる処理を入れても良い）
 
     const id = parseInt(val, 10);
-    if(isNaN(id)) { alert("数値を入力してください"); return;
-    }
+    if(isNaN(id)) { alert("数値を入力してください"); return; }
 
     if(!gachaMasterData.gachas[id]) {
         alert(`ガチャID: ${id} のデータが見つかりません。`);
         return;
     }
 
-    // 追加
     tableGachaIds.push(id.toString());
     uberAdditionCounts.push(0);
-    // 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
     updateUrlParams();
@@ -413,7 +377,6 @@ function addGachaById() {
 
 // --- SEED入力欄の制御 ---
 
-// 入力欄を表示
 function showSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
@@ -424,12 +387,9 @@ function showSeedInput() {
     if (input) input.focus();
 }
 
-// 値を反映して入力欄を隠す
 function applySeedInput() {
-    // データ更新と再描画
     updateUrlParams();
     resetAndGenerateTable();
-    // 閉じる処理
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     
@@ -447,7 +407,7 @@ function toggleSeedColumns() {
 
 function updateToggleButtons() {
     const btnSeed = document.getElementById('toggle-seed-btn');
-    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEEDを非表示' : 'SEEDを表示';
+    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
 }
 
 function toggleDescription() {
@@ -455,56 +415,23 @@ function toggleDescription() {
     const toggle = document.getElementById('toggle-description');
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ?
-        '概要を表示' : '概要を非表示';
+        toggle.textContent = isHidden ? '概要' : '概要を隠す';
     }
 }
 
-// --- Find情報表示切り替え ---
 function toggleFindInfo() {
     showFindInfo = !showFindInfo;
-    const container = document.getElementById('forecast-summary-area');
     const btn = document.getElementById('toggle-find-info-btn');
-    if (container) {
-        if (showFindInfo) container.classList.remove('hidden');
-        else container.classList.add('hidden');
-    }
-    if (btn) btn.textContent = showFindInfo ? 'Findを非表示' : 'Findを表示';
-    // ▼ 追加: ボタン切り替え時にメインテーブルも再描画してハイライトを反映させる
     if (typeof generateRollsTable === 'function') {
         generateRollsTable();
     }
-}
-
-// --- マスタ情報表示 ---
-function toggleMasterInfo() {
-    showMasterInfo = !showMasterInfo;
-    const container = document.getElementById('master-info-container');
-    const btn = document.getElementById('toggle-master-info-btn');
-    if (showMasterInfo) {
-        if (container) {
-            container.innerHTML = (typeof generateMasterInfoHtml === 'function') ?
-            generateMasterInfoHtml() : '';
-            container.classList.remove('hidden');
-        }
-        if (btn) btn.textContent = 'ガチャマスター情報を非表示';
-    } else {
-        if (container) container.classList.add('hidden');
-        if (btn) btn.textContent = 'ガチャマスター情報を表示';
-    }
+    if (btn) btn.textContent = showFindInfo ? 'Findを隠す' : 'Find';
 }
 
 function updateMasterInfoView() {
-    if (showMasterInfo) {
-        const container = document.getElementById('master-info-container');
-        if (container) {
-            container.innerHTML = (typeof generateMasterInfoHtml === 'function') ?
-            generateMasterInfoHtml() : '';
-        }
-    }
+    // マスター情報は generateRollsTable 内で生成されるため、ここでは何もしない
 }
 
-// Helper: 自動ターゲット（伝説・限定・新規）かどうかを判定
 function isAutomaticTarget(charId) {
     const idStr = String(charId);
     if (idStr.startsWith('sim-new-')) return true;
@@ -522,7 +449,6 @@ function isAutomaticTarget(charId) {
     return false;
 }
 
-// Findキャラの表示/非表示を切り替える関数 (個別)
 function toggleCharVisibility(charId) {
     let idVal = charId;
     if (!isNaN(parseInt(charId)) && !String(charId).includes('sim-new')) {
@@ -538,53 +464,103 @@ function toggleCharVisibility(charId) {
     }
     
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
 }
 
-// Findの一括表示/非表示切り替え (トグル)
-function toggleAllFindVisibility() {
-    if (isFindListCleared) {
-        hiddenFindIds.clear();
-        userTargetIds.clear();
-        isFindListCleared = false;
-    } else {
-        const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
-            let id = idStr;
-            if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
-            return id;
-        }))];
-        uniqueIds.forEach(id => {
-            const config = gachaMasterData.gachas[id];
-            if (!config) return;
-            
-            ['rare', 'super', 'uber', 'legend'].forEach(r => {
-                if (config.pool[r]) {
-                    config.pool[r].forEach(c => 
-                    {
-                        const cid = c.id;
-                        if (isAutomaticTarget(cid)) {
-                            hiddenFindIds.add(cid);
-                        }
-                    });
-                }
-            });
-        
+// --- Findの一括操作ボタンアクション ---
+
+// 1. 全消去 (×ボタン)
+function clearAllTargets() {
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
+        return id;
+    }))];
     
-            const colIndex = tableGachaIds.findIndex(tid => tid.startsWith(id));
-            const addCount = (colIndex >= 0 
-            && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
-            for(let k=1; k<=addCount; k++){
-               hiddenFindIds.add(`sim-new-${k}`);
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config) return;
+        ['rare', 'super', 'uber', 'legend'].forEach(r => {
+            if (config.pool[r]) {
+                config.pool[r].forEach(c => {
+                    const cid = c.id;
+                    // 自動ターゲットは全てHiddenに追加
+                    if (isAutomaticTarget(cid)) {
+                        hiddenFindIds.add(cid);
+                    }
+                });
             }
- 
         });
-        userTargetIds.clear();
-        isFindListCleared = true;
-    }
+        const colIndex = tableGachaIds.findIndex(tid => tid.startsWith(id));
+        const addCount = (colIndex >= 0 && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
+        for(let k=1; k<=addCount; k++){
+           hiddenFindIds.add(`sim-new-${k}`);
+        }
+    });
+    
+    // 手動ターゲットは全てクリア
+    userTargetIds.clear();
+    
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
+// 2. 伝説ON (伝説ボタン)
+function activateLegendTargets() {
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
+        return id;
+    }))];
+
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config || !config.pool.legend) return;
+        config.pool.legend.forEach(c => {
+            const cid = c.id;
+            // Hiddenリストから削除 (＝表示状態にする)
+            if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
+            if (hiddenFindIds.has(String(cid))) hiddenFindIds.delete(String(cid));
+        });
+    });
 
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
 }
+
+// 3. 限定ON (限定ボタン)
+function activateLimitedTargets() {
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
+        return id;
+    }))];
+
+    const limitedSet = new Set();
+    if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
+        limitedCats.forEach(id => {
+            limitedSet.add(id);
+            limitedSet.add(String(id));
+        });
+    }
+
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config) return;
+        ['rare', 'super', 'uber'].forEach(r => {
+            if (config.pool[r]) {
+                config.pool[r].forEach(c => {
+                    const cid = c.id;
+                    const cStr = String(cid);
+                    if (limitedSet.has(cid) || limitedSet.has(cStr)) {
+                        if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
+                        if (hiddenFindIds.has(cStr)) hiddenFindIds.delete(cStr);
+                    }
+                });
+            }
+        });
+    });
+
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
 
 // --- スケジュール表示 ---
 function setupScheduleUI() {
@@ -613,27 +589,16 @@ function toggleSchedule() {
     const tableContainer = document.getElementById('rolls-table-container');
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
-    const bottomControls = document.getElementById('bottom-controls');
-    // ID付きのコントロールエリア、マスター情報エリア、Findエリアを取得
     const mainControls = document.getElementById('main-controls');
-    const masterInfoContainer = document.getElementById('master-info-container');
-    const findContainer = document.getElementById('forecast-summary-area');
 
     if (isScheduleMode) {
-        scheduleBtn.textContent = 'ロールズに戻る';
+        scheduleBtn.textContent = 'Back';
         scheduleBtn.classList.add('active');
-        // メインテーブル関連を隠す
         if (simWrapper) simWrapper.classList.add('hidden');
         if (tableContainer) tableContainer.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
-        if (bottomControls) bottomControls.classList.add('hidden');
-        
-        // ▼ 追加: 入力フィールド、マスター情報、Findを隠す
         if (mainControls) mainControls.classList.add('hidden');
-        if (masterInfoContainer) masterInfoContainer.classList.add('hidden');
-        if (findContainer) findContainer.classList.add('hidden');
 
-        // スケジュール表示
         if (scheduleContainer) {
             scheduleContainer.classList.remove('hidden');
             if (typeof renderScheduleTable === 'function') {
@@ -641,22 +606,13 @@ function toggleSchedule() {
             }
         }
     } else {
-        scheduleBtn.textContent = 'スケジュールを表示';
+        scheduleBtn.textContent = 'skd';
         scheduleBtn.classList.remove('active');
-        
-        // メインテーブル関連を表示
         if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
-        if (bottomControls) bottomControls.classList.remove('hidden');
-        
-        // ▼ 追加: 入力フィールドを表示
         if (mainControls) mainControls.classList.remove('hidden');
-        // ▼ 追加: マスター情報とFindは元の状態に基づいて復元
-        if (showMasterInfo && masterInfoContainer) masterInfoContainer.classList.remove('hidden');
-        if (showFindInfo && findContainer) findContainer.classList.remove('hidden');
 
-        // スケジュール非表示
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
     }
 }

@@ -1296,62 +1296,150 @@ FILE: index.html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rare Gacha Rolls</title>
+    <title>R_Rolls</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* モバイル最適化用の追加スタイル */
+        @media (max-width: 768px) {
+            /* 画面全体の高さを確保し、はみ出しを禁止 */
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0 !important; /* bodyのpaddingをなくす */
+                overflow: hidden; /* 全体スクロールを無効化 */
+            }
+
+            .container {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                padding: 4px; /* コンテナ側で少し余白を取る */
+                box-sizing: border-box;
+            }
+
+            /* ヘッダーとコントロールエリアは高さを固定（縮小させない） */
+            .header-row, 
+            .controls, 
+            .description-box, 
+            #result,
+            .forecast-summary-container { /* Find表示エリアも含める */
+                flex-shrink: 0;
+            }
+
+            .header-row {
+                flex-direction: row !important; /* 横並びを強制 */
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 5px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #eee;
+                margin-bottom: 5px;
+            }
+
+            h1 {
+                font-size: 16px !important;
+                margin-right: 5px;
+            }
+
+            .header-actions {
+                display: flex;
+                gap: 3px;
+                flex-wrap: wrap;
+            }
+
+            .header-actions button, 
+            .header-actions span {
+                font-size: 10px !important;
+                padding: 2px 6px !important;
+                height: 24px;
+                line-height: 20px;
+            }
+
+            /* SEED入力欄のポップアップ調整 */
+            #seed-input-container {
+                position: absolute;
+                top: 40px;
+                left: 10px;
+                background: white;
+                padding: 5px;
+                border: 1px solid #ccc;
+                z-index: 100;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+
+            /* テーブルコンテナを残りの領域いっぱいに広げる */
+            #rolls-table-container {
+                flex-grow: 1;
+                max-height: none !important; /* 既存の制限を解除 */
+                margin-bottom: 0 !important;
+                overflow-y: auto; /* 縦スクロール許可 */
+                border-bottom: none; /* 下のボーダーを画面端に合わせる */
+            }
+            
+            /* スケジュール表示時も同様に */
+            #schedule-container {
+                flex-grow: 1;
+                overflow-y: auto;
+                padding-bottom: 0;
+            }
+            .schedule-scroll-wrapper {
+                max-height: none !important;
+            }
+        }
+
+        /* デスクトップ用 */
+        .header-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header-row">
-            <h1>Rare Gacha Rolls</h1>
+            <h1>R_Rolls</h1>
             <div class="header-actions">
-                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
-        
-                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">SIMモードへ（未実装）</button>
-                <button id="toggle-schedule-btn" class="secondary" onclick="toggleSchedule()">スケジュールを表示</button>
+                <span id="seed-input-trigger" class="text-btn" onclick="showSeedInput()">SEED</span>
+                
+                <span id="seed-input-container" class="hidden">
+                    <label for="seed" style="font-size:0.8em;">Seed:</label>
+                    <input type="number" id="seed" placeholder="Seed" value="12345" style="width:80px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
+                    <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 10px;">OK</button>
+                </span>
+
+                <span class="separator">|</span>
+                <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
+                
+                <span class="separator">|</span>
+                <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
+                
+                <span class="separator">|</span>
+                <span id="mode-toggle-btn" class="text-btn" onclick="toggleAppMode()">Sim</span>
+                
+                <span class="separator">|</span>
+                <span id="toggle-schedule-btn" class="text-btn" onclick="toggleSchedule()">skd</span>
             </div>
         </div>
 
         <div id="description-content" class="description-box hidden">
             <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
-            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
-       
-            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
+            <strong>Simulation Config:</strong> ガチャ手順「ガチャID ロール数」(例: 1006 4 942 11g)。数値のみは単発、+gは確定。</p>
         </div>
         
-        <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
-            <div class="control-group" style="margin-bottom: 0; display: flex; align-items: center;">
-                <span id="seed-input-trigger" style="cursor: pointer; text-decoration: underline; color: #007bff; font-weight: bold; font-size: 0.8em;" onclick="showSeedInput()">SEED入力</span>
-                <span id="seed-input-container" class="hidden">
-                    <label for="seed">Seed:</label>
-                    <input type="number" id="seed" placeholder="Enter Seed" value="12345" onkeydown="if(event.key==='Enter') applySeedInput()">
-                    <button onclick="applySeedInput()" class="secondary" style="margin-left: 5px; padding: 2px 8px; font-size: 0.9em;">更新</button>
-                </span>
-            </div>
+        <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
             
-            <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center;">
-                <label for="sim-config">Simulation Config:</label>
-                <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();">
-                <button onclick="clearSimConfig()" style="margin-left: 5px;">Clear</button>
-            </div>
-
-            <div style="display: flex; gap: 5px;">
-                <button id="toggle-master-info-btn" class="secondary" onclick="toggleMasterInfo()">ガチャマスター情報を表示</button>
-                <button id="toggle-find-info-btn" class="secondary" onclick="toggleFindInfo()">Findを表示</button>
+            <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; width: 100%;">
+                <label for="sim-config" style="font-size:0.9em;">Config:</label>
+                <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
+                <button onclick="clearSimConfig()" style="margin-left: 5px; font-size: 11px;">Clear</button>
             </div>
         </div>
 
-        <div id="master-info-container" class="description-box hidden" style="font-size: 0.85em; line-height: 1.4; word-break: break-all;"></div>
-
-        <div id="result" class="result-box hidden"></div>
+        <div id="result" class="result-box hidden" style="font-size: 10px; margin-bottom: 2px;"></div>
         
         <div id="rolls-table-container"></div>
 
-        <div id="bottom-controls" class="bottom-controls" style="margin-top: 10px; margin-bottom: 20px; display: flex; gap: 10px;">
-            <button onclick="addMoreRolls()">100行追加</button>
-            <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
-        </div>
-        
         <div id="schedule-container" class="hidden"></div>
     </div>
 
@@ -1362,16 +1450,12 @@ FILE: index.html
     <script src="simulation.js"></script>
     <script src="schedule_logic.js"></script>
     <script src="data_loader.js"></script> 
- 
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
-
     <script src="view_forecast.js"></script>
     <script src="view_master.js"></script>
     <script src="view_table.js"></script>
-
     <script src="ui_controller.js"></script>
-    
     <script src="main.js"></script>
 </body>
 </html>
@@ -2450,17 +2534,54 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* 1行表示を強制 */
+    gap: 10px;
 }
 
 h1 {
     margin: 0;
     padding: 0;
+    white-space: nowrap; /* タイトルの折り返し禁止 */
 }
 
 .header-actions {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 4px; /* 間隔を詰める */
+    flex-wrap: nowrap;
+}
+
+/* --- テキストボタン（ヘッダー用） --- */
+.text-btn {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: bold;
+    font-size: 0.9em;
+    text-decoration: underline;
+    white-space: nowrap;
+    padding: 2px 4px;
+    user-select: none;
+}
+
+.text-btn:hover {
+    color: #0056b3;
+    background-color: #f0f8ff;
+    border-radius: 3px;
+}
+
+.text-btn.active {
+    color: #28a745;
+    text-decoration: none;
+    border: 1px solid #28a745;
+    border-radius: 3px;
+    padding: 1px 3px; /* ボーダー分のズレ補正 */
+}
+
+.separator {
+    color: #ccc;
+    font-size: 0.8em;
+    margin: 0 2px;
+    user-select: none;
 }
 
 /* =========================================
@@ -2494,7 +2615,7 @@ input[type="number"] {
 }
 
 /* =========================================
-   ボタン
+   ボタン（通常）
    ========================================= */
 button {
     cursor: pointer;
@@ -2576,40 +2697,34 @@ th, td {
 th {
     background-color: #f8f9fa;
     font-weight: bold;
-    /* ヘッダー固定設定 */
     position: sticky;
     top: 0;
     z-index: 10;
-    /* 修正: 上部の罫線を復活 */
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
-    /* sticky時の境界線を綺麗に見せるための微調整 */
-    box-shadow: 0 1px 0 #ddd; 
+    box-shadow: 0 1px 0 #ddd;
 }
 
 /* 列ごとのスタイル */
 .col-no {
-    background-color: #f8f9fa; /* ヘッダー背景色と統一 */
+    background-color: #f8f9fa;
     width: 30px;
 }
 
 .calc-column {
-    background-color: #f0f8ff; /* 薄い青 */
+    background-color: #f0f8ff;
     font-size: 0.9em;
     color: #555;
 }
 
-/* ガチャ選択列 */
 .gacha-column {
     min-width: 120px;
 }
 
-/* セル内のハイライト */
 .gacha-cell {
     position: relative;
 }
 
-/* ハイライト（シミュレーションルート） */
 .highlight {
     position: relative;
 }
@@ -2619,12 +2734,10 @@ th {
     color: #c2185b;
 }
 
-/* リンク */
 .char-link:hover {
     color: #0056b3;
 }
 
-/* ヘッダー内のボタンなど */
 .remove-btn {
     background: #dc3545;
     padding: 2px 6px;
@@ -2652,19 +2765,24 @@ th {
     padding: 20px;
     background-color: #fff;
     border-top: 1px solid #ddd;
+    /* コンテナ自体が画面幅を超えないように設定 */
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .schedule-scroll-wrapper {
     overflow-x: auto;
     max-height: 80vh;
     border: 1px solid #ddd;
+    /* 画面幅に収める */
+    max-width: 100%;
 }
 
 .schedule-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    margin-top: 0; 
+    margin-top: 0;
     font-size: 14px;
 }
 
@@ -2687,7 +2805,6 @@ th {
     position: sticky;
     top: 0;
     z-index: 10;
-    /* 修正: 上部の罫線を復活 */
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ccc;
 }
@@ -2717,20 +2834,23 @@ th {
     display: inline-block;
     max-width: 100%;
     vertical-align: top;
+    width: 100%; /* 幅を確保 */
 }
 
 .gantt-chart-container {
     border: 1px solid #ccc;
     background: #fff;
-    overflow: hidden; 
+    /* overflow: hidden; を削除してスクロールバーを表示可能にする */
     font-size: 12px;
     margin-bottom: 20px;
+    max-width: 100%; /* はみ出し防止 */
 }
 
 .gantt-scroll-wrapper {
     overflow-x: auto;
     position: relative;
     padding-bottom: 10px;
+    width: 100%; /* 幅を確保 */
 }
 
 .gantt-header {
@@ -2747,7 +2867,7 @@ th {
     min-width: 160px;
     padding: 5px;
     border-right: 1px solid #ccc;
-    background-color: inherit; 
+    background-color: inherit;
     position: sticky;
     left: 0;
     z-index: 5;
@@ -2814,11 +2934,9 @@ th {
     position: absolute;
     top: 5px;
     height: 20px;
-    /* デフォルトの背景 */
     background-color: #4caf50;
-    /* 修正: 影(box-shadow)を削除し、枠線を背景色と同色で1px確保 */
-    border: 1px solid #4caf50; 
-    box-shadow: none; 
+    border: 1px solid #4caf50;
+    box-shadow: none;
     border-radius: 3px;
     color: #fff;
     font-size: 10px;
@@ -2830,9 +2948,8 @@ th {
     z-index: 2;
 }
 
-/* 各バリエーションで背景色と枠線色を一致させる */
 .gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
-.gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; } 
+.gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
 .gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
 .gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
 
@@ -2858,7 +2975,7 @@ th {
     bottom: 0;
     width: 2px;
     background-color: #ff0000;
-    z-index: 1; 
+    z-index: 1;
     opacity: 0.7;
     pointer-events: none;
 }
@@ -2867,31 +2984,110 @@ th {
    モバイル用・高密度表示レイアウト
    ========================================= */
 @media (max-width: 768px) {
-    /* ヘッダーの調整 */
-    .header-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    .header-actions {
-        width: 100%;
-        gap: 5px;
-        flex-wrap: wrap;
+    /* HTML, BODYの設定 */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0 !important;
+        overflow: hidden;
     }
 
-    body {
+    /* 全体コンテナ */
+    .container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
         padding: 4px;
-        font-size: 11px;
+        box-sizing: border-box;
+    }
+
+    /* 各エリアの縮小禁止 */
+    .header-row, 
+    .controls, 
+    .description-box, 
+    #result,
+    .forecast-summary-container {
+        flex-shrink: 0;
+    }
+
+    /* --- ヘッダーのモバイル調整（1行表示） --- */
+    .header-row {
+        flex-direction: row !important; /* 横並び強制 */
+        flex-wrap: nowrap !important; /* 折り返し禁止 */
+        overflow-x: auto; /* 幅が足りない場合はスクロール */
+        align-items: center;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 5px;
+        white-space: nowrap;
     }
 
     h1 {
-        font-size: 14px;
-        margin-bottom: 0;
+        font-size: 16px !important;
+        margin-right: 8px;
+        display: inline-block;
     }
 
+    .header-actions {
+        width: auto;
+        flex-wrap: nowrap;
+        gap: 4px;
+    }
+
+    /* ボタン・文字サイズ調整 */
+    .text-btn {
+        font-size: 11px;
+        padding: 2px 3px;
+    }
+
+    .header-actions button, 
+    .header-actions span:not(.text-btn):not(.separator) {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        height: 24px;
+        line-height: 20px;
+    }
+
+    /* SEED入力欄のポップアップ調整 */
+    #seed-input-container {
+        position: absolute;
+        top: 35px;
+        left: 50px;
+        background: white;
+        padding: 5px;
+        border: 1px solid #ccc;
+        z-index: 100;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* テーブルエリアの拡張 */
+    #rolls-table-container {
+        flex-grow: 1;
+        max-height: none !important;
+        margin-bottom: 0 !important;
+        overflow-y: auto;
+        border-bottom: none;
+        width: 100%; /* 横幅いっぱい */
+    }
+
+    /* スケジュールコンテナのモバイル調整（見切れ対策） */
+    #schedule-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-bottom: 0;
+        width: 100%; /* 横幅を100%に制限 */
+        max-width: 100vw; /* 画面幅を超えない */
+        box-sizing: border-box;
+    }
+    .schedule-scroll-wrapper {
+        max-height: none !important;
+        width: 100%; /* コンテナ幅に合わせる */
+    }
+
+    /* フォント・パディングの微調整 */
     .controls {
         padding: 8px;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
 
     .control-group {
@@ -2913,7 +3109,7 @@ th {
         padding: 2px 4px;
         height: 24px;
     }
-    
+
     #seed, #sim-config {
         max-width: 120px;
     }
@@ -2923,11 +3119,6 @@ th {
         font-size: 11px;
         height: 24px;
         line-height: 1;
-    }
-
-    .bottom-controls button {
-        padding: 6px 10px;
-        height: auto;
     }
 
     table {
@@ -2946,7 +3137,6 @@ th {
         overflow: hidden;
     }
     
-    /* ガチャヘッダー内の調整 */
     .gacha-header-wrapper {
         gap: 2px;
         justify-content: flex-start !important;
@@ -3025,20 +3215,19 @@ let tableGachaIds = [];
 let currentRolls = 300;
 let showSeedColumns = false;
 let showResultDisplay = false;
-let showMasterInfo = false;
-let showFindInfo = false;
+let showFindInfo = false; // Findエリア（予報＋マスター情報）の表示フラグ
 let finalSeedForUpdate = null;
 let isSimulationMode = false;
 let isScheduleMode = false;
 let activeGuaranteedIds = new Set();
 let isScheduleAnalyzed = false;
+
 // Find機能の状態管理
 let hiddenFindIds = new Set(); // 自動ターゲットのうち、非表示にするID
 let userTargetIds = new Set(); // 自動ターゲット以外で、表示するID (手動ターゲット)
-let isFindListCleared = false;
-// 一括非表示状態のフラグ
+let isFindListCleared = false; 
 
-// 超激レア追加シミュレーション用 (配列に変更してindex管理を容易にする)
+// 超激レア追加シミュレーション用
 let uberAdditionCounts = [];
 
 // --- 初期化 & データ処理 ---
@@ -3057,17 +3246,14 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
-            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
-         
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                 gachaMasterData.gachas[gId].name += " [確定]";
-             
-                           }
+                            }
                         }
                     }
                 }
@@ -3092,16 +3278,14 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
-              
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
-                   
                         tableGachaIds.push(newId);
-                        uberAdditionCounts.push(0); // 初期化
+                        uberAdditionCounts.push(0); 
                     });
                     scheduleFound = true;
                 }
@@ -3134,7 +3318,6 @@ function initializeDefaultGachas() {
         }
     }
 
-    // ▼▼▼ 修正: SEED値がデフォルト(12345)の場合は入力欄を表示する ▼▼▼
     const seedEl = document.getElementById('seed');
     if (seedEl && (seedEl.value === '12345' || seedEl.value === '')) {
         showSeedInput();
@@ -3157,10 +3340,10 @@ function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
         if (isSimulationMode) {
-            btn.textContent = "表示モードへ";
+            btn.textContent = "View";
             btn.classList.add('active');
         } else {
-            btn.textContent = "SIMモードへ（未実装）";
+            btn.textContent = "Sim";
             btn.classList.remove('active');
         }
     }
@@ -3230,13 +3413,12 @@ function addGachaColumn() {
         let val = options[0].value;
         if (activeGuaranteedIds.has(parseInt(val))) val += 'g';
         tableGachaIds.push(val);
-        uberAdditionCounts.push(0); // 新規列用に0を追加
+        uberAdditionCounts.push(0); 
         if (typeof generateRollsTable === 'function') generateRollsTable();
         updateMasterInfoView();
     }
 }
 
-// ▼▼▼ 修正: スケジュールから一括追加（IDで追加機能は維持） ▼▼▼
 function addGachasFromSchedule() {
     if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
         alert("スケジュールデータがありません。");
@@ -3244,8 +3426,6 @@ function addGachasFromSchedule() {
     }
 
     const scheduleData = parseGachaTSV(loadedTsvContent);
-    
-    // 1. 日付計算 (昨日) - schedule_logic.js の renderScheduleTable と同じ基準
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -3254,18 +3434,13 @@ function addGachasFromSchedule() {
     const d = String(yesterday.getDate()).padStart(2, '0');
     const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
 
-    // 2. フィルタリング: 昨日以降に終了するもの（開催中・未来含む）
     let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
     if (activeScheduleItems.length === 0) {
         alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
         return;
     }
 
-    // 3. ソート: スケジュール表の並び順に合わせる
-    // (プラチナ/レジェンドは最後、それ以外は日付順)
     activeScheduleItems.sort((a, b) => {
-        // schedule_logic.js の isPlatinumOrLegend が参照できる前提、なければ簡易判定
         const checkSpecial = (item) => {
             if (typeof isPlatinumOrLegend === 'function') return isPlatinumOrLegend(item);
             const n = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
@@ -3275,17 +3450,13 @@ function addGachasFromSchedule() {
         const isSpecialA = checkSpecial(a);
         const isSpecialB = checkSpecial(b);
         
-        if (isSpecialA && !isSpecialB) return 1; // Aが特殊なら後ろ
-        if (!isSpecialA && isSpecialB) return -1; // Bが特殊ならAは前
-        
-        // どちらも同じ属性なら開始日順
+        if (isSpecialA && !isSpecialB) return 1; 
+        if (!isSpecialA && isSpecialB) return -1; 
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
 
-    // 4. 現在のテーブル情報から「スケジュールにないもの」を抽出して保持
     const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
     const keptGachas = [];
-    
     tableGachaIds.forEach((idWithSuffix, index) => {
         const baseId = idWithSuffix.replace(/[gfs]$/, '');
         if (!scheduleIds.has(baseId)) {
@@ -3296,25 +3467,19 @@ function addGachasFromSchedule() {
         }
     });
 
-    // 5. スケジュール分をリスト化
     const newScheduleGachas = activeScheduleItems.map(item => {
         let newId = item.id.toString();
-        // 確定フラグがあれば 'g' を付与
         if (item.guaranteed) newId += 'g';
         return {
             fullId: newId,
-            count: 0 // 新規追加なので追加数は0
+            count: 0
         };
     });
 
-    // ▼▼▼ 修正: 結合順序を変更 (残した分を左、スケジュール分を右) ▼▼▼
     const finalGachaList = [...keptGachas, ...newScheduleGachas];
-
-    // 7. グローバル変数に反映
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
 
-    // 8. 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
     updateUrlParams();
@@ -3323,9 +3488,19 @@ function addGachasFromSchedule() {
 function removeGachaColumn(index) {
     tableGachaIds.splice(index, 1);
     uberAdditionCounts.splice(index, 1);
-    // 対応する追加数データも削除して詰める
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
+}
+
+function resetToFirstGacha() {
+    if (tableGachaIds.length <= 1) {
+        return;
+    }
+    tableGachaIds = [tableGachaIds[0]];
+    uberAdditionCounts = [uberAdditionCounts[0]];
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    updateMasterInfoView();
+    updateUrlParams();
 }
 
 function updateGachaSelection(selectElement, index) {
@@ -3340,7 +3515,6 @@ function updateGachaSelection(selectElement, index) {
         else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
         tableGachaIds[index] = newBaseId + suffix;
     }
-    // ガチャ変更時はadd設定をリセットしない（既存の値を維持する場合）
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
 }
@@ -3349,12 +3523,9 @@ function toggleGuaranteedColumn(index) {
     const currentVal = tableGachaIds[index];
     let baseId = currentVal;
     let suffix = '';
-    if (currentVal.endsWith('f')) { suffix = 'f'; baseId = currentVal.slice(0, -1);
-    } 
-    else if (currentVal.endsWith('s')) { suffix = 's'; baseId = currentVal.slice(0, -1);
-    } 
-    else if (currentVal.endsWith('g')) { suffix = 'g'; baseId = currentVal.slice(0, -1);
-    }
+    if (currentVal.endsWith('f')) { suffix = 'f'; baseId = currentVal.slice(0, -1); } 
+    else if (currentVal.endsWith('s')) { suffix = 's'; baseId = currentVal.slice(0, -1); } 
+    else if (currentVal.endsWith('g')) { suffix = 'g'; baseId = currentVal.slice(0, -1); }
 
     let nextSuffix = '';
     if (suffix === '') nextSuffix = 'g';
@@ -3371,7 +3542,6 @@ function updateUberAddition(selectElement, index) {
     if (typeof generateRollsTable === 'function') generateRollsTable();
 }
 
-// add入力欄の表示切替
 function showAddInput(index) {
     const trigger = document.getElementById(`add-trigger-${index}`);
     const wrapper = document.getElementById(`add-select-wrapper-${index}`);
@@ -3379,7 +3549,6 @@ function showAddInput(index) {
     if(wrapper) wrapper.style.display = 'inline-block';
 }
 
-// --- ID入力欄の制御 ---
 function showIdInput() {
     const trigger = document.getElementById('add-id-trigger');
     const container = document.getElementById('add-id-container');
@@ -3395,7 +3564,7 @@ function addGachaById() {
     const inp = document.getElementById('gacha-id-input');
     if(!inp) return;
     const val = inp.value.trim();
-    if(!val) return; // 空なら何もしない（あるいは閉じる処理を入れても良い）
+    if(!val) return;
 
     const id = parseInt(val, 10);
     if(isNaN(id)) { alert("数値を入力してください"); return; }
@@ -3405,11 +3574,8 @@ function addGachaById() {
         return;
     }
 
-    // 追加
     tableGachaIds.push(id.toString());
     uberAdditionCounts.push(0);
-
-    // 再描画
     if (typeof generateRollsTable === 'function') generateRollsTable();
     updateMasterInfoView();
     updateUrlParams();
@@ -3417,11 +3583,9 @@ function addGachaById() {
 
 // --- SEED入力欄の制御 ---
 
-// 入力欄を表示
 function showSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
-    
     if (container) container.classList.remove('hidden');
     if (trigger) trigger.classList.add('hidden');
     
@@ -3429,13 +3593,9 @@ function showSeedInput() {
     if (input) input.focus();
 }
 
-// 値を反映して入力欄を隠す
 function applySeedInput() {
-    // データ更新と再描画
     updateUrlParams();
     resetAndGenerateTable();
-    
-    // 閉じる処理
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     
@@ -3453,7 +3613,7 @@ function toggleSeedColumns() {
 
 function updateToggleButtons() {
     const btnSeed = document.getElementById('toggle-seed-btn');
-    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEEDを非表示' : 'SEEDを表示';
+    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
 }
 
 function toggleDescription() {
@@ -3461,51 +3621,23 @@ function toggleDescription() {
     const toggle = document.getElementById('toggle-description');
     if(content && toggle) {
         const isHidden = content.classList.toggle('hidden');
-        toggle.textContent = isHidden ? '概要を表示' : '概要を非表示';
+        toggle.textContent = isHidden ? '概要' : '概要を隠す';
     }
 }
 
-// --- Find情報表示切り替え ---
 function toggleFindInfo() {
     showFindInfo = !showFindInfo;
-    const container = document.getElementById('forecast-summary-area');
     const btn = document.getElementById('toggle-find-info-btn');
-    if (container) {
-        if (showFindInfo) container.classList.remove('hidden');
-        else container.classList.add('hidden');
+    if (typeof generateRollsTable === 'function') {
+        generateRollsTable();
     }
-    if (btn) btn.textContent = showFindInfo ? 'Findを非表示' : 'Findを表示';
-}
-
-// --- マスタ情報表示 ---
-function toggleMasterInfo() {
-    showMasterInfo = !showMasterInfo;
-    const container = document.getElementById('master-info-container');
-    const btn = document.getElementById('toggle-master-info-btn');
-    if (showMasterInfo) {
-        if (container) {
-            container.innerHTML = (typeof generateMasterInfoHtml === 'function') ?
-            generateMasterInfoHtml() : '';
-            container.classList.remove('hidden');
-        }
-        if (btn) btn.textContent = 'ガチャマスター情報を非表示';
-    } else {
-        if (container) container.classList.add('hidden');
-        if (btn) btn.textContent = 'ガチャマスター情報を表示';
-    }
+    if (btn) btn.textContent = showFindInfo ? 'Findを隠す' : 'Find';
 }
 
 function updateMasterInfoView() {
-    if (showMasterInfo) {
-        const container = document.getElementById('master-info-container');
-        if (container) {
-            container.innerHTML = (typeof generateMasterInfoHtml === 'function') ?
-            generateMasterInfoHtml() : '';
-        }
-    }
+    // マスター情報は generateRollsTable 内で生成されるため、ここでは何もしない
 }
 
-// Helper: 自動ターゲット（伝説・限定・新規）かどうかを判定
 function isAutomaticTarget(charId) {
     const idStr = String(charId);
     if (idStr.startsWith('sim-new-')) return true;
@@ -3523,7 +3655,6 @@ function isAutomaticTarget(charId) {
     return false;
 }
 
-// Findキャラの表示/非表示を切り替える関数 (個別)
 function toggleCharVisibility(charId) {
     let idVal = charId;
     if (!isNaN(parseInt(charId)) && !String(charId).includes('sim-new')) {
@@ -3539,52 +3670,103 @@ function toggleCharVisibility(charId) {
     }
     
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
 }
 
-// Findの一括表示/非表示切り替え (トグル)
-function toggleAllFindVisibility() {
-    if (isFindListCleared) {
-        hiddenFindIds.clear();
-        userTargetIds.clear();
-        isFindListCleared = false;
-    } else {
-        const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
-            let id = idStr;
-            if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
-            return id;
-        }))];
-        uniqueIds.forEach(id => {
-            const config = gachaMasterData.gachas[id];
-            if (!config) return;
-            
-            ['rare', 'super', 'uber', 'legend'].forEach(r => {
-                if (config.pool[r]) {
-                    config.pool[r].forEach(c => 
-                    {
-                        const cid = c.id;
-                        if (isAutomaticTarget(cid)) {
-                            hiddenFindIds.add(cid);
-                   
-                        }
-                    });
-                }
-            });
-            
-            const colIndex = tableGachaIds.findIndex(tid => tid.startsWith(id));
-            const addCount = (colIndex >= 0 
-            && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
-            for(let k=1; k<=addCount; k++){
-                hiddenFindIds.add(`sim-new-${k}`);
+// --- Findの一括操作ボタンアクション ---
+
+// 1. 全消去 (×ボタン)
+function clearAllTargets() {
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
+        return id;
+    }))];
+    
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config) return;
+        ['rare', 'super', 'uber', 'legend'].forEach(r => {
+            if (config.pool[r]) {
+                config.pool[r].forEach(c => {
+                    const cid = c.id;
+                    // 自動ターゲットは全てHiddenに追加
+                    if (isAutomaticTarget(cid)) {
+                        hiddenFindIds.add(cid);
+                    }
+                });
             }
         });
-        userTargetIds.clear();
-        isFindListCleared = true;
-    }
+        const colIndex = tableGachaIds.findIndex(tid => tid.startsWith(id));
+        const addCount = (colIndex >= 0 && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
+        for(let k=1; k<=addCount; k++){
+           hiddenFindIds.add(`sim-new-${k}`);
+        }
+    });
+    
+    // 手動ターゲットは全てクリア
+    userTargetIds.clear();
+    
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
+// 2. 伝説ON (伝説ボタン)
+function activateLegendTargets() {
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
+        return id;
+    }))];
+
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config || !config.pool.legend) return;
+        config.pool.legend.forEach(c => {
+            const cid = c.id;
+            // Hiddenリストから削除 (＝表示状態にする)
+            if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
+            if (hiddenFindIds.has(String(cid))) hiddenFindIds.delete(String(cid));
+        });
+    });
 
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
 }
+
+// 3. 限定ON (限定ボタン)
+function activateLimitedTargets() {
+    const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
+        let id = idStr;
+        if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
+        return id;
+    }))];
+
+    const limitedSet = new Set();
+    if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
+        limitedCats.forEach(id => {
+            limitedSet.add(id);
+            limitedSet.add(String(id));
+        });
+    }
+
+    uniqueIds.forEach(id => {
+        const config = gachaMasterData.gachas[id];
+        if (!config) return;
+        ['rare', 'super', 'uber'].forEach(r => {
+            if (config.pool[r]) {
+                config.pool[r].forEach(c => {
+                    const cid = c.id;
+                    const cStr = String(cid);
+                    if (limitedSet.has(cid) || limitedSet.has(cStr)) {
+                        if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
+                        if (hiddenFindIds.has(cStr)) hiddenFindIds.delete(cStr);
+                    }
+                });
+            }
+        });
+    });
+
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
 
 // --- スケジュール表示 ---
 function setupScheduleUI() {
@@ -3613,26 +3795,16 @@ function toggleSchedule() {
     const tableContainer = document.getElementById('rolls-table-container');
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
-    const bottomControls = document.getElementById('bottom-controls');
-    // ID付きのコントロールエリア、マスター情報エリア、Findエリアを取得
     const mainControls = document.getElementById('main-controls');
-    const masterInfoContainer = document.getElementById('master-info-container');
-    const findContainer = document.getElementById('forecast-summary-area');
+
     if (isScheduleMode) {
-        scheduleBtn.textContent = 'ロールズに戻る';
+        scheduleBtn.textContent = 'Back';
         scheduleBtn.classList.add('active');
-        // メインテーブル関連を隠す
         if (simWrapper) simWrapper.classList.add('hidden');
         if (tableContainer) tableContainer.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
-        if (bottomControls) bottomControls.classList.add('hidden');
-        
-        // ▼ 追加: 入力フィールド、マスター情報、Findを隠す
         if (mainControls) mainControls.classList.add('hidden');
-        if (masterInfoContainer) masterInfoContainer.classList.add('hidden');
-        if (findContainer) findContainer.classList.add('hidden');
 
-        // スケジュール表示
         if (scheduleContainer) {
             scheduleContainer.classList.remove('hidden');
             if (typeof renderScheduleTable === 'function') {
@@ -3640,22 +3812,13 @@ function toggleSchedule() {
             }
         }
     } else {
-        scheduleBtn.textContent = 'スケジュールを表示';
+        scheduleBtn.textContent = 'skd';
         scheduleBtn.classList.remove('active');
-        
-        // メインテーブル関連を表示
         if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
-        if (bottomControls) bottomControls.classList.remove('hidden');
-        
-        // ▼ 追加: 入力フィールドを表示
         if (mainControls) mainControls.classList.remove('hidden');
-        // ▼ 追加: マスター情報とFindは元の状態に基づいて復元
-        if (showMasterInfo && masterInfoContainer) masterInfoContainer.classList.remove('hidden');
-        if (showFindInfo && findContainer) findContainer.classList.remove('hidden');
 
-        // スケジュール非表示
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
     }
 }
@@ -3756,39 +3919,31 @@ function updateUrlParams() {
 ====================
 FILE: view_forecast.js
 ====================
+// view_forecast.js
 /**
  * view_forecast.js
  * 「Find (高速予報)」機能のHTML生成を担当
- * 描画用のテーブルデータとは独立して、2000行先まで数値計算のみでスキャンします。
  */
 
 function generateFastForecast(initialSeed, columnConfigs) {
     const scanRows = 2000;
-    // 2000行先までチェック
     const requiredSeeds = scanRows * 2 + 10;
-    // 1. 計算用のシード配列を高速生成
     const seeds = new Uint32Array(requiredSeeds);
     const rng = new Xorshift32(initialSeed);
     for (let i = 0; i < requiredSeeds; i++) {
         seeds[i] = rng.next();
     }
 
-    // IDとクラス(hidden)の動的付与 (showFindInfoはグローバル変数)
-    const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ?
-    '' : 'hidden';
-    let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-radius: 4px;">`;
-    // -------------------------------------------------------------------------
-    // 伝説枠・昇格伝説枠の汎用アドレス表示 (共通)
-    // -------------------------------------------------------------------------
+    const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
+    let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 0; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0;">`;
+
     const legendSlots = [];
     const promotedSlots = []; 
-
     for (let n = 0; n < scanRows * 2; n++) {
         const val = seeds[n] % 10000;
         const row = Math.floor(n / 2) + 1;
         const side = (n % 2 === 0) ? 'A' : 'B';
         const addr = `${row}${side}`; 
-
         if (val >= 9970) {
             legendSlots.push(addr);
         } else if (val >= 9940) {
@@ -3799,32 +3954,29 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const legendStr = legendSlots.length > 0 ? legendSlots.join(", ") : "なし";
     const promotedStr = promotedSlots.length > 0 ? promotedSlots.join(", ") : "なし";
     summaryHtml += `
-        <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #eee;">
-            <div style="margin-bottom: 6px;">
-                <span style="font-weight:bold; color:#e91e63; background:#ffe0eb; padding:2px 6px; border-radius:3px;">伝説枠 (9970↑)</span>
-                <span style="font-family: monospace; font-size: 1.1em; margin-left: 8px;">${legendStr}</span>
+        <div style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #eee; font-size: 0.85em;">
+            <div style="margin-bottom: 4px;">
+                <span style="font-weight:bold; color:#e91e63; background:#ffe0eb; padding:1px 4px; border-radius:3px;">伝説枠</span>
+                <span style="font-family: monospace; margin-left: 5px;">${legendStr}</span>
             </div>
-           
              <div>
-                <span style="font-weight:bold; color:#9c27b0; background:#f3e5f5; padding:2px 6px; border-radius:3px;">昇格伝説枠 (9940-9969)</span>
-                <span style="font-family: monospace; font-size: 1.1em; margin-left: 8px;">${promotedStr}</span>
+                <span style="font-weight:bold; color:#9c27b0; background:#f3e5f5; padding:1px 4px; border-radius:3px;">昇格枠</span>
+                <span style="font-family: monospace; margin-left: 5px;">${promotedStr}</span>
             </div>
         </div>
     `;
-    // 一括選択解除ボタン
-    const toggleBtnText = (typeof isFindListCleared !== 'undefined' && isFindListCleared) ? "伝説・限定を表示" : "一括非表示";
-    // 修正: ボタンの右側に注釈を追加
+    
+    // ▼▼▼ ボタンエリア変更: [×] [伝説] [限定] ▼▼▼
     summaryHtml += `
-        <div style="margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 10px;">
-            <button onclick="toggleAllFindVisibility()" class="secondary" style="font-size: 11px; padding: 4px 8px;">${toggleBtnText}</button>
-            <span style="font-size: 0.85em; color: #666;">※ 個別の表示/非表示の選択はガチャマスター情報からも出来ます</span>
+        <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 5px;">
+            <button onclick="clearAllTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px;" title="全て非表示">×</button>
+            <button onclick="activateLegendTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px; background-color: #ffb6c1; color: #333; border: 1px solid #ccc;">伝説</button>
+            <button onclick="activateLimitedTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px; background-color: #e0f7fa; color: #333; border: 1px solid #ccc;">限定</button>
+            <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
         </div>
     `;
-    // -------------------------------------------------------------------------
-    // 各ガチャ列ごとのターゲット表示
-    // -------------------------------------------------------------------------
+
     const processedGachaIds = new Set();
-    // 限定キャラ判定用のSet作成
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
         limitedCats.forEach(id => {
@@ -3833,7 +3985,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
     }
 
-    // AnniversaryLimited判定用のSet作成
     const anniversarySet = new Set();
     if (typeof AnniversaryLimited !== 'undefined' && Array.isArray(AnniversaryLimited)) {
         AnniversaryLimited.forEach(id => {
@@ -3844,28 +3995,22 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     columnConfigs.forEach((config, colIndex) => {
         if (!config) return;
-
-        // 同じIDのガチャが複数列あっても1回だけ表示
         if (processedGachaIds.has(config.id)) return;
         processedGachaIds.add(config.id);
 
-        // --- 準備: ターゲット情報の整理 ---
         const targetIds = new Set();
         const poolsToCheck = {}; 
 
-        // 1. 伝説レア (自動)
         const hasLegend = (config.rarity_rates.legend > 0 && config.pool.legend && config.pool.legend.length > 0);
         if (hasLegend) {
             config.pool.legend.forEach(c => targetIds.add(c.id));
         }
 
-        // 2. 限定/新規 (自動) および ユーザーターゲット (手動)
         ['rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r] && config.pool[r].length > 0) {
                  config.pool[r].forEach(charObj => {
                     const cid = charObj.id;
                     const cStr = String(cid);
-                    
                     const isNew = cStr.startsWith('sim-new-');
                     const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
@@ -3877,14 +4022,12 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         });
 
-        // ターゲットが全くなければスキップ
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
-        // --- 高速スキャン実行 ---
+        
         const resultMap = new Map();
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
             const rVal = s0 % 10000;
-            
             const rates = config.rarity_rates;
             let rarity = 'rare'; 
             const rareR = rates.rare;
@@ -3892,16 +4035,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const uberR = rates.uber;
             const legendR = rates.legend;
 
-            if (rVal < rareR) { rarity = 'rare';
-            }
-            else if (rVal < rareR + superR) { rarity = 'super';
-            }
-            else if (rVal < rareR + superR + uberR) { rarity = 'uber';
-            }
-            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend';
-            }
-            else { rarity = 'rare';
-            }
+            if (rVal < rareR) { rarity = 'rare'; }
+            else if (rVal < rareR + superR) { rarity = 'super'; }
+            else if (rVal < rareR + superR + uberR) { rarity = 'uber'; }
+            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend'; }
+            else { rarity = 'rare'; }
 
             let targetPool = null;
             let isLegendRank = false;
@@ -3917,12 +4055,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
-                // 非表示リストに含まれている場合はスキップ (自動ターゲットのみ)
+                
                 if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) {
                     continue;
                 }
 
-                // ターゲットIDに含まれているか
                 if (isLegendRank || targetIds.has(cid)) {
                     if (!resultMap.has(cid)) {
                         const cStr = String(cid);
@@ -3930,7 +4067,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                             name: charObj.name, 
                             hits: [], 
                             isLegend: isLegendRank,
-                             isNew: cStr.startsWith('sim-new-'),
+                            isNew: cStr.startsWith('sim-new-'),
                             isLimited: limitedSet.has(cid) || limitedSet.has(cStr),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(cStr)
                         });
@@ -3943,69 +4080,56 @@ function generateFastForecast(initialSeed, columnConfigs) {
         }
 
         if (resultMap.size === 0) return;
-        // --- 結果リストの生成とソート ---
         let listItems = [];
         resultMap.forEach((data, id) => {
             data.id = id;
             listItems.push(data);
         });
-        // ソート順の定義
+
         listItems.sort((a, b) => {
             const getPriority = (item) => {
                 if (item.isNew) return 1;
                 if (item.isLegend && item.isLimited) return 2;
                 if (item.isLegend) return 3;
-            
                  if (item.isAnniversary) return 4;
                 if (item.isLimited) return 5;
                 return 6; 
             };
-
             const pA = getPriority(a);
             const pB = getPriority(b);
-
             if (pA !== pB) return pA - pB;
-
             if (pA === 1) {
                 const nA = parseInt(String(a.id).replace('sim-new-', ''), 10);
                 const nB = parseInt(String(b.id).replace('sim-new-', ''), 10);
                 return nB - nA;
             }
-
              if (pA >= 2 && pA <= 5) return parseInt(b.id) - parseInt(a.id);
-
             const firstHitA = parseInt(a.hits[0]);
             const firstHitB = parseInt(b.hits[0]);
             return firstHitA - firstHitB;
         });
-        // 表示用HTML生成
+
+        // ▼▼▼ リスト表示のフォントサイズ調整 ▼▼▼
         const itemHtmls = listItems.map(data => {
-            let nameStyle = 'font-weight:bold;';
-            if (data.isNew) {
-                nameStyle += ' color:#007bff;'; 
-            } else if (data.isLegend) {
-                nameStyle += ' color:#e91e63;'; 
- 
-            } else if (data.isLimited) {
-                nameStyle += ' color:#d35400;'; 
-            } else {
-                nameStyle += ' color:#333;'; 
-            }
+            let nameStyle = 'font-weight:bold; font-size: 0.9em;'; // 名前も少し小さく
+            if (data.isNew) nameStyle += ' color:#007bff;'; 
+            else if (data.isLegend) nameStyle += ' color:#e91e63;'; 
+            else if (data.isLimited) nameStyle += ' color:#d35400;'; 
+            else nameStyle += ' color:#333;'; 
 
             const resultStr = data.hits.join(", ");
-   
-             // ×ボタン (行頭)
-            const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:8px; color:#999; font-weight:bold; font-size:1.1em;" title="非表示にする">×</span>`;
+            const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
             
-            return `<div style="margin-bottom: 4px;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: ${resultStr}</div>`;
+            // アドレス列のフォントサイズを縮小
+            return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${resultStr}</span></div>`;
         });
-        summaryHtml += `<div style="margin-bottom: 10px;">
-            <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 5px; font-size: 0.9em;">
-                ${config.name} (ID:${config.id}) - Target List (～${scanRows}行)
+
+        summaryHtml += `<div style="margin-bottom: 8px;">
+            <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 3px; font-size: 0.85em;">
+                ${config.name} (ID:${config.id})
             </div>
-            <div style="font-family: monospace; font-size: 1.1em; line-height: 1.4;">
+            <div style="font-family: monospace; font-size: 1em;">
                 ${itemHtmls.join('')}
-      
              </div>
         </div>`;
     });
@@ -4136,6 +4260,7 @@ function generateMasterInfoHtml() {
 ====================
 FILE: view_table.js
 ====================
+// view_table.js
 /**
  * view_table.js
  * ガチャ結果テーブルのHTML生成と描画ロジック
@@ -4153,7 +4278,7 @@ function generateRollsTable() {
              seedEl.value = "12345";
         }
         
-        const numRolls = currentRolls; // グローバル変数
+        const numRolls = currentRolls;
 
         if (typeof Xorshift32 === 'undefined' || typeof rollWithSeedConsumptionFixed === 'undefined') {
             document.getElementById('rolls-table-container').innerHTML = 
@@ -4163,13 +4288,9 @@ function generateRollsTable() {
 
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
-        // テーブル表示用に必要な分だけ生成 (300行分 + バッファ)
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-
-        // データの計算 (表示用ロジック)
+        
         const tableData = Array(numRolls * 2).fill(null).map(() => []);
-
-        // 列ごとの設定を生成
         const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
             let id = idWithSuffix;
             let suffix = '';
@@ -4192,8 +4313,6 @@ function generateRollsTable() {
             }
             
             config._guaranteedNormalRolls = guaranteedNormalRolls;
-
-            // 超激レア追加ロジック
             const addCount = uberAdditionCounts[colIndex] || 0;
             if (addCount > 0) {
                 for (let k = 1; k <= addCount; k++) {
@@ -4207,42 +4326,41 @@ function generateRollsTable() {
             return config;
         });
 
-        // 1. 高速予報サマリーの生成 (view_forecast.jsを使用)
-        const summaryHtml = (typeof generateFastForecast === 'function') 
-            ? generateFastForecast(initialSeed, columnConfigs) 
-            : '';
+        let findAreaHtml = '';
+        if (typeof generateFastForecast === 'function') {
+            findAreaHtml += generateFastForecast(initialSeed, columnConfigs);
+        }
 
-        // 2. テーブル計算実行 (Column Base)
+        if (typeof generateMasterInfoHtml === 'function') {
+            const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
+            findAreaHtml += `<div class="${visibilityClass}" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-top: none; margin-top: -16px; border-radius: 0 0 4px 4px; font-size: 0.85em;">`;
+            findAreaHtml += `<div style="border-top: 1px dashed #ccc; margin-bottom: 10px;"></div>`; 
+            findAreaHtml += generateMasterInfoHtml();
+            findAreaHtml += `</div>`;
+        }
+
         columnConfigs.forEach((config, colIndex) => {
             if (!config) return;
             let prevDrawA = null, prevDrawB = null;
             for (let i = 0; i < numRolls; i++) {
                 const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
-                
                 const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
                 const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
-                
                 if (!tableData[seedIndexA]) tableData[seedIndexA] = [];
                 tableData[seedIndexA][colIndex] = { gachaId: config.id, roll: rollResultA, isConsecutive: isConsecutiveA };
-                
                 prevDrawA = { rarity: rollResultA.rarity, charId: rollResultA.charId, isRerolled: rollResultA.isRerolled };
-                
                 if (seedIndexB < seeds.length - 2) {
                     const rollResultB = rollWithSeedConsumptionFixed(seedIndexB, config, seeds, prevDrawB);
                     const isConsecutiveB = prevDrawB && prevDrawB.isRerolled && rollResultB.isRerolled;
-                    
                     if (!tableData[seedIndexB]) tableData[seedIndexB] = [];
                     tableData[seedIndexB][colIndex] = { gachaId: config.id, roll: rollResultB, isConsecutive: isConsecutiveB };
-                    
                     prevDrawB = { rarity: rollResultB.rarity, charId: rollResultB.charId, isRerolled: rollResultB.isRerolled };
                 }
             }
         });
 
-        // 3. シミュレーションモードのハイライト計算
         const highlightMap = new Map();
         const guarHighlightMap = new Map();
-        
         if (isSimulationMode) { 
             const simConfigEl = document.getElementById('sim-config');
             if(simConfigEl && typeof parseSimConfig !== 'undefined') {
@@ -4250,14 +4368,12 @@ function generateRollsTable() {
                 let rngForText = new Xorshift32(initialSeed);
                 let currentSeedIndex = 0;
                 let lastDrawForHighlight = { rarity: null, charId: null };
-
                 for (const sim of simConfigs) {
                     if (gachaMasterData.gachas[sim.id]) sim.gachaConfig = gachaMasterData.gachas[sim.id];
                     if (!sim.gachaConfig) continue;
 
                     let normalRolls = sim.rolls; 
                     let isGuaranteedStep = false;
-
                     if (sim.g) {
                         if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
                         else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
@@ -4268,7 +4384,6 @@ function generateRollsTable() {
                     if (isGuaranteedStep) {
                         const startSeedIndex = currentSeedIndex;
                         guarHighlightMap.set(startSeedIndex, sim.id);
-
                         for(let k=0; k<normalRolls; k++){
                              if(currentSeedIndex >= numRolls*2) break;
                              highlightMap.set(currentSeedIndex, sim.id);
@@ -4279,7 +4394,6 @@ function generateRollsTable() {
                              for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
                         }
                         if(startSeedIndex < numRolls*2) highlightMap.set(`${startSeedIndex}G`, sim.id);
-
                         if(currentSeedIndex < seeds.length && typeof rollGuaranteedUber !== 'undefined') {
                             const gr = rollGuaranteedUber(currentSeedIndex, sim.gachaConfig, seeds);
                             currentSeedIndex += gr.seedsConsumed;
@@ -4297,27 +4411,25 @@ function generateRollsTable() {
                         }
                     }
                 }
-                finalSeedForUpdate = rngForText.seed; // UIコントローラで参照
+                finalSeedForUpdate = rngForText.seed;
             }
         }
 
-        // 4. HTML生成
         let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
         
-        // ID追加用のトリガーと入力フォーム
         buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
         buttonHtml += `<span id="add-id-container" style="display:none; margin-left:5px;">`;
         buttonHtml += `<label for="gacha-id-input" style="font-weight:normal; font-size:0.9em;">ID:</label>`;
         buttonHtml += `<input type="number" id="gacha-id-input" style="width:60px; padding:1px; font-size:0.9em;" onkeydown="if(event.key==='Enter') addGachaById()">`;
         buttonHtml += `<button onclick="addGachaById()" class="secondary" style="margin-left:3px; padding:1px 6px; font-size:0.85em;">追加</button>`;
         buttonHtml += `</span>`;
+        buttonHtml += `<button class="remove-btn" style="margin-left:8px; padding: 2px 8px; font-size: 11px;" onclick="resetToFirstGacha()" title="一番左以外を全削除">×</button>`;
 
         let totalGachaCols = 0;
         tableGachaIds.forEach(idWithSuffix => {
             let id = idWithSuffix.replace(/[gfs]$/, '');
             if (gachaMasterData.gachas[id]) totalGachaCols += /[gfs]$/.test(idWithSuffix) ? 2 : 1;
         });
-
         const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
         const calcColSpan = showSeedColumns ? 5 : 0;
         const totalTrackSpan = calcColSpan + totalGachaCols;
@@ -4325,8 +4437,7 @@ function generateRollsTable() {
         let tableHtml = `<table><thead>
             <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
             <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
-
-        // ヘッダー部HTML生成関数（内部）
+        
         const generateHeader = (isInteractive) => {
             let html = `
                 <th class="${calcColClass}">SEED</th>
@@ -4365,17 +4476,16 @@ function generateRollsTable() {
                 let controlArea = '';
 
                 if (isInteractive) {
-                    const removeBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})">x</button>`;
+                    const removeBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})" style="font-size:11px; padding:2px 6px; margin-left: 5px;">x</button>`;
                     let gBtnLabel = 'G';
                     if (suffix === 'g') gBtnLabel = '11G';
                     else if (suffix === 'f') gBtnLabel = '15G';
                     else if (suffix === 's') gBtnLabel = '7G';
                     
-                    const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px;">${gBtnLabel}</button>`;
-                    
+                    const gBtn = `<button onclick="toggleGuaranteedColumn(${index})" style="min-width:25px; font-size:11px; padding:2px 6px;">${gBtnLabel}</button>`;
                     const currentAddVal = uberAdditionCounts[index] || 0;
                     const addLabelText = (currentAddVal > 0) ? `add:${currentAddVal}` : `add`;
-                    const triggerHtml = `<span id="add-trigger-${index}" style="font-size:0.8em; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabelText}</span>`;
+                    const triggerHtml = `<span id="add-trigger-${index}" style="font-size:12px; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabelText}</span>`;
                     
                     let addSelect = `<span id="add-select-wrapper-${index}" style="display:none;">`;
                     addSelect += `<select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width: 40px; margin: 0 2px; padding: 0; font-size: 0.85em;">`;
@@ -4383,7 +4493,6 @@ function generateRollsTable() {
                         addSelect += `<option value="${k}" ${k===currentAddVal ? 'selected':''}>${k}</option>`;
                     }
                     addSelect += `</select></span>`;
-
                     let selector = `<select onchange="updateGachaSelection(this, ${index})" style="width: 30px; cursor: pointer; opacity: 0; position: absolute; left:0; top:0; height: 100%; width: 100%;">`;
                     options.forEach(opt => {
                         const selected = (opt.value == id) ? 'selected' : '';
@@ -4402,7 +4511,6 @@ function generateRollsTable() {
                     else if (suffix === 's') statusTextParts.push('7G');
                     const currentAddVal = uberAdditionCounts[index] || 0;
                     if (currentAddVal > 0) statusTextParts.push(`add:${currentAddVal}`);
-                    
                     if (statusTextParts.length > 0) {
                         controlArea = `<div style="margin-top:4px; font-size:0.85em; color:#555; height: 21px; display: flex; align-items: center; justify-content: center;">${statusTextParts.join(' / ')}</div>`;
                     } else {
@@ -4418,7 +4526,6 @@ function generateRollsTable() {
 
         tableHtml += `<th class="col-no">NO.</th>` + generateHeader(true) + `<th class="col-no">NO.</th>` + generateHeader(false) + `</tr></thead><tbody>`;
 
-        // 内部ヘルパー: アドレスフォーマット
         const formatAddress = (idx) => {
             if (idx === null || idx === undefined) return '';
             const row = Math.floor(idx / 2) + 1;
@@ -4426,10 +4533,8 @@ function generateRollsTable() {
             return `${side}${row})`;
         };
 
-        // 内部ヘルパー: 詳細計算セルの生成
         const generateDetailedCalcCells = (seedIndex) => {
             if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
-
             const firstGachaIdWithSuffix = tableGachaIds[0];
             if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
             
@@ -4448,7 +4553,6 @@ function generateRollsTable() {
             }
 
             if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
-
             const sNum1 = seedIndex + 1;
             const sNum2 = seedIndex + 2;
             const sVal_0 = seeds[seedIndex];
@@ -4465,7 +4569,6 @@ function generateRollsTable() {
             else if (rVal < rareRate + superRate + uberRate + legendRate) rType = 'legend';
             
             const colRarity = `<td>(S${sNum1})<br>${rVal}<br>(${rType})</td>`;
-
             const pool = config.pool[rType] || [];
             let colSlot = '<td>-</td>';
             let slotVal = '-';
@@ -4479,10 +4582,10 @@ function generateRollsTable() {
                 const roll = tableData[seedIndex][0].roll;
                 if (pool.length > 0) {
                     if (roll.isRerolled) {
-                        const finalSeedIndex = seedIndex + roll.seedsConsumed - 1;
-                        const sNumFinal = finalSeedIndex + 1;
                         const finalPoolSize = roll.uniqueTotal;
                         const finalVal = roll.reRollIndex;
+                        const finalSeedIndex = seedIndex + roll.seedsConsumed - 1;
+                        const sNumFinal = finalSeedIndex + 1;
                         colReRoll = `<td>(S${sNumFinal})<br>%${finalPoolSize}<br>${finalVal}</td>`;
                     } else {
                         colReRoll = `<td>false</td>`;
@@ -4513,7 +4616,6 @@ function generateRollsTable() {
             return colSeed + colRarity + colSlot + colReRoll + colGuar;
         };
 
-        // 内部ヘルパー: セル生成
         const generateCell = (seedIndex, id, colIndex) => {
             if(!tableData[seedIndex] || !tableData[seedIndex][colIndex]) return `<td class="gacha-cell gacha-column">N/A</td>`;
             const fullRoll = tableData[seedIndex][colIndex].roll;
@@ -4522,8 +4624,11 @@ function generateRollsTable() {
             const gachaName = gachaConfig ? gachaConfig.name : "";
             const isPlatOrLegend = gachaName.includes("プラチナ") || gachaName.includes("レジェンド");
             let isLimited = false;
+            const charId = fullRoll.finalChar.id;
+            const charIdStr = String(charId);
+
             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-                if (limitedCats.includes(parseInt(fullRoll.finalChar.id)) || limitedCats.includes(fullRoll.finalChar.id.toString())) {
+                if (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charIdStr)) {
                     isLimited = true;
                 }
             }
@@ -4558,6 +4663,20 @@ function generateRollsTable() {
                 }
             }
 
+            if (!isSimRoute) {
+                let isAuto = false;
+                if (fullRoll.rarity === 'legend') isAuto = true;
+                else if (isLimited) isAuto = true;
+                else if (charIdStr.startsWith('sim-new-')) isAuto = true;
+
+                const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
+                const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
+
+                if ((isAuto && !isHidden) || isManual) {
+                    style = 'background-color: #adff2f; font-weight: bold;';
+                }
+            }
+
             let content = fullRoll.finalChar.name;
             if (!isSimulationMode) {
                 if (fullRoll.isRerolled) {
@@ -4571,7 +4690,6 @@ function generateRollsTable() {
                     if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
                     
                     const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-                    // 修正: 連続レア被りの場合はアドレスにRを付与
                     let addr = formatAddress(nextSeedIdx);
                     if (fullRoll.isForceDuplicate) {
                         addr = 'R' + addr;
@@ -4584,7 +4702,6 @@ function generateRollsTable() {
             } else {
                 if (fullRoll.isRerolled) {
                     const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-                    // 修正: 連続レア被りの場合はアドレスにRを付与
                     let addr = formatAddress(nextSeedIdx);
                     if (fullRoll.isForceDuplicate) {
                         addr = 'R' + addr;
@@ -4595,7 +4712,6 @@ function generateRollsTable() {
             return `<td class="gacha-cell gacha-column${hlClass}" style="${style}">${content}</td>`;
         };
 
-        // --- No列ハイライト判定関数 (単純被り: Sn vs Sn+2) ---
         const isSimpleYellow = (currIdx) => {
             if (currIdx < 2) return false;
             const n = currIdx - 2; 
@@ -4612,21 +4728,14 @@ function generateRollsTable() {
             return (seeds[n+1] % 25) === (24 - (seeds[n+3] % 25));
         };
 
-        // --- No列ハイライト判定関数 (連続被り: Sn vs Sn+2 vs Sn+5) ---
-        // currIdx は Sn+5 (Row 3) に相当
         const isConsecutiveYellow = (currIdx) => {
             if (currIdx < 5) return false;
             const n = currIdx - 5;
             if (currIdx + 1 >= seeds.length) return false;
-            // Rarity checks
             if (seeds[n] % 10000 > 6969) return false;
             if (seeds[n+2] % 10000 > 6969) return false;
             if (seeds[currIdx] % 10000 > 6969) return false;
-            // 1st Dupe must be Normal (Yellow-type) logic as per spec: "Sn+1 % 25 == Sn+3 % 25"
             if (seeds[n+1] % 25 !== seeds[n+3] % 25) return false;
-            // 2nd Dupe Yellow check: Sn+4 (re-roll slot using reduced pool 24) vs Sn+6 (current row slot 25)
-            // seeds[n+4] is reroll seed for 2nd row (Sn+2), used with pool size 24
-            // seeds[currIdx+1] is slot seed for 3rd row (Sn+5), used with pool size 25
             return seeds[n+4] % 24 === seeds[currIdx+1] % 25;
         };
 
@@ -4634,27 +4743,21 @@ function generateRollsTable() {
             if (currIdx < 5) return false;
             const n = currIdx - 5;
             if (currIdx + 1 >= seeds.length) return false;
-            // Rarity checks
             if (seeds[n] % 10000 > 6969) return false;
             if (seeds[n+2] % 10000 > 6969) return false;
             if (seeds[currIdx] % 10000 > 6969) return false;
-            // 1st Dupe Normal check
             if (seeds[n+1] % 25 !== seeds[n+3] % 25) return false;
-            // 2nd Dupe Orange check: Sn+4 % 24 == 24 - (Sn+6 % 25)
             return seeds[n+4] % 24 === (24 - (seeds[currIdx+1] % 25));
         };
-        // ------------------------------------
 
-        // 行の生成ループ
         for(let i=0; i<numRolls; i++){
             const seedIndexA = i*2, seedIndexB = i*2+1;
-            // スタイル判定 (Orange優先)
             let styleNoA = '';
-            if (isSimpleOrange(seedIndexA) || isConsecutiveOrange(seedIndexA)) styleNoA = 'style="background-color: #ff9800;"';
-            else if (isSimpleYellow(seedIndexA) || isConsecutiveYellow(seedIndexA)) styleNoA = 'style="background-color: #ffeb3b;"';
+            if (isSimpleYellow(seedIndexA) || isConsecutiveYellow(seedIndexA)) styleNoA = 'style="background-color: #ffeb3b;"';
+            else if (isSimpleOrange(seedIndexA) || isConsecutiveOrange(seedIndexA)) styleNoA = 'style="background-color: #ff9800;"';
             let styleNoB = '';
-            if (isSimpleOrange(seedIndexB) || isConsecutiveOrange(seedIndexB)) styleNoB = 'style="background-color: #ff9800;"';
-            else if (isSimpleYellow(seedIndexB) || isConsecutiveYellow(seedIndexB)) styleNoB = 'style="background-color: #ffeb3b;"';
+            if (isSimpleYellow(seedIndexB) || isConsecutiveYellow(seedIndexB)) styleNoB = 'style="background-color: #ffeb3b;"';
+            else if (isSimpleOrange(seedIndexB) || isConsecutiveOrange(seedIndexB)) styleNoB = 'style="background-color: #ff9800;"';
 
             let rowHtml = `<tr><td class="col-no" ${styleNoA}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexA);
@@ -4673,7 +4776,6 @@ function generateRollsTable() {
                     let gContent = '---';
                     let cellStyle = '';
                     if (isSimulationMode && guarHighlightMap.get(seedIndexA) === id) cellStyle = 'background-color: #98FB98;'; 
-                    
                     if (typeof calculateGuaranteedLookahead !== 'undefined') {
                          const config = columnConfigs[colIndex];
                          const normalRolls = config._guaranteedNormalRolls || 10;
@@ -4736,7 +4838,7 @@ function generateRollsTable() {
                         const config = columnConfigs[colIndex];
                         const normalRolls = config._guaranteedNormalRolls || 10;
                         let lastDraw = (i>0 && tableData[seedIndexB-2]?.[colIndex]?.roll) ?
-                                      {rarity: tableData[seedIndexB-2][colIndex].roll.rarity, charId: tableData[seedIndexB-2][colIndex].roll.charId} : null;
+                                       {rarity: tableData[seedIndexB-2][colIndex].roll.rarity, charId: tableData[seedIndexB-2][colIndex].roll.charId} : null;
                         const gRes = calculateGuaranteedLookahead(seedIndexB, config, seeds, lastDraw, normalRolls);
                         const addr = formatAddress(gRes.nextRollStartSeedIndex);
                         let charName = gRes.name;
@@ -4760,7 +4862,7 @@ function generateRollsTable() {
                                  }
                              }
                              altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
-                         }
+                        }
                         gContent = altHtml + mainHtml;
                         if (cellStyle !== '') cellStyle = 'background-color: #32CD32;';
                     }
@@ -4771,10 +4873,21 @@ function generateRollsTable() {
             tableHtml += rowHtml;
         }
         
+        // ▼▼▼ テーブル最下部に追加: +100行 & SEED表示ボタン ▼▼▼
+        const seedBtnText = showSeedColumns ? 'SEED非表示' : 'SEED表示';
+        // colspan = 1(NoA) + totalTrackSpan(A) + 1(NoB) + totalTrackSpan(B)
+        const fullColSpan = 2 + (totalTrackSpan * 2); 
+        
+        tableHtml += `<tr><td colspan="${fullColSpan}" style="padding: 10px; text-align: center;">
+            <button onclick="addMoreRolls()">+100行</button>
+            <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${seedBtnText}</button>
+        </td></tr>`;
+        // ▲▲▲ 追加終了 ▲▲▲
+
         tableHtml += '</tbody></table>';
         const container = document.getElementById('rolls-table-container');
         if(container) {
-            container.innerHTML = summaryHtml + tableHtml;
+            container.innerHTML = findAreaHtml + tableHtml;
         }
 
         const resultDiv = document.getElementById('result');

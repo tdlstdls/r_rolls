@@ -3,62 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rare Gacha Rolls</title>
+    <title>R_Rolls</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* モバイル最適化用の追加スタイル */
+        @media (max-width: 768px) {
+            /* 画面全体の高さを確保し、はみ出しを禁止 */
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0 !important; /* bodyのpaddingをなくす */
+                overflow: hidden; /* 全体スクロールを無効化 */
+            }
+
+            .container {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                padding: 4px; /* コンテナ側で少し余白を取る */
+                box-sizing: border-box;
+            }
+
+            /* ヘッダーとコントロールエリアは高さを固定（縮小させない） */
+            .header-row, 
+            .controls, 
+            .description-box, 
+            #result,
+            .forecast-summary-container { /* Find表示エリアも含める */
+                flex-shrink: 0;
+            }
+
+            .header-row {
+                flex-direction: row !important; /* 横並びを強制 */
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 5px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #eee;
+                margin-bottom: 5px;
+            }
+
+            h1 {
+                font-size: 16px !important;
+                margin-right: 5px;
+            }
+
+            .header-actions {
+                display: flex;
+                gap: 3px;
+                flex-wrap: wrap;
+            }
+
+            .header-actions button, 
+            .header-actions span {
+                font-size: 10px !important;
+                padding: 2px 6px !important;
+                height: 24px;
+                line-height: 20px;
+            }
+
+            /* SEED入力欄のポップアップ調整 */
+            #seed-input-container {
+                position: absolute;
+                top: 40px;
+                left: 10px;
+                background: white;
+                padding: 5px;
+                border: 1px solid #ccc;
+                z-index: 100;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+
+            /* テーブルコンテナを残りの領域いっぱいに広げる */
+            #rolls-table-container {
+                flex-grow: 1;
+                max-height: none !important; /* 既存の制限を解除 */
+                margin-bottom: 0 !important;
+                overflow-y: auto; /* 縦スクロール許可 */
+                border-bottom: none; /* 下のボーダーを画面端に合わせる */
+            }
+            
+            /* スケジュール表示時も同様に */
+            #schedule-container {
+                flex-grow: 1;
+                overflow-y: auto;
+                padding-bottom: 0;
+            }
+            .schedule-scroll-wrapper {
+                max-height: none !important;
+            }
+        }
+
+        /* デスクトップ用 */
+        .header-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="header-row">
-            <h1>Rare Gacha Rolls</h1>
+            <h1>R_Rolls</h1>
             <div class="header-actions">
-                <button id="toggle-description" class="secondary" onclick="toggleDescription()">概要を表示</button>
-        
-                <button id="mode-toggle-btn" class="secondary" onclick="toggleAppMode()">SIMモードへ（未実装）</button>
-                <button id="toggle-schedule-btn" class="secondary" onclick="toggleSchedule()">スケジュールを表示</button>
-            </div>
-        </div>
-
-        <div id="description-content" class="description-box hidden">
-            <p><strong>Seed:</strong> ガチャの初期シード値（開始前シード値）を入力してください。<br>
-            <strong>Simulation Config:</strong> ガチャを回す手順を「ガチャID ロール数」で指定します。(例: 1006 4 942 11g)<br>
-       
-            数値のみは単発、数値+gは確定ガチャ(11連など)を示します。</p>
-        </div>
-        
-        <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
-            <div class="control-group" style="margin-bottom: 0; display: flex; align-items: center;">
-                <span id="seed-input-trigger" style="cursor: pointer; text-decoration: underline; color: #007bff; font-weight: bold; font-size: 0.8em;" onclick="showSeedInput()">SEED入力</span>
+                <span id="seed-input-trigger" class="text-btn" onclick="showSeedInput()">SEED</span>
+                
                 <span id="seed-input-container" class="hidden">
-                    <label for="seed">Seed:</label>
-                    <input type="number" id="seed" placeholder="Enter Seed" value="12345" onkeydown="if(event.key==='Enter') applySeedInput()">
-                    <button onclick="applySeedInput()" class="secondary" style="margin-left: 5px; padding: 2px 8px; font-size: 0.9em;">更新</button>
+                    <label for="seed" style="font-size:0.8em;">Seed:</label>
+                    <input type="number" id="seed" placeholder="Seed" value="12345" style="width:80px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
+                    <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 10px;">OK</button>
                 </span>
-            </div>
-            
-            <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center;">
-                <label for="sim-config">Simulation Config:</label>
-                <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();">
-                <button onclick="clearSimConfig()" style="margin-left: 5px;">Clear</button>
-            </div>
 
-            <div style="display: flex; gap: 5px;">
-                <button id="toggle-master-info-btn" class="secondary" onclick="toggleMasterInfo()">ガチャマスター情報を表示</button>
-                <button id="toggle-find-info-btn" class="secondary" onclick="toggleFindInfo()">Findを表示</button>
+                <span class="separator">|</span>
+                <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
+                
+                <span class="separator">|</span>
+                <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
+                
+                <span class="separator">|</span>
+                <span id="mode-toggle-btn" class="text-btn" onclick="toggleAppMode()">Sim</span>
+                
+                <span class="separator">|</span>
+                <span id="toggle-schedule-btn" class="text-btn" onclick="toggleSchedule()">skd</span>
             </div>
         </div>
 
-        <div id="master-info-container" class="description-box hidden" style="font-size: 0.85em; line-height: 1.4; word-break: break-all;"></div>
+        <div id="description-content" class="description-box hidden" style="font-size: 0.8em;">
+            <h3 style="margin-top:0;">【ツール概要】</h3>
+            <p style="margin-bottom:10px;">
+                レアガチャの排出結果を予測・シミュレーションするツールです。<br>
+                現在地のSEED値を入力することで、各ガチャイベントの排出キャラや、確定枠を利用したルート取りを支援します。
+            </p>
 
-        <div id="result" class="result-box hidden"></div>
+            <h3 style="margin-top:0;">【基本操作】</h3>
+            <ul style="padding-left: 20px; margin-bottom:10px;">
+                <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、現在地（Start Seed）を入力してOKを押してください。</li>
+                <li><strong>ガチャ選択:</strong> 表のヘッダー（日付やガチャ名が表示されている部分）のプルダウンから、表示したいガチャイベントを選択できます。</li>
+                <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、開催予定のガチャを一括で追加します。</li>
+            </ul>
+
+            <h3 style="margin-top:0;">【主要機能】</h3>
+            <dl style="margin-bottom:10px;">
+                <dt><strong>1. Find (特定キャラの取得可能アドレスの予測)</strong></dt>
+                <dd style="margin-bottom:5px;">
+                    「Find」ボタンを押すと、2000ロール先までの「伝説枠」「昇格伝説枠」を検索して表示します。<br>
+                    リスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。
+                </dd>
+                
+                <dt><strong>2. skd (スケジュール)</strong></dt>
+                <dd>
+                    「skd」ボタンで、直近のガチャ開催スケジュールをガントチャートとリスト形式で確認できます。<br>
+                </dd>
+
+                <dt><strong>3. Sim (シミュレーションモード)※作成中</strong></dt>
+                <dd style="margin-bottom:5px;">
+                    複数のガチャを跨いで引いた場合の結果をシミュレーションします。<br>
+                    「Config」欄に <code>ガチャID 回数 ガチャID 回数</code> の形式で入力してください。<br>
+                    <span style="font-size:0.9em; color:#666;">
+                        (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
+                        ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。
+                    </span>
+                </dd>
+                
+            </dl>
+
+            <h3 style="margin-top:0;">【表示・用語について】</h3>
+            <ul style="padding-left: 20px; margin-bottom:0;">
+                <li><span style="background-color:#adff2f; padding:0 4px;">緑背景</span>: Findターゲット（伝説レア、限定キャラ、新キャラ、または手動で指定したキャラ）。</li>
+                <li><strong>Guar列:</strong> 確定ガチャ（11連等）を引いた場合の「確定枠キャラ」と「移動先アドレス」を表示します。</li>
+            </ul>
+        </div>
+        
+        <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
+            
+            <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; width: 100%;">
+                <label for="sim-config" style="font-size:0.9em;">Config:</label>
+                <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
+                <button onclick="clearSimConfig()" style="margin-left: 5px; font-size: 11px;">Clear</button>
+            </div>
+        </div>
+
+        <div id="result" class="result-box hidden" style="font-size: 10px; margin-bottom: 2px;"></div>
         
         <div id="rolls-table-container"></div>
 
-        <div id="bottom-controls" class="bottom-controls" style="margin-top: 10px; margin-bottom: 20px; display: flex; gap: 10px;">
-            <button onclick="addMoreRolls()">100行追加</button>
-            <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">SEEDを表示</button>
-        </div>
-        
         <div id="schedule-container" class="hidden"></div>
     </div>
 
@@ -69,16 +198,12 @@
     <script src="simulation.js"></script>
     <script src="schedule_logic.js"></script>
     <script src="data_loader.js"></script> 
- 
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
-
     <script src="view_forecast.js"></script>
     <script src="view_master.js"></script>
     <script src="view_table.js"></script>
-
     <script src="ui_controller.js"></script>
-    
     <script src="main.js"></script>
 </body>
 </html>
