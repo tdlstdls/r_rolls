@@ -1423,7 +1423,7 @@ FILE: index.html
             <h3 style="margin-top:0;">【基本操作】</h3>
             <ul style="padding-left: 20px; margin-bottom:10px;">
                 <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、シーカー等で特定した実行前シードを入力してOKを押してください。</li>
-                <li><strong>ガチャ選択:</strong> 表のヘッダー（開催期間やガチャ名が表示されている部分）下部のプルダウンから、表示したいガチャイベントを選択できます。</li>
+                <li><strong>ガチャ選択:</strong> 表のヘッダー（開催期間やガチャ名が表示されている部分）下部のプルダウンから、表示したいガチャを選択できます。</li>
                 <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧（前日～）のガチャを一括で追加します。</li>
             </ul>
 
@@ -1439,6 +1439,7 @@ FILE: index.html
                 <dd style="margin-bottom:5px;">
                     複数のガチャを跨いで引いた場合の結果をシミュレーションします。<br>
                     「Config」欄に <code>ガチャID 回数 ガチャID 回数 ・・・</code> の形式で入力してください。<br>
+                    入力された内容に従って、シミュレーションしたルートをハイライトします。<br>
                     <span style="font-size:0.9em; color:#666;">
                         (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
                         ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
@@ -1473,6 +1474,7 @@ FILE: index.html
                 <input type="number" id="seed" placeholder="Seed" value="12345" style="width:100px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
                 <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 11px;">OK</button>
                 <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Copy to Clipboard">Copy</button>
+                <button onclick="cancelSeedInput()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Cancel">×</button>
             </div>
 
             <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; width: 100%;">
@@ -1512,7 +1514,7 @@ FILE: index.html
     <script src="ui_target_handler.js"></script>
     <script src="ui_table_handler.js"></script>
     <script src="ui_controller.js"></script>
-    <script src="main.js"></script> </body>
+    <script src="main.js"></script>
 </body>
 </html>
 
@@ -2692,7 +2694,8 @@ th {
     background-color: #f8f9fa;
     font-weight: bold;
     /* position: sticky;  <-- 削除 */
-    /* top: 0;            <-- 削除 */
+    /* top: 0;
+    <-- 削除 */
     /* z-index: 10;       <-- 削除 */
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
@@ -2704,16 +2707,19 @@ th {
     position: sticky;
     top: 0;
     z-index: 20; /* 他の要素より手前に表示 */
-    border-bottom: none; /* 下の行（操作行）との境界を目立たなくする */
+    border-bottom: none;
+    /* 下の行（操作行）との境界を目立たなくする */
     box-shadow: 0 2px 2px rgba(0,0,0,0.1); /* 浮いている感を出すための影 */
-    background-color: #f8f9fa; /* 背景色を明示 */
+    background-color: #f8f9fa;
+    /* 背景色を明示 */
 }
 
 /* 新規追加: 操作ボタン行（スクロール用）のスタイル */
 .control-row th {
-    position: static; /* 固定しない */
+    position: static;
+    /* 固定しない */
     border-top: none; /* 上の行との一体感を出す */
-    background-color: #f4f4f4; /* 少し色を変えて区別 */
+    background-color: #f8f9fa; /* 変更: タイトル行と同じ色に統一 (#f4f4f4 -> #f8f9fa) */
     padding-top: 2px;
     padding-bottom: 4px;
     z-index: 1;
@@ -2789,7 +2795,8 @@ th {
 
 .schedule-scroll-wrapper {
     overflow-x: auto;
-    /* max-height: 80vh; <-- 固定制限を削除 */
+    /* max-height: 80vh;
+    <-- 固定制限を削除 */
     max-height: none;
     border: 1px solid #ddd;
     /* 画面幅に収める */
@@ -2859,7 +2866,8 @@ th {
 .gantt-chart-container {
     border: 1px solid #ccc;
     background: #fff;
-    /* overflow: hidden; を削除してスクロールバーを表示可能にする */
+    /* overflow: hidden;
+    を削除してスクロールバーを表示可能にする */
     font-size: 12px;
     margin-bottom: 20px;
     max-width: 100%; /* はみ出し防止 */
@@ -2969,7 +2977,8 @@ th {
 
 .gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
 .gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
-.gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
+.gantt-bar.g-fest { background-color: #ff9800;
+    border-color: #ff9800; }
 .gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
 
 .gantt-bar-text {
@@ -3223,6 +3232,9 @@ FILE: ui_controller.js
  * 初期化、モード管理、基本UI操作を担当
  */
 
+// マスター情報の表示状態管理フラグ
+let isMasterInfoVisible = true;
+
 // --- 初期化ロジック ---
 
 function initializeDefaultGachas() {
@@ -3241,12 +3253,14 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
+              
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
+                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); 
                     });
@@ -3306,7 +3320,8 @@ function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
         if (isSimulationMode) {
-            btn.textContent = "View";
+            // Simモード中は「Back」と表示
+            btn.textContent = "Back";
             btn.classList.add('active');
         } else {
             btn.textContent = "Sim";
@@ -3364,7 +3379,6 @@ function updateSeedAndRefresh(newSeed) {
 function clearSimConfig() {
     const el = document.getElementById('sim-config');
     if(el) el.value = '';
-    
     // エラーメッセージもクリア
     const errorEl = document.getElementById('sim-error-msg');
     if (errorEl) {
@@ -3417,6 +3431,21 @@ function applySeedInput() {
     if (trigger) trigger.classList.remove('hidden');
 }
 
+// 追加: SEED入力をキャンセルして閉じる
+function cancelSeedInput() {
+    const container = document.getElementById('seed-input-container');
+    const trigger = document.getElementById('seed-input-trigger');
+    const input = document.getElementById('seed');
+
+    // 現在のURLパラメータから値を復元（変更を破棄）
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSeed = urlParams.get('seed') || "12345";
+    if (input) input.value = currentSeed;
+
+    if (container) container.classList.add('hidden');
+    if (trigger) trigger.classList.remove('hidden');
+}
+
 // 追加: SEEDをクリップボードにコピー
 function copySeedToClipboard() {
     const seedInput = document.getElementById('seed');
@@ -3438,6 +3467,25 @@ function toggleSeedColumns() {
 function updateToggleButtons() {
     const btnSeed = document.getElementById('toggle-seed-btn');
     if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
+}
+
+// 追加: マスター情報の表示切替
+function toggleMasterInfo() {
+    isMasterInfoVisible = !isMasterInfoVisible;
+    const el = document.getElementById('master-info-area');
+    const btn = document.getElementById('toggle-master-info-btn');
+    
+    if (el) {
+        if (isMasterInfoVisible) {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+    
+    if (btn) {
+        btn.textContent = isMasterInfoVisible ? 'マスター情報を隠す' : 'マスター情報を表示';
+    }
 }
 
 function toggleDescription() {
@@ -3554,12 +3602,12 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
         // ルート計算 (simulation.js)
         if (typeof calculateRouteToCell === 'function') {
             let routeConfig;
-            
             if (guaranteedType) {
                 // 確定枠クリック時の特別なアクション
                 const finalAction = { 
                     id: gachaId, 
                     rolls: parseInt(guaranteedType.replace('g', ''), 10), 
+               
                     g: true 
                 };
                 // 第5引数に finalAction を渡す
@@ -3567,6 +3615,21 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
             } else {
                 // 通常クリック
                 routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
+            }
+
+            if (routeConfig) {
+                // 【追加ロジック】
+                // Simモードでクリックした際、現在の構成（特に確定枠など）を書き換えて無理やり到達するルートを提示するのではなく、
+                // 「ここから先へのルート」として成立しない（過去改変が必要な）場合は「見つからない」扱いにする。
+                // 判定：currentConfigが空でなく、かつ、routeConfigがcurrentConfigから始まっていない（追記でない）場合は除外。
+                
+                const normCurrent = currentConfig.replace(/\s+/g, ' ').trim();
+                const normRoute = routeConfig.replace(/\s+/g, ' ').trim();
+
+                if (normCurrent.length > 0 && !normRoute.startsWith(normCurrent)) {
+                    // 履歴の書き換えが発生しているため、ルートとしては不採用（無効）とする
+                    routeConfig = null;
+                }
             }
 
             if (routeConfig) {
@@ -3581,15 +3644,14 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                 // Configは更新せず、エラーメッセージを表示する
                 if (errorEl) {
                     // セル番号の計算 (SeedIndex -> A1, B10 etc.)
-                    // seedIndex 0 -> A1, 1 -> B1, 2 -> A2 ...
                     const row = Math.floor(targetSeedIndex / 2) + 1;
                     const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
                     const cellLabel = `${side}${row}`;
                     
                     errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
-                    errorEl.style.display = 'block'; // inline-block or block
+                    errorEl.style.display = 'block'; 
                 }
-                console.warn("Route not found.");
+                console.warn("Route not found or history rewrite rejected.");
             }
         }
     } else {
@@ -4487,7 +4549,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
     let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 0; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0;">`;
-
     const legendSlots = [];
     const promotedSlots = []; 
     for (let n = 0; n < scanRows * 2; n++) {
@@ -4510,23 +4571,28 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span style="font-weight:bold; color:#e91e63; background:#ffe0eb; padding:1px 4px; border-radius:3px;">伝説枠</span>
                 <span style="font-family: monospace; margin-left: 5px;">${legendStr}</span>
             </div>
-             <div>
+            
+            <div>
                 <span style="font-weight:bold; color:#9c27b0; background:#f3e5f5; padding:1px 4px; border-radius:3px;">昇格枠</span>
                 <span style="font-family: monospace; margin-left: 5px;">${promotedStr}</span>
             </div>
         </div>
     `;
     
-    // ▼▼▼ ボタンエリア変更: [×] [伝説] [限定] ▼▼▼
+    // 現在のマスター情報表示状態に基づくボタンラベル
+    const masterInfoBtnLabel = (typeof isMasterInfoVisible !== 'undefined' && !isMasterInfoVisible) ? 'マスター情報を表示' : 'マスター情報を隠す';
+
+    // ▼▼▼ ボタンエリア変更: [×] [伝説] [限定] [マスター情報を隠す] ▼▼▼
     summaryHtml += `
         <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 5px;">
-            <button onclick="clearAllTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px;" title="全て非表示">×</button>
+            <button onclick="clearAllTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px;"
+                title="全て非表示">×</button>
             <button onclick="activateLegendTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px; background-color: #ffb6c1; color: #333; border: 1px solid #ccc;">伝説</button>
             <button onclick="activateLimitedTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px; background-color: #e0f7fa; color: #333; border: 1px solid #ccc;">限定</button>
+            <button id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="secondary" style="font-size: 11px; padding: 2px 8px; border: 1px solid #ccc;">${masterInfoBtnLabel}</button>
             <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
         </div>
     `;
-
     const processedGachaIds = new Set();
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
@@ -4554,6 +4620,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
         const hasLegend = (config.rarity_rates.legend > 0 && config.pool.legend && config.pool.legend.length > 0);
         if (hasLegend) {
+            
             config.pool.legend.forEach(c => targetIds.add(c.id));
         }
 
@@ -4561,11 +4628,13 @@ function generateFastForecast(initialSeed, columnConfigs) {
             if (config.pool[r] && config.pool[r].length > 0) {
                  config.pool[r].forEach(charObj => {
                     const cid = charObj.id;
+                  
                     const cStr = String(cid);
                     const isNew = cStr.startsWith('sim-new-');
                     const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
-                    if (isNew || isLimited || isManual) {
+                    if (isNew 
+                        || isLimited || isManual) {
                         targetIds.add(cid);
                         poolsToCheck[r] = true;
                     }
@@ -4574,7 +4643,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
 
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
-        
         const resultMap = new Map();
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
@@ -4586,11 +4654,16 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const uberR = rates.uber;
             const legendR = rates.legend;
 
-            if (rVal < rareR) { rarity = 'rare'; }
-            else if (rVal < rareR + superR) { rarity = 'super'; }
-            else if (rVal < rareR + superR + uberR) { rarity = 'uber'; }
-            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend'; }
-            else { rarity = 'rare'; }
+            if (rVal < rareR) { rarity = 'rare';
+            }
+            else if (rVal < rareR + superR) { rarity = 'super';
+            }
+            else if (rVal < rareR + superR + uberR) { rarity = 'uber';
+            }
+            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend';
+            }
+            else { rarity = 'rare';
+            }
 
             let targetPool = null;
             let isLegendRank = false;
@@ -4606,7 +4679,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
-                
                 if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) {
                     continue;
                 }
@@ -4618,9 +4690,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
                             name: charObj.name, 
                             hits: [], 
                             isLegend: isLegendRank,
+         
                             isNew: cStr.startsWith('sim-new-'),
                             isLimited: limitedSet.has(cid) || limitedSet.has(cStr),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(cStr)
+                  
                         });
                     }
                     const row = Math.floor(n / 2) + 1;
@@ -4636,36 +4710,38 @@ function generateFastForecast(initialSeed, columnConfigs) {
             data.id = id;
             listItems.push(data);
         });
-
         listItems.sort((a, b) => {
             const getPriority = (item) => {
                 if (item.isNew) return 1;
                 if (item.isLegend && item.isLimited) return 2;
                 if (item.isLegend) return 3;
                  if (item.isAnniversary) return 4;
+ 
                 if (item.isLimited) return 5;
                 return 6; 
             };
             const pA = getPriority(a);
             const pB = getPriority(b);
             if (pA !== pB) return pA - pB;
+   
             if (pA === 1) {
                 const nA = parseInt(String(a.id).replace('sim-new-', ''), 10);
                 const nB = parseInt(String(b.id).replace('sim-new-', ''), 10);
                 return nB - nA;
             }
-             if (pA >= 2 && pA <= 5) return parseInt(b.id) - parseInt(a.id);
+             if 
+            (pA >= 2 && pA <= 5) return parseInt(b.id) - parseInt(a.id);
             const firstHitA = parseInt(a.hits[0]);
             const firstHitB = parseInt(b.hits[0]);
             return firstHitA - firstHitB;
         });
-
         // ▼▼▼ リスト表示のフォントサイズ調整 ▼▼▼
         const itemHtmls = listItems.map(data => {
             let nameStyle = 'font-weight:bold; font-size: 0.9em;'; // 名前も少し小さく
             if (data.isNew) nameStyle += ' color:#007bff;'; 
             else if (data.isLegend) nameStyle += ' color:#e91e63;'; 
             else if (data.isLimited) nameStyle += ' color:#d35400;'; 
+         
             else nameStyle += ' color:#333;'; 
 
             const resultStr = data.hits.join(", ");
@@ -4673,6 +4749,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             
             // アドレス列のフォントサイズを縮小
             return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${resultStr}</span></div>`;
+      
         });
 
         summaryHtml += `<div style="margin-bottom: 8px;">
@@ -4681,7 +4758,8 @@ function generateFastForecast(initialSeed, columnConfigs) {
             </div>
             <div style="font-family: monospace; font-size: 1em;">
                 ${itemHtmls.join('')}
-             </div>
+         
+            </div>
         </div>`;
     });
 
@@ -5296,6 +5374,11 @@ FILE: view_table.js
  * ガチャ結果テーブルの構築（メインコントローラー）
  */
 
+// Simルートのハイライト色 (通常: 水色)
+const COLOR_ROUTE_HIGHLIGHT = '#d0ebff';
+// Simルートのハイライト色 (超激・伝説・限定: 青色)
+const COLOR_ROUTE_UBER = '#89c4f4';
+
 function generateRollsTable() {
     try {
         if (Object.keys(gachaMasterData.gachas).length === 0) return;
@@ -5318,6 +5401,7 @@ function generateRollsTable() {
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
+
         // 2. テーブルデータ（シミュレーション結果）の生成
         const tableData = Array(numRolls * 2).fill(null).map(() => []);
         const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
@@ -5343,8 +5427,7 @@ function generateRollsTable() {
             
             config._guaranteedNormalRolls = guaranteedNormalRolls;
             // ConfigにSuffix情報を保持させておく（セル生成時に使用）
-            config._suffix = suffix; 
-
+            config._suffix = suffix;
             const addCount = uberAdditionCounts[colIndex] || 0;
             if (addCount > 0) {
                 for (let k = 1; k <= addCount; k++) {
@@ -5361,9 +5444,14 @@ function generateRollsTable() {
         }
 
         if (typeof generateMasterInfoHtml === 'function') {
-            const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ?
-            '' : 'hidden';
-            findAreaHtml += `<div class="${visibilityClass}" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-top: none; margin-top: -16px; border-radius: 0 0 4px 4px; font-size: 0.85em;">`;
+            // Find表示ON(showFindInfo=true) かつ マスター情報ON(isMasterInfoVisible=true) の場合のみ表示
+            let visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
+            if (typeof isMasterInfoVisible !== 'undefined' && !isMasterInfoVisible) {
+                visibilityClass = 'hidden';
+            }
+
+            // ID="master-info-area" を追加
+            findAreaHtml += `<div id="master-info-area" class="${visibilityClass}" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-top: none; margin-top: -16px; border-radius: 0 0 4px 4px; font-size: 0.85em;">`;
             findAreaHtml += `<div style="border-top: 1px dashed #ccc; margin-bottom: 10px;"></div>`; 
             findAreaHtml += generateMasterInfoHtml();
             findAreaHtml += `</div>`;
@@ -5391,6 +5479,7 @@ function generateRollsTable() {
                 }
             }
         });
+
         // 5. Simモード用のハイライト準備
         const highlightMap = new Map();
         const guarHighlightMap = new Map();
@@ -5449,8 +5538,7 @@ function generateRollsTable() {
         }
 
         // 6. テーブルHTMLの構築開始
-        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;"
-        onclick="addGachasFromSchedule()">skdで追加</button>`;
+        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
         buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
         buttonHtml += `<span id="add-id-container" style="display:none; margin-left:5px;">`;
         buttonHtml += `<label for="gacha-id-input" style="font-weight:normal; font-size:0.9em;">ID:</label>`;
@@ -5483,11 +5571,13 @@ function generateRollsTable() {
             <th class="${calcColClass}"></th>
             <th class="${calcColClass}"></th>
         `;
+
         // ヘッダー生成 (view_header.js の関数を使用)
         // 変更: 固定行(名前)とスクロール行(操作)に分割
         let tableHtml = `<table><thead>
             <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
             <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr>`;
+        
         // 行1: 名前行 (Sticky)
         tableHtml += `<tr class="sticky-row">`;
         tableHtml += `<th class="col-no">NO.</th>`;
@@ -5497,6 +5587,7 @@ function generateRollsTable() {
         tableHtml += stickyCalcCols;
         tableHtml += generateNameHeaderHTML();
         tableHtml += `</tr>`;
+
         // 行2: 操作行 (Scrollable)
         tableHtml += `<tr class="control-row">`;
         tableHtml += `<th class="col-no"></th>`;
@@ -5504,14 +5595,15 @@ function generateRollsTable() {
         tableHtml += generateControlHeaderHTML(true); 
         tableHtml += `<th class="col-no"></th>`;
         tableHtml += controlCalcCols;
-        tableHtml += generateControlHeaderHTML(false);
-        // B側はボタン非表示
+        tableHtml += generateControlHeaderHTML(false); // B側はボタン非表示
         tableHtml += `</tr>`;
         
         tableHtml += `</thead><tbody>`;
+
         // 7. 行ループとセル生成
         for(let i=0; i<numRolls; i++){
             const seedIndexA = i*2, seedIndexB = i*2+1;
+            
             // 行の背景色判定 (view_analysis.js の関数を使用)
             let styleNoA = '';
             if (RowAnalysis.isSimpleYellow(seedIndexA, seeds) || RowAnalysis.isConsecutiveYellow(seedIndexA, seeds)) styleNoA = 'style="background-color: #ffeb3b;"';
@@ -5520,6 +5612,7 @@ function generateRollsTable() {
             let styleNoB = '';
             if (RowAnalysis.isSimpleYellow(seedIndexB, seeds) || RowAnalysis.isConsecutiveYellow(seedIndexB, seeds)) styleNoB = 'style="background-color: #ffeb3b;"';
             else if (RowAnalysis.isSimpleOrange(seedIndexB, seeds) || RowAnalysis.isConsecutiveOrange(seedIndexB, seeds)) styleNoB = 'style="background-color: #ff9800;"';
+
             // --- A側 ---
             let rowHtml = `<tr><td class="col-no" ${styleNoA}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexA, seeds, tableData); // view_cell_renderer.js
@@ -5534,13 +5627,22 @@ function generateRollsTable() {
                 if(!gachaMasterData.gachas[id]) return;
                 
                 // 通常セル生成 (view_cell_renderer.js)
-                rowHtml += generateCell(seedIndexA, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
+                let cellHtml = generateCell(seedIndexA, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
+                // 色置換
+                if (isSimulationMode) {
+                    // 通常ルート(薄緑) -> 水色
+                    cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
+                    // 高レア・限定ルート(濃い緑) -> 青色
+                    cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
+                }
+                rowHtml += cellHtml;
                 
                 // 確定枠生成
                 if(isG) {
                     let gContent = '---';
                     let cellStyle = '';
-                    if (isSimulationMode && guarHighlightMap.get(seedIndexA) === id) cellStyle = 'background-color: #98FB98;'; 
+                    // 確定枠も青色ハイライト
+                    if (isSimulationMode && guarHighlightMap.get(seedIndexA) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`; 
                     if (typeof calculateGuaranteedLookahead !== 'undefined') {
                          const config = columnConfigs[colIndex];
                          const normalRolls = config._guaranteedNormalRolls || 10;
@@ -5551,22 +5653,15 @@ function generateRollsTable() {
                          let charName = gRes.name;
                          
                          // ★確定枠キャラ名へのクリックイベント設定
-                         // シードを更新するのではなく、ルート計算(onGachaCellClick)を呼ぶ
-                         // シード更新は updateSeedAndRefresh
-                         
-                         // Simモードかどうかで挙動を変えるか、Simモードへの誘導をするか
-                         // 既存ロジックに合わせて onclick を設定
-                         
-                         // ★変更点: Simモード時、確定列のキャラ名をクリックでルート計算
+                         // Simモード: ルート計算 + 確定入力
+                         // Viewモード: シードジャンプ
                          let gClickAction = "";
                          let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
                          const escapedName = charName.replace(/'/g, "\\'");
                          
                          if (isSimulationMode) {
-                            // Simモード: ルート計算 + 確定入力
                             gClickAction = `onclick="onGachaCellClick(${seedIndexA}, '${id}', '${escapedName}', '${gType}')"`;
                          } else {
-                            // Viewモード: シードジャンプ (排出後のシードへ)
                             if (gRes.nextRollStartSeedIndex > 0) {
                                  const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
                                  if (guarSeedIdx < seeds.length) {
@@ -5586,7 +5681,6 @@ function generateRollsTable() {
                              let altClickAction = "";
                              
                              if (isSimulationMode) {
-                                // Alternativeルートの場合も同じアクション (本当はルート分岐が必要だが簡易的に同じ)
                                 const escAlt = altCharName.replace(/'/g, "\\'");
                                 altClickAction = `onclick="onGachaCellClick(${seedIndexA}, '${id}', '${escAlt}', '${gType}')"`;
                              } else {
@@ -5608,12 +5702,15 @@ function generateRollsTable() {
                              if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
                                  if (limitedCats.includes(parseInt(gRes.charId)) || limitedCats.includes(String(gRes.charId))) isLimited = true;
                              }
-                             cellStyle = 'background-color: #32CD32;';
+                             // Simモード外の色 (ここではSimモード内なので cellStyle が優先されるが、上書きしないよう注意)
+                             // ここでの background-color: #32CD32 はSimモードでない場合の限定確定枠などに適用される
+                             // Simモードなら cellStyle が入っている
                          }
                     }
                     rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
                 }
             });
+
             // --- B側 ---
             rowHtml += `<td class="col-no" ${styleNoB}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexB, seeds, tableData);
@@ -5627,11 +5724,19 @@ function generateRollsTable() {
                 const isG = (suffix !== '');
                 if(!gachaMasterData.gachas[id]) return;
 
-                rowHtml += generateCell(seedIndexB, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
+                // 通常セル生成
+                let cellHtml = generateCell(seedIndexB, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
+                // 色置換
+                if (isSimulationMode) {
+                    cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
+                    cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
+                }
+                rowHtml += cellHtml;
+
                 if(isG) {
                     let gContent = '---';
                     let cellStyle = '';
-                    if (isSimulationMode && guarHighlightMap.get(seedIndexB) === id) cellStyle = 'background-color: #98FB98;';
+                    if (isSimulationMode && guarHighlightMap.get(seedIndexB) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`;
                     if (typeof calculateGuaranteedLookahead !== 'undefined') {
                         const config = columnConfigs[colIndex];
                         const normalRolls = config._guaranteedNormalRolls || 10;
@@ -5640,7 +5745,6 @@ function generateRollsTable() {
                         const addr = formatAddress(gRes.nextRollStartSeedIndex);
                         let charName = gRes.name;
                         
-                        // ★B側 確定枠クリックアクション
                         let gClickAction = "";
                         let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
                         const escapedName = charName.replace(/'/g, "\\'");
@@ -5681,7 +5785,16 @@ function generateRollsTable() {
                              altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
                         }
                         gContent = altHtml + mainHtml;
-                        if (cellStyle !== '') cellStyle = 'background-color: #32CD32;';
+                        if (cellStyle !== '') {
+                            // Simモードでハイライトされている場合
+                        } else {
+                            // Simモード外での色付けロジック (必要であれば)
+                            let isLimited = false;
+                             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
+                                 if (limitedCats.includes(parseInt(gRes.charId)) || limitedCats.includes(String(gRes.charId))) isLimited = true;
+                             }
+                             if(isLimited) cellStyle = 'background-color: #32CD32;';
+                        }
                     }
                     rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
                 }

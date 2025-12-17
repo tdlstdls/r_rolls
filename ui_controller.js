@@ -4,6 +4,9 @@
  * 初期化、モード管理、基本UI操作を担当
  */
 
+// マスター情報の表示状態管理フラグ
+let isMasterInfoVisible = true;
+
 // --- 初期化ロジック ---
 
 function initializeDefaultGachas() {
@@ -238,6 +241,25 @@ function updateToggleButtons() {
     if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
 }
 
+// 追加: マスター情報の表示切替
+function toggleMasterInfo() {
+    isMasterInfoVisible = !isMasterInfoVisible;
+    const el = document.getElementById('master-info-area');
+    const btn = document.getElementById('toggle-master-info-btn');
+    
+    if (el) {
+        if (isMasterInfoVisible) {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+    
+    if (btn) {
+        btn.textContent = isMasterInfoVisible ? 'マスター情報を隠す' : 'マスター情報を表示';
+    }
+}
+
 function toggleDescription() {
     const content = document.getElementById('description-content');
     const toggle = document.getElementById('toggle-description');
@@ -347,8 +369,7 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
         const visibleIds = tableGachaIds.map(id => id);
         // Config欄の現在の値を取得
         const configInput = document.getElementById('sim-config');
-        const currentConfig = configInput ?
-            configInput.value : "";
+        const currentConfig = configInput ? configInput.value : "";
 
         // ルート計算 (simulation.js)
         if (typeof calculateRouteToCell === 'function') {
@@ -369,6 +390,21 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
             }
 
             if (routeConfig) {
+                // 【追加ロジック】
+                // Simモードでクリックした際、現在の構成（特に確定枠など）を書き換えて無理やり到達するルートを提示するのではなく、
+                // 「ここから先へのルート」として成立しない（過去改変が必要な）場合は「見つからない」扱いにする。
+                // 判定：currentConfigが空でなく、かつ、routeConfigがcurrentConfigから始まっていない（追記でない）場合は除外。
+                
+                const normCurrent = currentConfig.replace(/\s+/g, ' ').trim();
+                const normRoute = routeConfig.replace(/\s+/g, ' ').trim();
+
+                if (normCurrent.length > 0 && !normRoute.startsWith(normCurrent)) {
+                    // 履歴の書き換えが発生しているため、ルートとしては不採用（無効）とする
+                    routeConfig = null;
+                }
+            }
+
+            if (routeConfig) {
                 // 成功: Configに入力して更新
                 if (configInput) {
                     configInput.value = routeConfig;
@@ -379,17 +415,15 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                 // 失敗: ルートが見つからない場合
                 // Configは更新せず、エラーメッセージを表示する
                 if (errorEl) {
-                    // セル番号の計算 (SeedIndex -> A1, B10 
-                    // etc.)
-                    // seedIndex 0 -> A1, 1 -> B1, 2 -> A2 ...
+                    // セル番号の計算 (SeedIndex -> A1, B10 etc.)
                     const row = Math.floor(targetSeedIndex / 2) + 1;
                     const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
                     const cellLabel = `${side}${row}`;
                     
                     errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
-                    errorEl.style.display = 'block'; // inline-block or block
+                    errorEl.style.display = 'block'; 
                 }
-                console.warn("Route not found.");
+                console.warn("Route not found or history rewrite rejected.");
             }
         }
     } else {
