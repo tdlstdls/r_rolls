@@ -22,12 +22,14 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
+              
                     return now >= startDt && now <= endDt;
                 });
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
+                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); 
                     });
@@ -87,7 +89,8 @@ function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
         if (isSimulationMode) {
-            btn.textContent = "View";
+            // Simモード中は「Back」と表示
+            btn.textContent = "Back";
             btn.classList.add('active');
         } else {
             btn.textContent = "Sim";
@@ -145,7 +148,6 @@ function updateSeedAndRefresh(newSeed) {
 function clearSimConfig() {
     const el = document.getElementById('sim-config');
     if(el) el.value = '';
-    
     // エラーメッセージもクリア
     const errorEl = document.getElementById('sim-error-msg');
     if (errorEl) {
@@ -194,6 +196,21 @@ function applySeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     
+    if (container) container.classList.add('hidden');
+    if (trigger) trigger.classList.remove('hidden');
+}
+
+// 追加: SEED入力をキャンセルして閉じる
+function cancelSeedInput() {
+    const container = document.getElementById('seed-input-container');
+    const trigger = document.getElementById('seed-input-trigger');
+    const input = document.getElementById('seed');
+
+    // 現在のURLパラメータから値を復元（変更を破棄）
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSeed = urlParams.get('seed') || "12345";
+    if (input) input.value = currentSeed;
+
     if (container) container.classList.add('hidden');
     if (trigger) trigger.classList.remove('hidden');
 }
@@ -330,17 +347,18 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
         const visibleIds = tableGachaIds.map(id => id);
         // Config欄の現在の値を取得
         const configInput = document.getElementById('sim-config');
-        const currentConfig = configInput ? configInput.value : "";
+        const currentConfig = configInput ?
+            configInput.value : "";
 
         // ルート計算 (simulation.js)
         if (typeof calculateRouteToCell === 'function') {
             let routeConfig;
-            
             if (guaranteedType) {
                 // 確定枠クリック時の特別なアクション
                 const finalAction = { 
                     id: gachaId, 
                     rolls: parseInt(guaranteedType.replace('g', ''), 10), 
+               
                     g: true 
                 };
                 // 第5引数に finalAction を渡す
@@ -361,7 +379,8 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                 // 失敗: ルートが見つからない場合
                 // Configは更新せず、エラーメッセージを表示する
                 if (errorEl) {
-                    // セル番号の計算 (SeedIndex -> A1, B10 etc.)
+                    // セル番号の計算 (SeedIndex -> A1, B10 
+                    // etc.)
                     // seedIndex 0 -> A1, 1 -> B1, 2 -> A2 ...
                     const row = Math.floor(targetSeedIndex / 2) + 1;
                     const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';

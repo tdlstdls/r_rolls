@@ -121,7 +121,7 @@
             <h3 style="margin-top:0;">【基本操作】</h3>
             <ul style="padding-left: 20px; margin-bottom:10px;">
                 <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、シーカー等で特定した実行前シードを入力してOKを押してください。</li>
-                <li><strong>ガチャ選択:</strong> 表のヘッダー（開催期間やガチャ名が表示されている部分）下部のプルダウンから、表示したいガチャイベントを選択できます。</li>
+                <li><strong>ガチャ選択:</strong> 表のヘッダー（開催期間やガチャ名が表示されている部分）下部のプルダウンから、表示したいガチャを選択できます。</li>
                 <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧（前日～）のガチャを一括で追加します。</li>
             </ul>
 
@@ -171,6 +171,7 @@
                 <input type="number" id="seed" placeholder="Seed" value="12345" style="width:100px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
                 <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 11px;">OK</button>
                 <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Copy to Clipboard">Copy</button>
+                <button onclick="cancelSeedInput()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Cancel">×</button>
             </div>
 
             <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; width: 100%;">
@@ -210,6 +211,6 @@
     <script src="ui_target_handler.js"></script>
     <script src="ui_table_handler.js"></script>
     <script src="ui_controller.js"></script>
-    <script src="main.js"></script> </body>
+    <script src="main.js"></script>
 </body>
 </html>
