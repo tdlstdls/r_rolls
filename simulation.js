@@ -242,10 +242,9 @@ function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
 
     // Normal Rolls
     for(let k=0; k < normalRolls; k++) {
-        if (tempIdx >= seeds.length - 5) break; 
+        if (tempIdx >= seeds.length - 5) break;
         const rr = rollWithSeedConsumptionFixed(tempIdx, conf, seeds, tempLastDraw);
         if (rr.seedsConsumed === 0) break;
-        
         tempLastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
         tempIdx += rr.seedsConsumed;
     }
@@ -263,7 +262,7 @@ function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
 
 /**
  * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
- * ★修正機能: 途中セルがクリックされた場合、既存のConfigを遡って最大限維持する
+ * ★修正: 途中セルがクリックされた場合、既存のConfigを遡って最大限維持し、そこからルートを再計算する
  */
 function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null) {
     // シード配列の準備 (Start Seedから生成)
@@ -294,9 +293,8 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
             // このセグメントを実行した場合の到達点を計算
             const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
             
-            // もしこのセグメントを実行すると、ターゲットを超えてしまう（または同じ位置になってしまう）場合
+            // もしこのセグメントを実行すると、ターゲットを超えてしまう場合
             // このセグメント以降は採用せず、ここから経路探索を行う
-            // ※「同じ位置」の場合も、そのセルの直前のアクションを再計算する可能性があるため止める
             if (res.nextIndex > targetSeedIndex) {
                 break;
             }
@@ -306,10 +304,11 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
             tempIdx = res.nextIndex;
             tempLastDraw = res.lastDraw;
             
-            // ターゲット地点ぴったりに到達した場合も、そこからの追加操作（確定枠等）があるかもしれないので
-            // ここで止めても良いが、通常はTargetIndexを超えるまで維持して良い。
-            // ただし、もしターゲット位置ぴったりですでにクリックされた場合、
-            // 追加アクションがないなら「ルート検索」は空になる。
+            // ターゲット地点ぴったりに到達した場合、そこまでのConfigは確定としループを抜ける
+            // (これ以上既存Configを読み込むとオーバーするため)
+            if (tempIdx === targetSeedIndex) {
+                break;
+            }
         }
 
         startIdx = tempIdx;
@@ -331,13 +330,15 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         if (conf.name.includes('プラチナ') || conf.name.includes('レジェンド')) return null;
         return conf;
     }).filter(c => c !== null);
+
     if (usableConfigs.length === 0) return null;
 
     // 3. 経路探索実行 (startIdx から targetSeedIndex まで)
+    // startIdx === targetSeedIndex の場合は path=[] が返り、finalActionOverrideのみが追加される
     const route = findPathGreedy(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
-    
+
     if (route) {
-        // ★修正: クリックしたセルの処理
+        // クリックしたセルの処理
         if (finalActionOverride) {
             // 確定枠などの指定がある場合はそのアクションを追加
             route.push(finalActionOverride);
@@ -347,6 +348,7 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         }
 
         const newRouteStr = compressRoute(route);
+
         if (baseConfigStr) {
             // 維持したConfig + 新しいルート
             return baseConfigStr + " " + newRouteStr;
@@ -367,8 +369,7 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
 function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
     let currentIdx = startIdx;
     let path = []; // { id: gachaId, rolls: 1 }
-    let lastDraw = initialLastDraw;
-    // { rarity, charId, isRerolled }
+    let lastDraw = initialLastDraw; // { rarity, charId, isRerolled }
 
     // 安全装置: 無限ループ防止
     let loopCount = 0;
@@ -437,12 +438,10 @@ function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, i
  */
 function compressRoute(path) {
     if (!path || path.length === 0) return "";
-    
     let compressed = [];
     let currentId = path[0].id;
     let isG = path[0].g || false;
     let count = path[0].rolls || 1;
-
     for (let i = 1; i < path.length; i++) {
         const step = path[i];
         const stepG = step.g || false;
@@ -460,6 +459,5 @@ function compressRoute(path) {
     }
     // 最後の一つ
     compressed.push(`${currentId} ${count}${isG ? 'g' : ''}`);
-    
     return compressed.join(" ");
 }

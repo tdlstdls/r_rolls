@@ -6,7 +6,6 @@
 
 // マスター情報の表示状態管理フラグ
 let isMasterInfoVisible = true;
-
 // --- 初期化ロジック ---
 
 function initializeDefaultGachas() {
@@ -208,7 +207,6 @@ function cancelSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     const input = document.getElementById('seed');
-
     // 現在のURLパラメータから値を復元（変更を破棄）
     const urlParams = new URLSearchParams(window.location.search);
     const currentSeed = urlParams.get('seed') || "12345";
@@ -246,7 +244,6 @@ function toggleMasterInfo() {
     isMasterInfoVisible = !isMasterInfoVisible;
     const el = document.getElementById('master-info-area');
     const btn = document.getElementById('toggle-master-info-btn');
-    
     if (el) {
         if (isMasterInfoVisible) {
             el.classList.remove('hidden');
@@ -256,7 +253,8 @@ function toggleMasterInfo() {
     }
     
     if (btn) {
-        btn.textContent = isMasterInfoVisible ? 'マスター情報を隠す' : 'マスター情報を表示';
+        btn.textContent = isMasterInfoVisible ?
+        'マスター情報を隠す' : 'マスター情報を表示';
     }
 }
 
@@ -379,7 +377,6 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                 const finalAction = { 
                     id: gachaId, 
                     rolls: parseInt(guaranteedType.replace('g', ''), 10), 
-               
                     g: true 
                 };
                 // 第5引数に finalAction を渡す
@@ -387,21 +384,6 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
             } else {
                 // 通常クリック
                 routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
-            }
-
-            if (routeConfig) {
-                // 【追加ロジック】
-                // Simモードでクリックした際、現在の構成（特に確定枠など）を書き換えて無理やり到達するルートを提示するのではなく、
-                // 「ここから先へのルート」として成立しない（過去改変が必要な）場合は「見つからない」扱いにする。
-                // 判定：currentConfigが空でなく、かつ、routeConfigがcurrentConfigから始まっていない（追記でない）場合は除外。
-                
-                const normCurrent = currentConfig.replace(/\s+/g, ' ').trim();
-                const normRoute = routeConfig.replace(/\s+/g, ' ').trim();
-
-                if (normCurrent.length > 0 && !normRoute.startsWith(normCurrent)) {
-                    // 履歴の書き換えが発生しているため、ルートとしては不採用（無効）とする
-                    routeConfig = null;
-                }
             }
 
             if (routeConfig) {
@@ -423,7 +405,7 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                     errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
                     errorEl.style.display = 'block'; 
                 }
-                console.warn("Route not found or history rewrite rejected.");
+                console.warn("Route not found.");
             }
         }
     } else {
