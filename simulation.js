@@ -55,6 +55,16 @@ function decrementLastRollOrRemoveSegment(configStr) {
     return stringifySimConfig(configs);
 }
 
+// 追加: 最後のセグメント（ID+回数）を丸ごと削除する
+function removeLastConfigSegment(configStr) {
+    if (!configStr) return "";
+    const configs = parseSimConfig(configStr);
+    if (configs.length > 0) {
+        configs.pop();
+    }
+    return stringifySimConfig(configs);
+}
+
 function generateGuaranteedConfig(configStr, gachaId) {
     if (!configStr) return null;
     const parsed = parseSimConfig(configStr);
@@ -127,7 +137,6 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
 
         const otherIndex = gachaConfigs.findIndex(c => c.id === otherGachaId);
         if (otherIndex === -1) continue;
-
         const createAltConfig = (prevIndexUsed) => {
             const configStr = getBestLink(cellSimConfigs, prevIndexUsed, gachaConfigs);
             if (configStr === null) return null; 
@@ -140,7 +149,6 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
             }
             return stringifySimConfig(parts);
         };
-
         for (const prevIndex of prevIndicesToCheck) {
             if (prevIndex < 0) continue;
             const otherRoll_prev = tableData[prevIndex]?.[otherIndex]?.roll;
@@ -174,7 +182,6 @@ function canBeForced(seedIndex, currentGachaId, tableData, gachaConfigs) {
     const currentRoll = tableData[seedIndex][gachaIndex].roll;
     const originalCharId = currentRoll.originalChar ? currentRoll.originalChar.id : null;
     if (!originalCharId) return false;
-
     const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
     for (const prevIndex of prevIndicesToCheck) {
         if (prevIndex < 0) continue;
@@ -197,7 +204,6 @@ function canBeAvoided(seedIndex, currentGachaId, tableData, gachaConfigs) {
     const currentRoll = tableData[seedIndex][gachaIndex].roll;
     if (currentRoll.rarity !== 'rare' || !currentRoll.isRerolled || !currentRoll.originalChar) return false;
     const originalCharId = currentRoll.originalChar.id;
-
     const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
     for (const prevIndex of prevIndicesToCheck) {
         if (prevIndex < 0) continue;
@@ -216,56 +222,50 @@ function canBeAvoided(seedIndex, currentGachaId, tableData, gachaConfigs) {
 // --- 自動経路探索ロジック ---
 
 /**
- * Helper: 指定されたConfigを実行した後の SeedIndex と LastDraw を取得する
+ * 内部ヘルパー: 単一セグメントをシミュレートし、次のインデックスとLastDrawを返す
  */
-function getSimulationState(configStr, seeds) {
-    const configs = parseSimConfig(configStr);
-    let currentSeedIndex = 0;
-    let lastDraw = null;
+function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
+    const conf = gachaMasterData.gachas[sim.id];
+    if (!conf) return { nextIndex: currentIdx, lastDraw: currentLastDraw };
 
-    for (const sim of configs) {
-        const conf = gachaMasterData.gachas[sim.id];
-        if (!conf) continue;
+    let normalRolls = sim.rolls;
+    let isGuaranteedStep = false;
+    let tempIdx = currentIdx;
+    let tempLastDraw = currentLastDraw;
 
-        let normalRolls = sim.rolls;
-        let isGuaranteedStep = false;
+    if (sim.g) {
+         if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
+         else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
+         else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
+         else { normalRolls = sim.rolls; }
+    }
+
+    // Normal Rolls
+    for(let k=0; k < normalRolls; k++) {
+        if (tempIdx >= seeds.length - 5) break; 
+        const rr = rollWithSeedConsumptionFixed(tempIdx, conf, seeds, tempLastDraw);
+        if (rr.seedsConsumed === 0) break;
         
-        if (sim.g) {
-             if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
-             else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
-             else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
-             else { normalRolls = sim.rolls; }
-        }
-
-        // Normal Rolls
-        for(let k=0; k < normalRolls; k++) {
-            if (currentSeedIndex >= seeds.length - 5) break; // 安全策
-            const rr = rollWithSeedConsumptionFixed(currentSeedIndex, conf, seeds, lastDraw);
-            if (rr.seedsConsumed === 0) break;
-            
-            lastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
-            currentSeedIndex += rr.seedsConsumed;
-        }
-        
-        // Guaranteed Roll
-        if (isGuaranteedStep && currentSeedIndex < seeds.length) {
-            if (typeof rollGuaranteedUber !== 'undefined') {
-                const gr = rollGuaranteedUber(currentSeedIndex, conf, seeds);
-                currentSeedIndex += gr.seedsConsumed;
-                // 確定枠の結果は LastDraw に影響しない（次の通常枠の被り判定には使われない）のが一般的だが
-                // 必要ならここで更新する。今回は更新しない実装とする。
-            }
+        tempLastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
+        tempIdx += rr.seedsConsumed;
+    }
+    
+    // Guaranteed Roll
+    if (isGuaranteedStep && tempIdx < seeds.length) {
+        if (typeof rollGuaranteedUber !== 'undefined') {
+            const gr = rollGuaranteedUber(tempIdx, conf, seeds);
+            tempIdx += gr.seedsConsumed;
         }
     }
-    return { currentIndex: currentSeedIndex, lastDraw: lastDraw };
+
+    return { nextIndex: tempIdx, lastDraw: tempLastDraw };
 }
 
 /**
  * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
- * メインテーブルに表示されているガチャのみ使用し、確定・プラチナ等は使用しない
- * * ★追加機能: currentConfigStr がある場合、その続きから計算する
+ * ★修正機能: 途中セルがクリックされた場合、既存のConfigを遡って最大限維持する
  */
-function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr) {
+function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null) {
     // シード配列の準備 (Start Seedから生成)
     const getSeeds = () => {
         const seedEl = document.getElementById('seed');
@@ -273,27 +273,51 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         const rng = new Xorshift32(initialSeed);
         const tempSeeds = [];
         // 必要十分な数だけ回す（targetIdx + バッファ）
-        const limit = Math.max(targetSeedIndex, 1000) + 500; 
+        const limit = Math.max(targetSeedIndex, 1000) + 500;
         for(let i=0; i < limit; i++) tempSeeds.push(rng.next());
         return tempSeeds;
     };
     const simSeeds = getSeeds();
 
-    // 0. 開始地点の決定 (既存Configの続き or 最初から)
+    // 0. 開始地点の決定 
+    // 既存のConfigを解析し、ターゲットより手前の有効なルートまでを特定する
     let startIdx = 0;
     let initialLastDraw = null;
-    let baseConfigStr = "";
+    let validConfigParts = [];
 
     if (currentConfigStr && currentConfigStr.trim() !== "") {
-        const state = getSimulationState(currentConfigStr, simSeeds);
-        
-        // もしターゲットが既に通過した地点(過去)にある場合は、追記ではなく上書き(最初から計算)にする
-        if (targetSeedIndex > state.currentIndex) {
-            startIdx = state.currentIndex;
-            initialLastDraw = state.lastDraw;
-            baseConfigStr = currentConfigStr.trim();
+        const existingConfigs = parseSimConfig(currentConfigStr);
+        let tempIdx = 0;
+        let tempLastDraw = null;
+
+        for (const segment of existingConfigs) {
+            // このセグメントを実行した場合の到達点を計算
+            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
+            
+            // もしこのセグメントを実行すると、ターゲットを超えてしまう（または同じ位置になってしまう）場合
+            // このセグメント以降は採用せず、ここから経路探索を行う
+            // ※「同じ位置」の場合も、そのセルの直前のアクションを再計算する可能性があるため止める
+            if (res.nextIndex > targetSeedIndex) {
+                break;
+            }
+
+            // ターゲットより手前（またはターゲット地点）で終わるセグメントなら維持する
+            validConfigParts.push(segment);
+            tempIdx = res.nextIndex;
+            tempLastDraw = res.lastDraw;
+            
+            // ターゲット地点ぴったりに到達した場合も、そこからの追加操作（確定枠等）があるかもしれないので
+            // ここで止めても良いが、通常はTargetIndexを超えるまで維持して良い。
+            // ただし、もしターゲット位置ぴったりですでにクリックされた場合、
+            // 追加アクションがないなら「ルート検索」は空になる。
         }
+
+        startIdx = tempIdx;
+        initialLastDraw = tempLastDraw;
     }
+    
+    // 維持されたConfig文字列
+    const baseConfigStr = stringifySimConfig(validConfigParts);
 
     // 1. 目標地点のガチャ設定を取得
     const targetConfig = gachaMasterData.gachas[targetGachaId];
@@ -307,24 +331,33 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         if (conf.name.includes('プラチナ') || conf.name.includes('レジェンド')) return null;
         return conf;
     }).filter(c => c !== null);
-
     if (usableConfigs.length === 0) return null;
 
     // 3. 経路探索実行 (startIdx から targetSeedIndex まで)
     const route = findPathGreedy(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
     
     if (route) {
-        // ★修正: クリックしたセル自身を含めるため、最後にターゲットガチャを1回引く
-        route.push({ id: targetGachaId, rolls: 1 });
+        // ★修正: クリックしたセルの処理
+        if (finalActionOverride) {
+            // 確定枠などの指定がある場合はそのアクションを追加
+            route.push(finalActionOverride);
+        } else {
+            // 通常セルは単発1回
+            route.push({ id: targetGachaId, rolls: 1 });
+        }
 
         const newRouteStr = compressRoute(route);
         if (baseConfigStr) {
+            // 維持したConfig + 新しいルート
             return baseConfigStr + " " + newRouteStr;
         } else {
             return newRouteStr;
         }
     } else {
-        return null; // ルート見つからず
+        // ルートが見つからない場合
+        // StartIdxがTargetSeedIndexを超えている（理論上ありえないが）、
+        // または探索不能な場合
+        return null;
     }
 }
 
@@ -334,7 +367,8 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
 function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
     let currentIdx = startIdx;
     let path = []; // { id: gachaId, rolls: 1 }
-    let lastDraw = initialLastDraw; // { rarity, charId, isRerolled }
+    let lastDraw = initialLastDraw;
+    // { rarity, charId, isRerolled }
 
     // 安全装置: 無限ループ防止
     let loopCount = 0;
@@ -345,17 +379,13 @@ function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, i
         const dist = targetIdx - currentIdx;
         
         let possibleMoves = [];
-
         for (const conf of configs) {
             // このガチャを引いた場合の結果を予測
             const res = rollWithSeedConsumptionFixed(currentIdx, conf, simSeeds, lastDraw);
-            
             // ターゲットを越える場合は除外
             if (currentIdx + res.seedsConsumed > targetIdx) continue;
-
             // 評価値計算 (小さいほど良い)
             let score = 0;
-
             // 1. パリティ（偶奇）チェック
             const distIsOdd = (dist % 2 !== 0);
             const moveIsOdd = (res.seedsConsumed % 2 !== 0);
@@ -368,35 +398,28 @@ function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, i
 
             // 2. ターゲットガチャ優先
             if (conf.id == targetGachaId) score -= 10;
-            
             // 3. 直前のガチャと同じなら優先（圧縮効率・Stickiness）
             const prevId = path.length > 0 ? path[path.length-1].id : null;
             if (conf.id == prevId) score -= 5;
-
             // 4. 消費シード数による重みづけ (パリティが合うなら大きく進む)
             score -= res.seedsConsumed;
-
             possibleMoves.push({ config: conf, result: res, score: score });
         }
 
         // 候補がない（詰み）
         if (possibleMoves.length === 0) return null;
-
         // スコア順にソート (昇順)
         possibleMoves.sort((a, b) => a.score - b.score);
-
         // 最良の手を採用
         const bestMove = possibleMoves[0];
         
         path.push({ id: bestMove.config.id, rolls: 1 });
-        
         // 次のステップのために lastDraw を更新
         lastDraw = { 
             rarity: bestMove.result.rarity, 
             charId: bestMove.result.charId, 
             isRerolled: bestMove.result.isRerolled 
         };
-        
         currentIdx += bestMove.result.seedsConsumed;
     }
 
@@ -416,22 +439,27 @@ function compressRoute(path) {
     if (!path || path.length === 0) return "";
     
     let compressed = [];
-    if (path.length > 0) {
-        let currentId = path[0].id;
-        let count = 0;
+    let currentId = path[0].id;
+    let isG = path[0].g || false;
+    let count = path[0].rolls || 1;
 
-        for (const step of path) {
-            if (step.id === currentId) {
-                count++;
-            } else {
-                compressed.push(`${currentId} ${count}`);
-                currentId = step.id;
-                count = 1;
-            }
+    for (let i = 1; i < path.length; i++) {
+        const step = path[i];
+        const stepG = step.g || false;
+        
+        if (step.id === currentId && stepG === isG && !isG) {
+            // 通常ロール同士は結合
+            count += (step.rolls || 1);
+        } else {
+            // 切り替わりまたは確定枠
+            compressed.push(`${currentId} ${count}${isG ? 'g' : ''}`);
+            currentId = step.id;
+            isG = stepG;
+            count = step.rolls || 1;
         }
-        // 最後の一つ
-        compressed.push(`${currentId} ${count}`);
     }
-
+    // 最後の一つ
+    compressed.push(`${currentId} ${count}${isG ? 'g' : ''}`);
+    
     return compressed.join(" ");
 }

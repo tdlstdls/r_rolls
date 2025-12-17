@@ -24,7 +24,6 @@ function initializeDefaultGachas() {
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
                     return now >= startDt && now <= endDt;
                 });
-
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
@@ -146,7 +145,24 @@ function updateSeedAndRefresh(newSeed) {
 function clearSimConfig() {
     const el = document.getElementById('sim-config');
     if(el) el.value = '';
+    
+    // エラーメッセージもクリア
+    const errorEl = document.getElementById('sim-error-msg');
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+    }
+
     resetAndGenerateTable();
+}
+
+// シミュレーションConfig 一つ戻る (Back)
+function backSimConfig() {
+    const el = document.getElementById('sim-config');
+    if (el && typeof removeLastConfigSegment === 'function') {
+        el.value = removeLastConfigSegment(el.value);
+        resetAndGenerateTable();
+    }
 }
 
 // シミュレーション結果のシードをStart Seedに反映
@@ -245,7 +261,7 @@ function toggleDescription() {
             content.style.height = '100%';
             content.style.webkitOverflowScrolling = 'touch';
             content.style.minHeight = '0';
-            content.style.maxHeight = 'none';   
+            content.style.maxHeight = 'none';
         }
 
     } else {
@@ -297,41 +313,73 @@ function updateMasterInfoView() {
  * セルクリック時のハンドラ
  * Simモード時: ルートを計算してConfigに入力
  * 通常時: キャラ名をクリップボードにコピー（またはSimモードへ誘導）
+ * @param targetSeedIndex クリックされたセルのシードインデックス
+ * @param gachaId ガチャID
+ * @param charName キャラ名
+ * @param guaranteedType (optional) 確定枠クリック時の指定 (例: '11g', '15g', '7g')
  */
-function onGachaCellClick(targetSeedIndex, gachaId, charName) {
+function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null) {
     if (isSimulationMode) {
+        // まずエラー表示をクリア
+        const errorEl = document.getElementById('sim-error-msg');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
+
         const visibleIds = tableGachaIds.map(id => id);
-        
         // Config欄の現在の値を取得
         const configInput = document.getElementById('sim-config');
         const currentConfig = configInput ? configInput.value : "";
 
         // ルート計算 (simulation.js)
         if (typeof calculateRouteToCell === 'function') {
-            // 第4引数に currentConfig を渡す
-            const routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
+            let routeConfig;
             
-            if (configInput) {
-                if (routeConfig) {
-                    // 成功: Configに入力して更新
+            if (guaranteedType) {
+                // 確定枠クリック時の特別なアクション
+                const finalAction = { 
+                    id: gachaId, 
+                    rolls: parseInt(guaranteedType.replace('g', ''), 10), 
+                    g: true 
+                };
+                // 第5引数に finalAction を渡す
+                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction);
+            } else {
+                // 通常クリック
+                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
+            }
+
+            if (routeConfig) {
+                // 成功: Configに入力して更新
+                if (configInput) {
                     configInput.value = routeConfig;
                     if (typeof updateUrlParams === 'function') updateUrlParams();
                     resetAndGenerateTable();
-                } else {
-                    // 失敗(ルート見つからない、または計算不能): キャラ名を設定
-                    // 既存値がある場合は末尾に追記する
-                    configInput.value = currentConfig ? (currentConfig + " " + charName) : charName;
-                    console.warn("Route not found. Set character name.");
                 }
+            } else {
+                // 失敗: ルートが見つからない場合
+                // Configは更新せず、エラーメッセージを表示する
+                if (errorEl) {
+                    // セル番号の計算 (SeedIndex -> A1, B10 etc.)
+                    // seedIndex 0 -> A1, 1 -> B1, 2 -> A2 ...
+                    const row = Math.floor(targetSeedIndex / 2) + 1;
+                    const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
+                    const cellLabel = `${side}${row}`;
+                    
+                    errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
+                    errorEl.style.display = 'block'; // inline-block or block
+                }
+                console.warn("Route not found.");
             }
         }
     } else {
         // 通常モード時の挙動
         const confirmSwitch = confirm(`Simモードに切り替えて、このセル(${charName})へのルートを計算しますか？`);
         if (confirmSwitch) {
-            toggleAppMode(); 
+            toggleAppMode();
             setTimeout(() => {
-                onGachaCellClick(targetSeedIndex, gachaId, charName);
+                onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType);
             }, 100);
         }
     }

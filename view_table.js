@@ -25,7 +25,6 @@ function generateRollsTable() {
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-
         // 2. テーブルデータ（シミュレーション結果）の生成
         const tableData = Array(numRolls * 2).fill(null).map(() => []);
         const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
@@ -50,6 +49,9 @@ function generateRollsTable() {
             }
             
             config._guaranteedNormalRolls = guaranteedNormalRolls;
+            // ConfigにSuffix情報を保持させておく（セル生成時に使用）
+            config._suffix = suffix; 
+
             const addCount = uberAdditionCounts[colIndex] || 0;
             if (addCount > 0) {
                 for (let k = 1; k <= addCount; k++) {
@@ -66,7 +68,8 @@ function generateRollsTable() {
         }
 
         if (typeof generateMasterInfoHtml === 'function') {
-            const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
+            const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ?
+            '' : 'hidden';
             findAreaHtml += `<div class="${visibilityClass}" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-top: none; margin-top: -16px; border-radius: 0 0 4px 4px; font-size: 0.85em;">`;
             findAreaHtml += `<div style="border-top: 1px dashed #ccc; margin-bottom: 10px;"></div>`; 
             findAreaHtml += generateMasterInfoHtml();
@@ -95,7 +98,6 @@ function generateRollsTable() {
                 }
             }
         });
-
         // 5. Simモード用のハイライト準備
         const highlightMap = new Map();
         const guarHighlightMap = new Map();
@@ -154,7 +156,8 @@ function generateRollsTable() {
         }
 
         // 6. テーブルHTMLの構築開始
-        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
+        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;"
+        onclick="addGachasFromSchedule()">skdで追加</button>`;
         buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
         buttonHtml += `<span id="add-id-container" style="display:none; margin-left:5px;">`;
         buttonHtml += `<label for="gacha-id-input" style="font-weight:normal; font-size:0.9em;">ID:</label>`;
@@ -172,16 +175,50 @@ function generateRollsTable() {
         const calcColSpan = showSeedColumns ? 5 : 0;
         const totalTrackSpan = calcColSpan + totalGachaCols;
 
+        // 計算列の共通定義
+        const stickyCalcCols = `
+            <th class="${calcColClass}">SEED</th>
+            <th class="${calcColClass}">rarity</th>
+            <th class="${calcColClass}">slot</th>
+            <th class="${calcColClass}">ReRoll</th>
+            <th class="${calcColClass}">Guar</th>
+        `;
+        const controlCalcCols = `
+            <th class="${calcColClass}"></th>
+            <th class="${calcColClass}"></th>
+            <th class="${calcColClass}"></th>
+            <th class="${calcColClass}"></th>
+            <th class="${calcColClass}"></th>
+        `;
         // ヘッダー生成 (view_header.js の関数を使用)
+        // 変更: 固定行(名前)とスクロール行(操作)に分割
         let tableHtml = `<table><thead>
             <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
-            <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr><tr>`;
-        tableHtml += `<th class="col-no">NO.</th>` + generateHeaderHTML(true) + `<th class="col-no">NO.</th>` + generateHeaderHTML(false) + `</tr></thead><tbody>`;
-
+            <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr>`;
+        // 行1: 名前行 (Sticky)
+        tableHtml += `<tr class="sticky-row">`;
+        tableHtml += `<th class="col-no">NO.</th>`;
+        tableHtml += stickyCalcCols;
+        tableHtml += generateNameHeaderHTML(); 
+        tableHtml += `<th class="col-no">NO.</th>`;
+        tableHtml += stickyCalcCols;
+        tableHtml += generateNameHeaderHTML();
+        tableHtml += `</tr>`;
+        // 行2: 操作行 (Scrollable)
+        tableHtml += `<tr class="control-row">`;
+        tableHtml += `<th class="col-no"></th>`;
+        tableHtml += controlCalcCols;
+        tableHtml += generateControlHeaderHTML(true); 
+        tableHtml += `<th class="col-no"></th>`;
+        tableHtml += controlCalcCols;
+        tableHtml += generateControlHeaderHTML(false);
+        // B側はボタン非表示
+        tableHtml += `</tr>`;
+        
+        tableHtml += `</thead><tbody>`;
         // 7. 行ループとセル生成
         for(let i=0; i<numRolls; i++){
             const seedIndexA = i*2, seedIndexB = i*2+1;
-            
             // 行の背景色判定 (view_analysis.js の関数を使用)
             let styleNoA = '';
             if (RowAnalysis.isSimpleYellow(seedIndexA, seeds) || RowAnalysis.isConsecutiveYellow(seedIndexA, seeds)) styleNoA = 'style="background-color: #ffeb3b;"';
@@ -190,7 +227,6 @@ function generateRollsTable() {
             let styleNoB = '';
             if (RowAnalysis.isSimpleYellow(seedIndexB, seeds) || RowAnalysis.isConsecutiveYellow(seedIndexB, seeds)) styleNoB = 'style="background-color: #ffeb3b;"';
             else if (RowAnalysis.isSimpleOrange(seedIndexB, seeds) || RowAnalysis.isConsecutiveOrange(seedIndexB, seeds)) styleNoB = 'style="background-color: #ff9800;"';
-
             // --- A側 ---
             let rowHtml = `<tr><td class="col-no" ${styleNoA}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexA, seeds, tableData); // view_cell_renderer.js
@@ -220,25 +256,57 @@ function generateRollsTable() {
                          const gRes = calculateGuaranteedLookahead(seedIndexA, config, seeds, lastDraw, normalRolls);
                          const addr = formatAddress(gRes.nextRollStartSeedIndex);
                          let charName = gRes.name;
-                         if (!isSimulationMode && gRes.nextRollStartSeedIndex > 0) {
-                             const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
-                             if (guarSeedIdx < seeds.length) {
-                                 const guarSeedVal = seeds[guarSeedIdx];
-                                 charName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${guarSeedVal})">${charName}</span>`;
-                             }
+                         
+                         // ★確定枠キャラ名へのクリックイベント設定
+                         // シードを更新するのではなく、ルート計算(onGachaCellClick)を呼ぶ
+                         // シード更新は updateSeedAndRefresh
+                         
+                         // Simモードかどうかで挙動を変えるか、Simモードへの誘導をするか
+                         // 既存ロジックに合わせて onclick を設定
+                         
+                         // ★変更点: Simモード時、確定列のキャラ名をクリックでルート計算
+                         let gClickAction = "";
+                         let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
+                         const escapedName = charName.replace(/'/g, "\\'");
+                         
+                         if (isSimulationMode) {
+                            // Simモード: ルート計算 + 確定入力
+                            gClickAction = `onclick="onGachaCellClick(${seedIndexA}, '${id}', '${escapedName}', '${gType}')"`;
+                         } else {
+                            // Viewモード: シードジャンプ (排出後のシードへ)
+                            if (gRes.nextRollStartSeedIndex > 0) {
+                                 const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
+                                 if (guarSeedIdx < seeds.length) {
+                                     const guarSeedVal = seeds[guarSeedIdx];
+                                     gClickAction = `onclick="updateSeedAndRefresh(${guarSeedVal})"`;
+                                 }
+                            }
                          }
+                         
+                         charName = `<span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
+
                          let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span>${charName}`;
                          let altHtml = '';
                          if (gRes.alternative) {
                              const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
                              let altCharName = gRes.alternative.name;
-                             if (!isSimulationMode && gRes.alternative.nextRollStartSeedIndex > 0) {
-                                 const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
-                                 if (altGuarSeedIdx < seeds.length) {
-                                     const altGuarSeedVal = seeds[altGuarSeedIdx];
-                                     altCharName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${altGuarSeedVal})">${altCharName}</span>`;
+                             let altClickAction = "";
+                             
+                             if (isSimulationMode) {
+                                // Alternativeルートの場合も同じアクション (本当はルート分岐が必要だが簡易的に同じ)
+                                const escAlt = altCharName.replace(/'/g, "\\'");
+                                altClickAction = `onclick="onGachaCellClick(${seedIndexA}, '${id}', '${escAlt}', '${gType}')"`;
+                             } else {
+                                 if (gRes.alternative.nextRollStartSeedIndex > 0) {
+                                     const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
+                                     if (altGuarSeedIdx < seeds.length) {
+                                         const altGuarSeedVal = seeds[altGuarSeedIdx];
+                                         altClickAction = `onclick="updateSeedAndRefresh(${altGuarSeedVal})"`;
+                                     }
                                  }
                              }
+                             altCharName = `<span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span>`;
+
                              altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
                          }
                          gContent = altHtml + mainHtml;
@@ -253,7 +321,6 @@ function generateRollsTable() {
                     rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
                 }
             });
-            
             // --- B側 ---
             rowHtml += `<td class="col-no" ${styleNoB}>${i+1}</td>`;
             rowHtml += generateDetailedCalcCells(seedIndexB, seeds, tableData);
@@ -279,25 +346,45 @@ function generateRollsTable() {
                         const gRes = calculateGuaranteedLookahead(seedIndexB, config, seeds, lastDraw, normalRolls);
                         const addr = formatAddress(gRes.nextRollStartSeedIndex);
                         let charName = gRes.name;
-                        if (!isSimulationMode && gRes.nextRollStartSeedIndex > 0) {
-                             const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
-                             if (guarSeedIdx < seeds.length) {
-                                 const guarSeedVal = seeds[guarSeedIdx];
-                                 charName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${guarSeedVal})">${charName}</span>`;
-                             }
+                        
+                        // ★B側 確定枠クリックアクション
+                        let gClickAction = "";
+                        let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
+                        const escapedName = charName.replace(/'/g, "\\'");
+                         
+                        if (isSimulationMode) {
+                            gClickAction = `onclick="onGachaCellClick(${seedIndexB}, '${id}', '${escapedName}', '${gType}')"`;
+                        } else {
+                            if (gRes.nextRollStartSeedIndex > 0) {
+                                 const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
+                                 if (guarSeedIdx < seeds.length) {
+                                     const guarSeedVal = seeds[guarSeedIdx];
+                                     gClickAction = `onclick="updateSeedAndRefresh(${guarSeedVal})"`;
+                                 }
+                            }
                         }
+                        charName = `<span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
+
                         let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span>${charName}`;
                         let altHtml = '';
                         if (gRes.alternative) {
                              const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
                              let altCharName = gRes.alternative.name;
-                             if (!isSimulationMode && gRes.alternative.nextRollStartSeedIndex > 0) {
-                                 const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
-                                 if (altGuarSeedIdx < seeds.length) {
-                                     const altGuarSeedVal = seeds[altGuarSeedIdx];
-                                     altCharName = `<span class="char-link" style="cursor:pointer;" onclick="updateSeedAndRefresh(${altGuarSeedVal})">${altCharName}</span>`;
+                             let altClickAction = "";
+                             if (isSimulationMode) {
+                                const escAlt = altCharName.replace(/'/g, "\\'");
+                                altClickAction = `onclick="onGachaCellClick(${seedIndexB}, '${id}', '${escAlt}', '${gType}')"`;
+                             } else {
+                                 if (gRes.alternative.nextRollStartSeedIndex > 0) {
+                                     const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
+                                     if (altGuarSeedIdx < seeds.length) {
+                                         const altGuarSeedVal = seeds[altGuarSeedIdx];
+                                         altClickAction = `onclick="updateSeedAndRefresh(${altGuarSeedVal})"`;
+                                     }
                                  }
                              }
+                             altCharName = `<span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span>`;
+
                              altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
                         }
                         gContent = altHtml + mainHtml;
@@ -316,7 +403,6 @@ function generateRollsTable() {
             <button onclick="addMoreRolls()">+100行</button>
             <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${seedBtnText}</button>
         </td></tr>`;
-
         tableHtml += '</tbody></table>';
         const container = document.getElementById('rolls-table-container');
         if(container) {

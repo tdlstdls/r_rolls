@@ -115,51 +115,52 @@
             <h3 style="margin-top:0;">【ツール概要】</h3>
             <p style="margin-bottom:10px;">
                 レアガチャの排出結果を予測・シミュレーションするツールです。<br>
-                現在地のSEED値を入力することで、各ガチャイベントの排出キャラや、確定枠を利用したルート取りを支援します。
+                各ガチャの排出キャラの確認や、確定枠等を利用したルート取りを支援します。
             </p>
 
             <h3 style="margin-top:0;">【基本操作】</h3>
             <ul style="padding-left: 20px; margin-bottom:10px;">
-                <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、現在地（Start Seed）を入力してOKを押してください。</li>
-                <li><strong>ガチャ選択:</strong> 表のヘッダー（日付やガチャ名が表示されている部分）のプルダウンから、表示したいガチャイベントを選択できます。</li>
-                <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、開催予定のガチャを一括で追加します。</li>
+                <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、シーカー等で特定した実行前シードを入力してOKを押してください。</li>
+                <li><strong>ガチャ選択:</strong> 表のヘッダー（開催期間やガチャ名が表示されている部分）下部のプルダウンから、表示したいガチャイベントを選択できます。</li>
+                <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧（前日～）のガチャを一括で追加します。</li>
             </ul>
 
             <h3 style="margin-top:0;">【主要機能】</h3>
             <dl style="margin-bottom:10px;">
-                <dt><strong>1. Find (特定キャラの取得可能アドレスの予測)</strong></dt>
+                <dt><strong>1. Find (特定キャラの取得可能位置の予測)</strong></dt>
                 <dd style="margin-bottom:5px;">
                     「Find」ボタンを押すと、2000ロール先までの「伝説枠」「昇格伝説枠」を検索して表示します。<br>
                     リスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。
                 </dd>
+
+                <dt><strong>2. Sim (シミュレーションモード)</strong></dt>
+                <dd style="margin-bottom:5px;">
+                    複数のガチャを跨いで引いた場合の結果をシミュレーションします。<br>
+                    「Config」欄に <code>ガチャID 回数 ガチャID 回数 ・・・</code> の形式で入力してください。<br>
+                    <span style="font-size:0.9em; color:#666;">
+                        (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
+                        ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
+                    </span>
+                        また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
+                        ・自動回避・誘発： レア被りによる再抽選（Reroll）の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
+                        ・A列⇔B列のルート切り替え： 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列、B列からA列へ移動するルートを計算します。<br>
+                        ・追記機能： 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
+                        ・確定枠クリック： G列(Guar)のキャラをクリックすると、前の行までのルート＋確定ロール(11g等)を自動入力します。<br>
+                        ※自動計算では「超激レア確定」「プラチナ」「レジェンド」ガチャは使用しません。<br>
+                </dd>
                 
-                <dt><strong>2. skd (スケジュール)</strong></dt>
+                <dt><strong>3. skd (スケジュール)</strong></dt>
                 <dd>
                     「skd」ボタンで、直近のガチャ開催スケジュールをガントチャートとリスト形式で確認できます。<br>
                 </dd>
 
-                <dt><strong>3. Sim (シミュレーションモード)※作成中</strong></dt>
-                <dd style="margin-bottom:5px;">
-                    複数のガチャを跨いで引いた場合の結果をシミュレーションします。<br>
-                    「Config」欄に <code>ガチャID 回数 ガチャID 回数</code> の形式で入力してください。<br>
-                    <span style="font-size:0.9em; color:#666;">
-                        (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
-                        ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
-
-                        また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
-                        ・自動回避・誘発: レア被りによる再抽選（Reroll）の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
-                        ・A列⇔B列のルート切り替え: 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列、B列からA列へ移動するルートを計算します。<br>
-                        ・追記機能: 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
-                        ※自動計算では「超激レア確定」「プラチナ」「レジェンド」ガチャは使用しません。<br>
-                    </span>
-                </dd>
             </dl>
 
             <h3 style="margin-top:0;">【表示・用語について】</h3>
             <ul style="padding-left: 20px; margin-bottom:0;">
                 <li><span style="background-color:#adff2f; padding:0 4px;">緑背景</span>: Findターゲット（伝説レア、限定キャラ、新キャラ、または手動で指定したキャラ）。</li>
                 <li><strong>Guar列:</strong> 確定ガチャ（11連等）を引いた場合の「確定枠キャラ」と「移動先アドレス」を表示します。</li>
-                <li><strong>No列のハイライト:</strong> （黄色）常設ガチャでのレア被り位置、（オレンジ色）波動バスターズ利用のレア被り位置</li>
+                <li><strong>NO列のハイライト:</strong> 常設ガチャでのレア被り位置を黄色で、波動バスターズ利用のレア被り位置をオレンジ色でハイライトします。</li>
             </ul>
         </div>
         
@@ -172,10 +173,12 @@
                 <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Copy to Clipboard">Copy</button>
             </div>
 
-            <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; width: 100%;">
+            <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; width: 100%;">
                 <label for="sim-config" style="font-size:0.9em;">Config:</label>
                 <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
-                <button onclick="clearSimConfig()" style="margin-left: 5px; font-size: 11px;">Clear</button>
+                <button onclick="backSimConfig()" style="margin-left: 5px; font-size: 11px; min-width: 40px;">Back</button>
+                <button onclick="clearSimConfig()" style="margin-left: 2px; font-size: 11px;">Clear</button>
+                <div id="sim-error-msg" style="color: #d9534f; font-size: 0.85em; margin-left: 5px; display: none;"></div>
             </div>
         </div>
 

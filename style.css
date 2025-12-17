@@ -1,5 +1,4 @@
 @charset "UTF-8";
-
 /* =========================================
    基本設定
    ========================================= */
@@ -13,7 +12,8 @@ html, body {
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     padding: 20px;
-    box-sizing: border-box; /* パディングを含めてサイズ計算 */
+    box-sizing: border-box;
+    /* パディングを含めてサイズ計算 */
     color: #333;
     background-color: #fff;
     /* Flexboxレイアウトに変更 */
@@ -44,7 +44,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    flex-wrap: nowrap; /* 1行表示を強制 */
+    flex-wrap: nowrap;
+    /* 1行表示を強制 */
     gap: 10px;
 }
 
@@ -189,7 +190,8 @@ button.active {
     overflow-y: auto;
     /* max-height: 80vh;  <-- 固定制限を削除 */
     max-height: none; 
-    flex-grow: 1; /* 残りの高さを全て埋める */
+    flex-grow: 1;
+    /* 残りの高さを全て埋める */
     border: 1px solid #ddd;
     margin-bottom: 0;
 }
@@ -209,15 +211,36 @@ th, td {
     white-space: nowrap;
 }
 
+/* 変更: th全体への sticky 指定を削除し、クラス指定に変更 */
 th {
     background-color: #f8f9fa;
     font-weight: bold;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    /* position: sticky;  <-- 削除 */
+    /* top: 0;            <-- 削除 */
+    /* z-index: 10;       <-- 削除 */
     border-top: 1px solid #ddd;
     border-bottom: 1px solid #ddd;
     box-shadow: 0 1px 0 #ddd;
+}
+
+/* 新規追加: ガチャ名行（固定表示用）のスタイル */
+.sticky-row th {
+    position: sticky;
+    top: 0;
+    z-index: 20; /* 他の要素より手前に表示 */
+    border-bottom: none; /* 下の行（操作行）との境界を目立たなくする */
+    box-shadow: 0 2px 2px rgba(0,0,0,0.1); /* 浮いている感を出すための影 */
+    background-color: #f8f9fa; /* 背景色を明示 */
+}
+
+/* 新規追加: 操作ボタン行（スクロール用）のスタイル */
+.control-row th {
+    position: static; /* 固定しない */
+    border-top: none; /* 上の行との一体感を出す */
+    background-color: #f4f4f4; /* 少し色を変えて区別 */
+    padding-top: 2px;
+    padding-bottom: 4px;
+    z-index: 1;
 }
 
 /* 列ごとのスタイル */
@@ -360,8 +383,7 @@ th {
 .gantt-chart-container {
     border: 1px solid #ccc;
     background: #fff;
-    /* overflow: hidden;
-       を削除してスクロールバーを表示可能にする */
+    /* overflow: hidden; を削除してスクロールバーを表示可能にする */
     font-size: 12px;
     margin-bottom: 20px;
     max-width: 100%; /* はみ出し防止 */
@@ -471,8 +493,7 @@ th {
 
 .gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
 .gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
-.gantt-bar.g-fest { background-color: #ff9800;
-border-color: #ff9800; }
+.gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
 .gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
 
 .gantt-bar-text {

@@ -3,17 +3,11 @@
  * テーブルヘッダーのHTML生成ロジック
  */
 
-function generateHeaderHTML(isInteractive) {
-    const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-
-    let html = `
-        <th class="${calcColClass}">SEED</th>
-        <th class="${calcColClass}">rarity</th>
-        <th class="${calcColClass}">slot</th>
-        <th class="${calcColClass}">ReRoll</th>
-        <th class="${calcColClass}">Guar</th>
-    `;
-
+// 変更: 名前行（固定表示）のHTMLを生成
+function generateNameHeaderHTML() {
+    let html = ``;
+    
+    // index引数を追加して、uberAdditionCountsにアクセスできるように変更
     tableGachaIds.forEach((idWithSuffix, index) => {
         let id = idWithSuffix;
         let suffix = '';
@@ -30,16 +24,49 @@ function generateHeaderHTML(isInteractive) {
         const foundOption = options.find(o => o.value == id);
         if (foundOption) selectedLabel = foundOption.label;
 
+        // --- 追加: add情報の表示文字列を作成 ---
+        const addCount = uberAdditionCounts[index] || 0;
+        let addInfoStr = '';
+        if (addCount > 0) {
+            // 赤字で目立たせて表示 (例: add:1)
+            addInfoStr = ` <span style="font-size:0.85em; color:#d9534f; font-weight:normal;">(add:${addCount})</span>`;
+        }
+        // ---------------------------------------
+
         let displayHTML = "";
         const firstSpaceIdx = selectedLabel.indexOf(' ');
+    
         if (firstSpaceIdx !== -1) {
             const part1 = selectedLabel.substring(0, firstSpaceIdx);
             const part2 = selectedLabel.substring(firstSpaceIdx + 1);
-            displayHTML = `<span style="font-size:0.85em; color:#333;">${part1}</span><br><span style="font-weight:bold; font-size:0.95em;">${part2}</span>`;
+            // ガチャ名の後ろにadd情報を付与
+            displayHTML = `<span style="font-size:0.85em; color:#333;">${part1}</span><br><span style="font-weight:bold; font-size:0.95em;">${part2}${addInfoStr}</span>`;
         } else {
-            displayHTML = selectedLabel;
+            displayHTML = `${selectedLabel}${addInfoStr}`;
         }
 
+        const cls = isGuaranteed ? '' : 'class="gacha-column"';
+        // 名前行なので ControlArea は出力しない
+        html += `<th ${cls} ${isGuaranteed?'colspan="2"':''} style="vertical-align: bottom; padding-bottom: 2px;">
+                    <div style="text-align: center; line-height: 1.25;">${displayHTML}</div>
+                 </th>`;
+    });
+    return html;
+}
+
+// 変更: 操作ボタン行（スクロールと一緒に流れる）のHTMLを生成
+function generateControlHeaderHTML(isInteractive) {
+    let html = ``;
+
+    tableGachaIds.forEach((idWithSuffix, index) => {
+        let id = idWithSuffix;
+        let suffix = '';
+        if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
+        else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
+        else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+
+        const isGuaranteed = (suffix !== '');
+        
         let selectorArea = '';
         let controlArea = '';
 
@@ -62,6 +89,8 @@ function generateHeaderHTML(isInteractive) {
             }
             addSelect += `</select></span>`;
             
+            // セレクター（透明）の再構築
+            const options = getGachaSelectorOptions(id);
             let selector = `<select onchange="updateGachaSelection(this, ${index})" style="width: 30px; cursor: pointer; opacity: 0; position: absolute; left:0; top:0; height: 100%; width: 100%;">`;
             options.forEach(opt => {
                 const selected = (opt.value == id) ? 'selected' : '';
@@ -69,26 +98,19 @@ function generateHeaderHTML(isInteractive) {
             });
             selector += '</select>';
             
-            const fakeSelectBtn = `<div style="width:20px; height:20px; background:#ddd; border:1px solid #999; display:flex; align-items:center; justify-content:center; border-radius:3px;">▼</div>`;
-            selectorArea = `<div style="position: relative; width: 24px; height: 24px;">${fakeSelectBtn}${selector}</div>`;
-            controlArea = `<div style="margin-top:4px; display:flex; justify-content:center; align-items:center; gap:3px;">${gBtn}${triggerHtml}${addSelect}${removeBtn}</div>`;
+            const fakeSelectBtn = `<div style="width:20px; height:20px; background:#ddd; border:1px solid #999; display:flex; align-items:center; justify-content:center; border-radius:3px; font-size:10px;">▼</div>`;
+            selectorArea = `<div style="position: relative; width: 20px; height: 20px;">${fakeSelectBtn}${selector}</div>`;
+            
+            controlArea = `<div style="display:flex; justify-content:center; align-items:center; gap:3px;">${selectorArea}${gBtn}${triggerHtml}${addSelect}${removeBtn}</div>`;
         } else {
-            selectorArea = `<div style="width: 24px; height: 24px;"></div>`;
-            let statusTextParts = [];
-            if (suffix === 'g') statusTextParts.push('11G');
-            else if (suffix === 'f') statusTextParts.push('15G');
-            else if (suffix === 's') statusTextParts.push('7G');
-            const currentAddVal = uberAdditionCounts[index] || 0;
-            if (currentAddVal > 0) statusTextParts.push(`add:${currentAddVal}`);
-            if (statusTextParts.length > 0) {
-                controlArea = `<div style="margin-top:4px; font-size:0.85em; color:#555; height: 21px; display: flex; align-items: center; justify-content: center;">${statusTextParts.join(' / ')}</div>`;
-            } else {
-                 controlArea = `<div style="margin-top:4px; height: 21px;"></div>`;
-            }
+            // Interactiveでない場合（A, Bの表示のみの箇所など）
+             controlArea = `<div style="height: 20px;"></div>`;
         }
         
         const cls = isGuaranteed ? '' : 'class="gacha-column"';
-        html += `<th ${cls} ${isGuaranteed?'colspan="2"':''}><div class="gacha-header-wrapper" style="display: flex; align-items: center; justify-content: center; gap: 6px; position: relative;">${selectorArea}<div style="text-align: left; line-height: 1.25;">${displayHTML}</div></div>${controlArea}</th>`;
+        html += `<th ${cls} ${isGuaranteed?'colspan="2"':''} style="vertical-align: top; padding-top: 2px;">
+                    ${controlArea}
+                 </th>`;
     });
     return html;
 }
