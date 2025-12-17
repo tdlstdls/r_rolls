@@ -3,10 +3,10 @@
  * ガチャ結果テーブルの構築（メインコントローラー）
  */
 
-// Simルートのハイライト色 (通常: 水色)
-const COLOR_ROUTE_HIGHLIGHT = '#d0ebff';
-// Simルートのハイライト色 (超激・伝説・限定: 青色)
-const COLOR_ROUTE_UBER = '#89c4f4';
+// Simルートのハイライト色 (通常: 鮮やかな水色)
+const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
+// Simルートのハイライト色 (超激・伝説・限定: 鮮やかな青色)
+const COLOR_ROUTE_UBER = '#66b2ff';
 
 function generateRollsTable() {
     try {
@@ -259,9 +259,9 @@ function generateRollsTable() {
                 let cellHtml = generateCell(seedIndexA, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
                 // 色置換
                 if (isSimulationMode) {
-                    // 通常ルート(薄緑) -> 水色
+                    // 通常ルート(薄緑) -> 鮮やかな水色
                     cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
-                    // 高レア・限定ルート(濃い緑) -> 青色
+                    // 高レア・限定ルート(濃い緑) -> 鮮やかな青色
                     cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
                 }
                 rowHtml += cellHtml;
