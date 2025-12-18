@@ -102,7 +102,9 @@ function generateFastForecast(initialSeed, columnConfigs) {
             <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
             <span class="separator">|</span>
             <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
-            
+            <span style="font-size: 0.75em; color: #d9534f; margin-left: 5px; font-weight: bold;">
+                ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。
+            </span>
             <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
         </div>
     `;
