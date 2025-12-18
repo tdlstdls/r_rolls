@@ -1,3 +1,6 @@
+//====================
+//FILE: simulation.js
+//====================
 //simulation.js
 // --- sim-config ヘルパー関数 ---
 
@@ -292,7 +295,7 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         for (const segment of existingConfigs) {
             // このセグメントを実行した場合の到達点を計算
             const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
-            
+
             // もしこのセグメントを実行すると、ターゲットを超えてしまう場合
             // このセグメント以降は採用せず、ここから経路探索を行う
             if (res.nextIndex > targetSeedIndex) {
@@ -334,9 +337,9 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
     if (usableConfigs.length === 0) return null;
 
     // 3. 経路探索実行 (startIdx から targetSeedIndex まで)
-    // startIdx === targetSeedIndex の場合は path=[] が返り、finalActionOverrideのみが追加される
-    const route = findPathGreedy(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
-
+    // findPathBeamSearch に名称変更
+    const route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
+    
     if (route) {
         // クリックしたセルの処理
         if (finalActionOverride) {
@@ -357,79 +360,155 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         }
     } else {
         // ルートが見つからない場合
-        // StartIdxがTargetSeedIndexを超えている（理論上ありえないが）、
-        // または探索不能な場合
         return null;
     }
 }
 
 /**
- * 貪欲法による経路探索
+ * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
+ * ビームサーチ(Beam Search)を使用し、最適なルートを探索する
  */
-function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
-    let currentIdx = startIdx;
-    let path = []; // { id: gachaId, rolls: 1 }
-    let lastDraw = initialLastDraw; // { rarity, charId, isRerolled }
+function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
+    // ビームサーチ設定
+    const BEAM_WIDTH = 20;
+    // 同時に探索するルート候補の数（増やしすぎると重くなるが精度が上がる）
+    const MAX_STEPS = 1000; // 無限ループ防止
 
-    // 安全装置: 無限ループ防止
+    // targetGachaId を優先的に試行するためにリストを並び替える
+    const sortedConfigs = [...configs].sort((a, b) => {
+        if (a.id == targetGachaId) return -1;
+        if (b.id == targetGachaId) return 1;
+        return 0;
+    });
+
+    // 候補リスト: { idx, path, lastDraw, score }
+    // scoreが大きいほど優先度が高い
+    let candidates = [{
+        idx: startIdx,
+        path: [],
+        lastDraw: initialLastDraw,
+        score: 0
+    }];
+
     let loopCount = 0;
-    const MAX_LOOPS = 2000;
 
-    while (currentIdx < targetIdx && loopCount < MAX_LOOPS) {
+    while (candidates.length > 0 && loopCount < MAX_STEPS) {
         loopCount++;
-        const dist = targetIdx - currentIdx;
+        let nextCandidates = [];
         
-        let possibleMoves = [];
-        for (const conf of configs) {
-            // このガチャを引いた場合の結果を予測
-            const res = rollWithSeedConsumptionFixed(currentIdx, conf, simSeeds, lastDraw);
-            // ターゲットを越える場合は除外
-            if (currentIdx + res.seedsConsumed > targetIdx) continue;
-            // 評価値計算 (小さいほど良い)
-            let score = 0;
-            // 1. パリティ（偶奇）チェック
-            const distIsOdd = (dist % 2 !== 0);
-            const moveIsOdd = (res.seedsConsumed % 2 !== 0);
-            
-            if (distIsOdd === moveIsOdd) {
-                score -= 100; // パリティが一致する手は高評価
-            } else {
-                score += 50; // パリティ不一致は後回し
+        // 現在の候補すべてについて、次の手を展開
+        for (const current of candidates) {
+            // すでにゴールしている場合は（念のため）リターン
+            if (current.idx === targetIdx) {
+                return current.path;
             }
 
-            // 2. ターゲットガチャ優先
-            if (conf.id == targetGachaId) score -= 10;
-            // 3. 直前のガチャと同じなら優先（圧縮効率・Stickiness）
-            const prevId = path.length > 0 ? path[path.length-1].id : null;
-            if (conf.id == prevId) score -= 5;
-            // 4. 消費シード数による重みづけ (パリティが合うなら大きく進む)
-            score -= res.seedsConsumed;
-            possibleMoves.push({ config: conf, result: res, score: score });
+            // 残りの距離
+            const dist = targetIdx - current.idx;
+            if (dist < 0) continue; // 行き過ぎたルートは破棄
+
+            for (const conf of sortedConfigs) {
+                // このガチャを引いた場合の結果を予測
+                const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, current.lastDraw);
+
+                // ターゲットを越える場合は除外
+                if (current.idx + res.seedsConsumed > targetIdx) continue;
+
+                // --- スコアリング (大きいほど良い) ---
+                let score = current.score;
+
+                // 1. パリティ（偶奇）チェック
+                // 「残り距離」と「移動距離」の偶奇が一致すれば、トラック移動として非常に高評価
+                const distIsOdd = (dist % 2 !== 0);
+                const moveIsOdd = (res.seedsConsumed % 2 !== 0);
+                
+                if (distIsOdd === moveIsOdd) {
+                    score += 500; // パリティ一致は最優先
+                } else {
+                    score -= 50; // パリティ不一致は減点
+                }
+
+                // 2. レアリティ・ターゲットに基づく加点（優先順位指定あり）
+                let rarityScore = 0;
+                const cid = res.charId;
+                const cStr = String(cid);
+
+                // 限定キャラ判定（limited_cats.js）
+                const isLimited = (typeof limitedCats !== 'undefined' && (limitedCats.includes(cid) || limitedCats.includes(cStr)));
+                
+                // ユーザー指定ターゲット判定（ui_globals.js, ui_target_handler.js）
+                // userTargetIds は Set
+                const isUserTarget = (typeof userTargetIds !== 'undefined' && (userTargetIds.has(cid) || userTargetIds.has(parseInt(cid))));
+                
+                if (res.rarity === 'legend') {
+                    if (isUserTarget) rarityScore = 300; // Findで選択された伝説レア
+                    else rarityScore = 250;              // その他の伝説レア
+                } else if (isLimited) {
+                    if (isUserTarget) rarityScore = 200; // Findで選択された限定キャラ
+                    else rarityScore = 150;              // その他の限定キャラ
+                } else if (res.rarity === 'uber') {
+                    if (isUserTarget) rarityScore = 100; // Findで選択された超激レア
+                    else rarityScore = 80;               // その他の超激レア
+                } else if (isUserTarget) {
+                    rarityScore = 50;                    // Findで選択されたその他のレアリティ
+                }
+
+                score += rarityScore;
+
+                // 3. Stickiness（同じガチャを連続して引く）
+                const prevId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
+                if (conf.id == prevId) score += 40; // 加点を強化
+
+                // 4. Target Gacha の条件削除
+                // if (conf.id == targetGachaId) score += 30; // 削除済み
+
+                // 5. 進むこと自体への加点（停滞防止）
+                score += res.seedsConsumed;
+
+                // 新しい候補を作成
+                const newPath = [...current.path, { id: conf.id, rolls: 1 }];
+                const newLastDraw = { 
+                    rarity: res.rarity, 
+                    charId: res.charId, 
+                    isRerolled: res.isRerolled 
+                };
+
+                // もしこれでゴールなら即終了
+                if (current.idx + res.seedsConsumed === targetIdx) {
+                    return newPath;
+                }
+
+                nextCandidates.push({
+                    idx: current.idx + res.seedsConsumed,
+                    path: newPath,
+                    lastDraw: newLastDraw,
+                    score: score
+                });
+            }
         }
 
-        // 候補がない（詰み）
-        if (possibleMoves.length === 0) return null;
-        // スコア順にソート (昇順)
-        possibleMoves.sort((a, b) => a.score - b.score);
-        // 最良の手を採用
-        const bestMove = possibleMoves[0];
-        
-        path.push({ id: bestMove.config.id, rolls: 1 });
-        // 次のステップのために lastDraw を更新
-        lastDraw = { 
-            rarity: bestMove.result.rarity, 
-            charId: bestMove.result.charId, 
-            isRerolled: bestMove.result.isRerolled 
-        };
-        currentIdx += bestMove.result.seedsConsumed;
+        if (nextCandidates.length === 0) break; // 手詰まり
+
+        // スコア順にソート (降順)
+        nextCandidates.sort((a, b) => b.score - a.score);
+
+        // 重複除去（同じ到達点・同じLastDrawなら、スコアが高い方だけ残す）
+        const uniqueCandidates = [];
+        const seenState = new Set();
+
+        for (const cand of nextCandidates) {
+            const stateKey = `${cand.idx}-${cand.lastDraw.charId}`;
+            if (!seenState.has(stateKey)) {
+                seenState.add(stateKey);
+                uniqueCandidates.push(cand);
+            }
+            if (uniqueCandidates.length >= BEAM_WIDTH) break;
+        }
+
+        candidates = uniqueCandidates;
     }
 
-    // 到達チェック
-    if (currentIdx === targetIdx) {
-        return path;
-    }
-
-    return null;
+    return null; // ルートが見つからなかった
 }
 
 /**
