@@ -91,21 +91,24 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const legendBtnClass = isLegendActive ? 'text-btn active' : 'text-btn';
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
+    const masterDescStyle = isMasterActive ? '' : 'display: none;';
 
     // ボタンエリア HTML生成
     summaryHtml += `
-        <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px;">
-            <span onclick="clearAllTargets()" class="text-btn" title="全て非表示">×</span>
-            <span class="separator">|</span>
-            <span onclick="toggleLegendTargets()" class="${legendBtnClass}">伝説</span>
-            <span class="separator">|</span>
-            <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
-            <span class="separator">|</span>
-            <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
-            <span style="font-size: 0.75em; color: #d9534f; margin-left: 5px; font-weight: bold;">
+        <div style="margin-bottom: 10px; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span onclick="clearAllTargets()" class="text-btn" title="全て非表示">×</span>
+                <span class="separator">|</span>
+                <span onclick="toggleLegendTargets()" class="${legendBtnClass}">伝説</span>
+                <span class="separator">|</span>
+                <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
+                <span class="separator">|</span>
+                <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
+                <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
+            </div>
+            <div style="font-size: 0.75em; color: #d9534f; font-weight: bold; padding-left: 2px; ${masterDescStyle}">
                 ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。
-            </span>
-            <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
+            </div>
         </div>
     `;
 
