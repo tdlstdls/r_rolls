@@ -1,7 +1,4 @@
-/**
- * ui_target_handler.js
- * Find機能（ターゲット指定、表示/非表示切り替え）のロジック
- */
+/** @file ui_target_handler.js @description Find機能のターゲット指定（伝説・限定）の管理を担当 @dependency ui_globals.js, view_table.js */
 
 // 自動ターゲット対象かどうか
 // 変更: 伝説レア・限定キャラを除外し、手動追加（sim-new）のみを自動対象とする

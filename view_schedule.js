@@ -1,8 +1,4 @@
-/**
- * view_schedule.js
- * スケジュール表・ガントチャートのレンダリング及び画像保存を担当
- * 依存: schedule_logic.js (Utility functions)
- */
+/** @file view_schedule.js @description スケジュール表およびガントチャートのレンダリングを担当 @dependency schedule_logic.js */
 
 // 文字列の表示幅を概算する関数 (動的幅調整用)
 function calcTextWidth(text) {

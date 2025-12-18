@@ -1,7 +1,4 @@
-/**
- * schedule_logic.js
- * gatya.tsvの解析、日付処理、初期データ決定などのロジックを担当
- */
+/** @file schedule_logic.js @description gatya.tsvの解析、日付・時刻計算のユーティリティを担当 @dependency なし */
 
 // YYYYMMDD -> M/D (年は無視、20300101は「永続」)
 function formatDateJP(dateStr) {

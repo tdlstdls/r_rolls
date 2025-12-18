@@ -1,7 +1,4 @@
-/**
- * ui_schedule_handler.js
- * スケジュールデータの解析、skdモード切替、スケジュールからの列追加ロジック
- */
+/** @file ui_schedule_handler.js @description スケジュールモード（skd）の切替、スケジュールからの列追加を担当 @dependency schedule_logic.js, view_schedule.js */
 
 // スケジュール情報の事前解析
 function prepareScheduleInfo() {

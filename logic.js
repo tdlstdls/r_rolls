@@ -1,11 +1,6 @@
-/**
- * lojic.js
- * ガチャ抽選ロジック
- */
+/** @file logic.js @description ガチャ抽選の核心ロジック（Xorshift32、レア被り再抽選）を担当 @dependency なし */
 
-/**
- * 乱数生成クラス
- */
+/** 乱数生成クラス */
 class Xorshift32 {
     constructor(seed) { this.seed = (seed >>> 0) || 1;
 }

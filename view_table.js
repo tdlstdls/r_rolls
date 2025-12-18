@@ -1,7 +1,4 @@
-/**
- * view_table.js
- * ガチャ結果テーブルの構築（メインコントローラー）
- */
+/** @file view_table.js @description ガチャ結果テーブル全体のHTML構築と描画の主制御を担当 @dependency logic.js, view_cell_renderer.js, view_header.js */
 
 // Simルートのハイライト色 (通常: 鮮やかな水色)
 const COLOR_ROUTE_HIGHLIGHT = '#aaddff';

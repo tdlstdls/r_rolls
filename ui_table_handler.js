@@ -1,7 +1,4 @@
-/**
- * ui_table_handler.js
- * テーブルの列操作（追加、削除、変更）および列内コントロールのロジック
- */
+/** @file ui_table_handler.js @description テーブルの列操作（追加、削除、変更）のイベントハンドラを担当 @dependency view_table.js */
 
 // 新しいガチャ列を追加 (デフォルト選択)
 function addGachaColumn() {

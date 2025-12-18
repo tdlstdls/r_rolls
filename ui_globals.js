@@ -1,7 +1,4 @@
-/**
- * ui_globals.js
- * アプリケーション全体で共有される状態変数の定義
- */
+/** @file ui_globals.js @description アプリケーション全体で共有されるグローバルな状態変数の定義 @dependency なし */
 
 // UI状態変数 (Global)
 let tableGachaIds = [];

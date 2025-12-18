@@ -1,7 +1,4 @@
-/**
- * view_header.js
- * テーブルヘッダーのHTML生成ロジック
- */
+/** @file view_header.js @description テーブルヘッダー（固定行・操作行）のHTML生成を担当 @dependency gacha_selector.js */
 
 // 変更: 名前行（固定表示）のHTMLを生成
 function generateNameHeaderHTML() {

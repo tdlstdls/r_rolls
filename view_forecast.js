@@ -1,8 +1,4 @@
-// view_forecast.js
-/**
- * view_forecast.js
- * 「Find (高速予報)」機能のHTML生成を担当
- */
+/** @file view_forecast.js @description Find（高速予報）エリアおよび操作ボタンのHTML生成を担当 @dependency logic.js, ui_target_handler.js */
 
 function generateFastForecast(initialSeed, columnConfigs) {
     const scanRows = 2000;
@@ -39,7 +35,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span style="font-weight:bold; color:#e91e63; background:#ffe0eb; padding:1px 4px; border-radius:3px;">伝説枠</span>
                 <span style="font-family: monospace; margin-left: 5px;">${legendStr}</span>
             </div>
-            
             <div>
                 <span style="font-weight:bold; color:#9c27b0; background:#f3e5f5; padding:1px 4px; border-radius:3px;">昇格枠</span>
                 <span style="font-family: monospace; margin-left: 5px;">${promotedStr}</span>
@@ -48,7 +43,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
     `;
 
     // --- ボタンの状態判定 ---
-    // 現在のテーブルに含まれる全ての伝説・限定キャラを収集
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
@@ -66,11 +60,9 @@ function generateFastForecast(initialSeed, columnConfigs) {
         if (processedGachaIdsForBtn.has(config.id)) return;
         processedGachaIdsForBtn.add(config.id);
 
-        // 伝説
         if (config.pool.legend && config.pool.legend.length > 0) {
             config.pool.legend.forEach(c => availableLegendIds.push(c.id));
         }
-        // 限定
         ['rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r]) {
                 config.pool[r].forEach(c => {
@@ -83,7 +75,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
     });
 
-    // 状態判定
     const isLegendActive = (availableLegendIds.length > 0) && availableLegendIds.every(cid => userTargetIds.has(cid));
     const isLimitedActive = (availableLimitedIds.length > 0) && availableLimitedIds.every(cid => userTargetIds.has(cid));
     const isMasterActive = (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true;
@@ -91,7 +82,14 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const legendBtnClass = isLegendActive ? 'text-btn active' : 'text-btn';
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
+
+    // マスターボタンON時の説明文スタイル
     const masterDescStyle = isMasterActive ? '' : 'display: none;';
+
+    // 特殊ガチャ設定に応じたメッセージ
+    const specialStatusText = (typeof useSpecialInRoute !== 'undefined' && useSpecialInRoute)
+        ? `<span style="color: #d9534f; font-weight: bold;">[特殊ガチャ許可ON]</span> 現在、プラチナ・レジェンドを経路に使用します。`
+        : `超激確定・プラチナ・レジェンドは消費を避けるため使用しません。`;
 
     // ボタンエリア HTML生成
     summaryHtml += `
@@ -107,14 +105,15 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
             </div>
             <div style="font-size: 0.75em; color: #d9534f; font-weight: bold; padding-left: 2px; ${masterDescStyle}">
-                ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。
+                ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。<br>
+                <span style="color: #666; font-weight: normal;">
+                    ※Simモードの自動計算：${specialStatusText}
+                </span>
             </div>
         </div>
     `;
 
     const processedGachaIds = new Set();
-    
-    // アニバーサリー限定セット
     const anniversarySet = new Set();
     if (typeof AnniversaryLimited !== 'undefined' && Array.isArray(AnniversaryLimited)) {
         AnniversaryLimited.forEach(id => {
@@ -174,7 +173,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
             let targetPool = null;
             let isLegendRank = false;
-
             if (rarity === 'legend' && hasLegend) {
                 targetPool = config.pool.legend;
                 isLegendRank = true;
@@ -187,15 +185,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
-
                 if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) {
                     continue;
                 }
-                // 手動ターゲットに入っていないものはスキップ（Legend/Limitedが自動対象ではなくなったため）
-                // ただし、sim-new は自動対象(toggleでhiddenに入る)なので、ここでの判定は不要(hidden checkのみ)
                 const cStr = String(cid);
                 const isNew = cStr.startsWith('sim-new-');
-                // 自動対象(isNew) または 手動リスト入り(userTargetIds) の場合のみ表示
                 if (!isNew && !userTargetIds.has(cid) && !userTargetIds.has(parseInt(cid))) {
                      continue;
                 }
@@ -231,7 +225,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 if (item.isNew) return 1;
                 if (item.isLegend && item.isLimited) return 2;
                 if (item.isLegend) return 3;
-                 if (item.isAnniversary) return 4;
+                if (item.isAnniversary) return 4;
                 if (item.isLimited) return 5;
                 return 6; 
             };
@@ -256,10 +250,20 @@ function generateFastForecast(initialSeed, columnConfigs) {
             else if (data.isLimited) nameStyle += ' color:#d35400;'; 
             else nameStyle += ' color:#333;'; 
 
-            const resultStr = data.hits.join(", ");
+            // セル番地をクリック可能なリンク（自動Simモード切り替え対応）に変更
+            const hitLinks = data.hits.map(addr => {
+                const row = parseInt(addr);
+                const side = addr.endsWith('B') ? 1 : 0;
+                const sIdx = (row - 1) * 2 + side;
+                const escapedName = data.name.replace(/'/g, "\\'");
+                
+                return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
+                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true)">${addr}</span>`;
+            }).join("");
+
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
             
-            return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${resultStr}</span></div>`;
+            return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${hitLinks}</span></div>`;
         });
 
         summaryHtml += `<div style="margin-bottom: 8px;">

@@ -1,4 +1,5 @@
-//simulation.js
+/** @file simulation.js @description 自動経路探索（ビームサーチ）、回避・誘発の判定、Config解析を担当 @dependency logic.js, ui_globals.js */
+
 // --- sim-config ヘルパー関数 ---
 
 function parseSimConfig(configStr) {

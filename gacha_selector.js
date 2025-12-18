@@ -1,7 +1,4 @@
-/**
- * gacha_selector.js
- * ガチャ選択用プルダウンのオプション生成ロジック
- */
+/** @file gacha_selector.js @description ガチャ選択用プルダウンのオプション項目生成を担当 @dependency data_loader.js, schedule_logic.js */
 
 function getGachaSelectorOptions(selectedId) {
     const now = new Date();

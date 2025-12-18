@@ -1,7 +1,4 @@
-/**
- * view_master.js
- * ガチャマスター情報のHTML生成を担当
- */
+/** @file view_master.js @description ガチャマスタ（キャラリスト）の詳細情報のHTML生成を担当 @dependency data_loader.js */
 
 function generateMasterInfoHtml() {
     if (!gachaMasterData || !gachaMasterData.gachas) return '<p>データがありません</p>';

@@ -1,7 +1,4 @@
-/**
- * data_loader.js
- * データの読み込み、解析、マスタデータの構築を担当
- */
+/** @file data_loader.js @description 外部データ（CSV/TSV）の非同期取得とマスタデータの構築を担当 @dependency cats.js, gacha_series.js */
 
 /**
  * [gatya.tsv Data Structure Memo]

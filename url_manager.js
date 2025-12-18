@@ -1,7 +1,4 @@
-/**
- * url_manager.js
- * URLパラメータの読み込みと更新を担当
- */
+/** @file url_manager.js @description URLパラメータとアプリ状態の同期（保存・復元）を担当 @dependency ui_globals.js, ui_controller.js */
 
 function processUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);

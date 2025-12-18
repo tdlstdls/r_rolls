@@ -1,7 +1,4 @@
-/**
- * view_analysis.js
- * レア被り（黄色・オレンジ）の判定ロジック
- */
+/** @file view_analysis.js @description レア被り位置（黄色・オレンジ）のハイライト判定を担当 @dependency なし */
 
 const RowAnalysis = {
     // 常設レア被り（黄色）: n+1とn+3のスロットが同じ

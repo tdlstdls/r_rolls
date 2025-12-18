@@ -1,856 +1,7 @@
 ﻿====================
-FILE: cats.js
-====================
-const cats = [
-  { "id": 0, "name": "ネコ", "rarity": 0 },
-  { "id": 1, "name": "タンクネコ", "rarity": 0 },
-  { "id": 2, "name": "バトルネコ", "rarity": 0 },
-  { "id": 3, "name": "キモネコ", "rarity": 0 },
-  { "id": 4, "name": "ウシネコ", "rarity": 0 },
-  { "id": 5, "name": "ネコノトリ", "rarity": 0 },
-  { "id": 6, "name": "ネコフィッシュ", "rarity": 0 },
-  { "id": 7, "name": "ネコトカゲ", "rarity": 0 },
-  { "id": 8, "name": "巨神ネコ", "rarity": 0 },
-  { "id": 9, "name": "ネコ女優", "rarity": 1 },
-  { "id": 10, "name": "カンフーにゃんこ", "rarity": 1 },
-  { "id": 11, "name": "Mr.", "rarity": 1 },
-  { "id": 12, "name": "猫縛り", "rarity": 1 },
-  { "id": 13, "name": "女王猫", "rarity": 1 },
-  { "id": 14, "name": "ネコの箱詰め", "rarity": 1 },
-  { "id": 15, "name": "ネコパンツ", "rarity": 1 },
-  { "id": 16, "name": "もねこ", "rarity": 1 },
-  { "id": 17, "name": "ネコリンリン", "rarity": 1 },
-  { "id": 18, "name": "ネコ忍者", "rarity": 1 },
-  { "id": 19, "name": "ネコゾンビ", "rarity": 1 },
-  { "id": 20, "name": "ネコざむらい", "rarity": 1 },
-  { "id": 21, "name": "スモウネコ", "rarity": 1 },
-  { "id": 22, "name": "ネコフィーバー", "rarity": 1 },
-  { "id": 23, "name": "ネコスカート", "rarity": 1 },
-  { "id": 24, "name": "ネコヴァルキリー", "rarity": 1 },
-  { "id": 25, "name": "ネコムート", "rarity": 1 },
-  { "id": 26, "name": "ケリ姫", "rarity": 1 },
-  { "id": 27, "name": "ネコひめ", "rarity": 1 },
-  { "id": 28, "name": "ネコカプセル", "rarity": 1 },
-  { "id": 29, "name": "マスクオブネコ", "rarity": 1 },
-  { "id": 30, "name": "ネコぼさつ", "rarity": 3 },
-  { "id": 31, "name": "ネコ番長", "rarity": 3 },
-  { "id": 32, "name": "ネコザイル", "rarity": 3 },
-  { "id": 33, "name": "ねこタツ", "rarity": 3 },
-  { "id": 34, "name": "ネコルガ", "rarity": 4 },
-  { "id": 35, "name": "オタネコ", "rarity": 3 },
-  { "id": 36, "name": "ネコスイマー", "rarity": 3 },
-  { "id": 37, "name": "ネコホッピング", "rarity": 2 },
-  { "id": 38, "name": "ネコ車輪", "rarity": 2 },
-  { "id": 39, "name": "ネコリンゴ", "rarity": 3 },
-  { "id": 40, "name": "ネコバスたぶ", "rarity": 3 },
-  { "id": 41, "name": "ネコエステ", "rarity": 2 },
-  { "id": 42, "name": "ネコアイス", "rarity": 4 },
-  { "id": 43, "name": "ネコマシン", "rarity": 4 },
-  { "id": 44, "name": "鬼にゃんま", "rarity": 4 },
-  { "id": 45, "name": "芸者ねこ", "rarity": 1 },
-  { "id": 46, "name": "ねこジュラ", "rarity": 2 },
-  { "id": 47, "name": "ねこファイター", "rarity": 2 },
-  { "id": 48, "name": "ねこ海賊", "rarity": 2 },
-  { "id": 49, "name": "ねこ泥棒", "rarity": 2 },
-  { "id": 50, "name": "ねこ僧侶", "rarity": 2 },
-  { "id": 51, "name": "ねこ占い師", "rarity": 2 },
-  { "id": 52, "name": "ネコシャーマン", "rarity": 2 },
-  { "id": 53, "name": "エヴァンジェリスト", "rarity": 4 },
-  { "id": 54, "name": "10式戦車", "rarity": 1 },
-  { "id": 55, "name": "ネコ魔女", "rarity": 2 },
-  { "id": 56, "name": "ネコアーチャー", "rarity": 2 },
-  { "id": 57, "name": "ネコシュバリエ", "rarity": 4 },
-  { "id": 58, "name": "ネコ魔剣士", "rarity": 2 },
-  { "id": 59, "name": "ねこベビー", "rarity": 4 },
-  { "id": 60, "name": "ネコブ・ロンズ", "rarity": 2 },
-  { "id": 61, "name": "ねこ寿司", "rarity": 3 },
-  { "id": 62, "name": "ネコポン", "rarity": 1 },
-  { "id": 63, "name": "ネコ運動会", "rarity": 2 },
-  { "id": 64, "name": "剣士", "rarity": 2 },
-  { "id": 65, "name": "ウシ姫", "rarity": 2 },
-  { "id": 66, "name": "KHM48", "rarity": 4 },
-  { "id": 67, "name": "チビガウ", "rarity": 2 },
-  { "id": 68, "name": "執行者", "rarity": 3 },
-  { "id": 69, "name": "眠れるケリの美女", "rarity": 3 },
-  { "id": 70, "name": "ネコリーマン", "rarity": 2 },
-  { "id": 71, "name": "真田幸村", "rarity": 4 },
-  { "id": 72, "name": "前田慶次", "rarity": 4 },
-  { "id": 73, "name": "織田信長", "rarity": 4 },
-  { "id": 74, "name": "トナカイフィッシュ", "rarity": 2 },
-  { "id": 75, "name": "風神のウィンディ", "rarity": 4 },
-  { "id": 76, "name": "雷神のサンディア", "rarity": 4 },
-  { "id": 77, "name": "ドロイド", "rarity": 2 },
-  { "id": 78, "name": "ネコと宇宙", "rarity": 2 },
-  { "id": 79, "name": "にゃんこ成人", "rarity": 2 },
-  { "id": 80, "name": "吾輩は鬼である", "rarity": 2 },
-  { "id": 81, "name": "ひなにゃんこ", "rarity": 2 },
-  { "id": 82, "name": "ネコ忍者～青～", "rarity": 1 },
-  { "id": 83, "name": "地龍ソドム", "rarity": 4 },
-  { "id": 84, "name": "聖龍メギドラ", "rarity": 4 },
-  { "id": 85, "name": "竜騎士バルス", "rarity": 4 },
-  { "id": 86, "name": "神龍かむくら", "rarity": 4 },
-  { "id": 87, "name": "竜戦機ライデン", "rarity": 4 },
-  { "id": 88, "name": "ネコなわとび", "rarity": 2 },
-  { "id": 89, "name": "ニムエ", "rarity": 4 },
-  { "id": 90, "name": "猿王", "rarity": 4 },
-  { "id": 91, "name": "狂乱のネコ", "rarity": 3 },
-  { "id": 92, "name": "狂乱のタンクネコ", "rarity": 3 },
-  { "id": 93, "name": "狂乱のバトルネコ", "rarity": 3 },
-  { "id": 94, "name": "狂乱のキモネコ", "rarity": 3 },
-  { "id": 95, "name": "狂乱のウシネコ", "rarity": 3 },
-  { "id": 96, "name": "狂乱のネコノトリ", "rarity": 3 },
-  { "id": 97, "name": "狂乱のネコフィッシュ", "rarity": 3 },
-  { "id": 98, "name": "狂乱のネコトカゲ", "rarity": 3 },
-  { "id": 99, "name": "狂乱の巨神ネコ", "rarity": 3 },
-  { "id": 100, "name": "ネコ乙女", "rarity": 2 },
-  { "id": 101, "name": "弱酸性エル", "rarity": 1 },
-  { "id": 102, "name": "レッドマローン", "rarity": 1 },
-  { "id": 103, "name": "歌謡にゃんこ", "rarity": 1 },
-  { "id": 104, "name": "マジでコイしてる", "rarity": 2 },
-  { "id": 105, "name": "猿帝のクウ", "rarity": 4 },
-  { "id": 106, "name": "召し豚のカイ", "rarity": 4 },
-  { "id": 107, "name": "宝杖のカッパーマイン", "rarity": 4 },
-  { "id": 108, "name": "にゃんこ３兄弟", "rarity": 1 },
-  { "id": 109, "name": "マダム・ザ・花嫁", "rarity": 2 },
-  { "id": 110, "name": "セレス", "rarity": 2 },
-  { "id": 111, "name": "ノノ", "rarity": 2 },
-  { "id": 112, "name": "オルガ", "rarity": 2 },
-  { "id": 113, "name": "ノルン", "rarity": 2 },
-  { "id": 114, "name": "よいち", "rarity": 2 },
-  { "id": 115, "name": "セラム", "rarity": 2 },
-  { "id": 116, "name": "フウ", "rarity": 2 },
-  { "id": 117, "name": "アウラ", "rarity": 3 },
-  { "id": 118, "name": "レイ", "rarity": 3 },
-  { "id": 119, "name": "ワイバーン", "rarity": 4 },
-  { "id": 120, "name": "癒術士", "rarity": 1 },
-  { "id": 121, "name": "メルク", "rarity": 1 },
-  { "id": 122, "name": "女王様の休日", "rarity": 2 },
-  { "id": 123, "name": "マメマメにゃんこ", "rarity": 1 },
-  { "id": 124, "name": "伊達政宗", "rarity": 4 },
-  { "id": 125, "name": "武田信玄", "rarity": 4 },
-  { "id": 126, "name": "カラクリにゃんこ", "rarity": 2 },
-  { "id": 127, "name": "ネコフラワー", "rarity": 1 },
-  { "id": 128, "name": "うらめしにゃん", "rarity": 2 },
-  { "id": 129, "name": "金ネコ", "rarity": 3 },
-  { "id": 130, "name": "ウルフとウルルン", "rarity": 1 },
-  { "id": 131, "name": "ねねこ", "rarity": 3 },
-  { "id": 132, "name": "カンフーにゃんこＧ", "rarity": 2 },
-  { "id": 133, "name": "ヒカキン", "rarity": 1 },
-  { "id": 134, "name": "うらしまタロウ", "rarity": 4 },
-  { "id": 135, "name": "ツルの恩返し", "rarity": 4 },
-  { "id": 136, "name": "ももたろう", "rarity": 4 },
-  { "id": 137, "name": "かさじぞう", "rarity": 4 },
-  { "id": 138, "name": "かぐやひめ", "rarity": 4 },
-  { "id": 139, "name": "ネコンドー", "rarity": 1 },
-  { "id": 140, "name": "ふにゅふにゅネコ", "rarity": 1 },
-  { "id": 141, "name": "神様", "rarity": 1 },
-  { "id": 142, "name": "ネコチュートリアル", "rarity": 1 },
-  { "id": 143, "name": "ねこナース", "rarity": 4 },
-  { "id": 144, "name": "にゃんこ城Mini", "rarity": 3 },
-  { "id": 145, "name": "ねこガンマン", "rarity": 2 },
-  { "id": 146, "name": "たけうまねこ", "rarity": 2 },
-  { "id": 147, "name": "ブリキネコ", "rarity": 2 },
-  { "id": 148, "name": "ねこロッカー", "rarity": 2 },
-  { "id": 149, "name": "ねこ人魚", "rarity": 2 },
-  { "id": 150, "name": "窓辺の乙女ネコ", "rarity": 3 },
-  { "id": 151, "name": "ネコバーベル", "rarity": 3 },
-  { "id": 152, "name": "ネコスケート", "rarity": 3 },
-  { "id": 153, "name": "ネコトースター", "rarity": 3 },
-  { "id": 154, "name": "ねこフープ", "rarity": 2 },
-  { "id": 155, "name": "156-1", "rarity": 4 },
-  { "id": 156, "name": "ドラリー剣士", "rarity": 2 },
-  { "id": 157, "name": "ヌボボ", "rarity": 1 },
-  { "id": 158, "name": "上杉謙信", "rarity": 4 },
-  { "id": 159, "name": "冥界のカリファ", "rarity": 4 },
-  { "id": 160, "name": "ユーリンチー", "rarity": 3 },
-  { "id": 161, "name": "狂乱のケリ姫", "rarity": 4 },
-  { "id": 162, "name": "綾小路 翔", "rarity": 1 },
-  { "id": 163, "name": "早乙女 光", "rarity": 1 },
-  { "id": 164, "name": "西園寺 瞳", "rarity": 1 },
-  { "id": 165, "name": "星グランマニエ", "rarity": 1 },
-  { "id": 166, "name": "白鳥松竹梅", "rarity": 1 },
-  { "id": 167, "name": "ネコヤンキー", "rarity": 2 },
-  { "id": 168, "name": "アシルガ", "rarity": 4 },
-  { "id": 169, "name": "クビルガ", "rarity": 4 },
-  { "id": 170, "name": "テコルガ", "rarity": 4 },
-  { "id": 171, "name": "バララガ", "rarity": 4 },
-  { "id": 172, "name": "コニャンダム", "rarity": 1 },
-  { "id": 173, "name": "厨房マンボウ", "rarity": 3 },
-  { "id": 174, "name": "マンボ王", "rarity": 4 },
-  { "id": 175, "name": "にゃんぼう", "rarity": 1 },
-  { "id": 176, "name": "マシュマロにゃん", "rarity": 2 },
-  { "id": 177, "name": "覇龍ディオラムス", "rarity": 4 },
-  { "id": 178, "name": "極道にゃんこ", "rarity": 1 },
-  { "id": 179, "name": "タクヤとユキ", "rarity": 2 },
-  { "id": 180, "name": "謎の少女ユキ", "rarity": 4 },
-  { "id": 181, "name": "ゆきにゃん", "rarity": 1 },
-  { "id": 183, "name": "にゃんこカートR", "rarity": 2 },
-  { "id": 184, "name": "ミスターニンジャ", "rarity": 1 },
-  { "id": 185, "name": "ハルシュト", "rarity": 4 },
-  { "id": 186, "name": "コーネリア", "rarity": 4 },
-  { "id": 187, "name": "ユーヴェンス", "rarity": 4 },
-  { "id": 188, "name": "ミスティカ", "rarity": 4 },
-  { "id": 189, "name": "アロイス", "rarity": 3 },
-  { "id": 190, "name": "シトルイユ", "rarity": 3 },
-  { "id": 191, "name": "ティティ", "rarity": 1 },
-  { "id": 192, "name": "山岡実乃里", "rarity": 1 },
-  { "id": 193, "name": "中村奏絵", "rarity": 1 },
-  { "id": 194, "name": "アキラ", "rarity": 4 },
-  { "id": 195, "name": "西園寺メカ子", "rarity": 4 },
-  { "id": 196, "name": "キャットマンダディ", "rarity": 4 },
-  { "id": 197, "name": "サイキックネコ", "rarity": 2 },
-  { "id": 198, "name": "ねこ陰陽師", "rarity": 2 },
-  { "id": 199, "name": "ネコサーファー", "rarity": 3 },
-  { "id": 200, "name": "メタルネコ", "rarity": 3 },
-  { "id": 201, "name": "ドラムメニャー", "rarity": 2 },
-  { "id": 202, "name": "ネコ小籠包", "rarity": 1 },
-  { "id": 203, "name": "カチカチヤマンズ", "rarity": 4 },
-  { "id": 204, "name": "アイルー", "rarity": 1 },
-  { "id": 205, "name": "シェリア【キリン】", "rarity": 1 },
-  { "id": 206, "name": "リオレウス", "rarity": 1 },
-  { "id": 207, "name": "リオレイア", "rarity": 1 },
-  { "id": 208, "name": "キリンネコ", "rarity": 1 },
-  { "id": 209, "name": "ちびネコ", "rarity": 1 },
-  { "id": 210, "name": "ちびタンクネコ", "rarity": 1 },
-  { "id": 211, "name": "ちびバトルネコ", "rarity": 1 },
-  { "id": 212, "name": "ホワイトラビット", "rarity": 4 },
-  { "id": 213, "name": "にゃんこバーガー", "rarity": 1 },
-  { "id": 214, "name": "百太郎", "rarity": 2 },
-  { "id": 215, "name": "マルコ", "rarity": 2 },
-  { "id": 216, "name": "ターマ", "rarity": 2 },
-  { "id": 217, "name": "エリ", "rarity": 2 },
-  { "id": 218, "name": "フィオ", "rarity": 2 },
-  { "id": 219, "name": "SV-001", "rarity": 3 },
-  { "id": 220, "name": "アレン・オニール", "rarity": 3 },
-  { "id": 221, "name": "マーズピープル", "rarity": 2 },
-  { "id": 222, "name": "ヒュージハーミット", "rarity": 4 },
-  { "id": 223, "name": "ジュピターキング", "rarity": 4 },
-  { "id": 224, "name": "モーデン元帥", "rarity": 4 },
-  { "id": 225, "name": "ハイ・ドゥ", "rarity": 4 },
-  { "id": 226, "name": "呪術師デスピエロ", "rarity": 4 },
-  { "id": 227, "name": "にゃんぷきん", "rarity": 2 },
-  { "id": 228, "name": "ハロウィンねねこ", "rarity": 3 },
-  { "id": 229, "name": "ウィンディスイート", "rarity": 4 },
-  { "id": 230, "name": "デビルサンディア", "rarity": 4 },
-  { "id": 231, "name": "おでん", "rarity": 1 },
-  { "id": 232, "name": "光の神徒ヴァルキリー", "rarity": 2 },
-  { "id": 233, "name": "神徒ブリュンヒルデ", "rarity": 2 },
-  { "id": 234, "name": "神徒スルズ", "rarity": 2 },
-  { "id": 235, "name": "豊穣の女神フレイヤ", "rarity": 3 },
-  { "id": 236, "name": "軍神オーディン", "rarity": 4 },
-  { "id": 237, "name": "おかめはちもくネコ", "rarity": 3 },
-  { "id": 238, "name": "ボンボンネコ", "rarity": 3 },
-  { "id": 239, "name": "見習いスニャイパー", "rarity": 3 },
-  { "id": 240, "name": "トゲルガ", "rarity": 4 },
-  { "id": 241, "name": "雪だるまのスノーカイ", "rarity": 4 },
-  { "id": 242, "name": "サンタのメリークウ", "rarity": 4 },
-  { "id": 243, "name": "聖夜のシスターカッパー", "rarity": 4 },
-  { "id": 244, "name": "ネコのプレゼント", "rarity": 2 },
-  { "id": 245, "name": "ちびキモネコ", "rarity": 1 },
-  { "id": 246, "name": "ちびウシネコ", "rarity": 1 },
-  { "id": 247, "name": "ちびネコノトリ", "rarity": 1 },
-  { "id": 248, "name": "死にたてにゃんこ", "rarity": 1 },
-  { "id": 249, "name": "剣士", "rarity": 2 },
-  { "id": 250, "name": "騎馬兵", "rarity": 2 },
-  { "id": 251, "name": "アシュラ", "rarity": 2 },
-  { "id": 252, "name": "バトルバルーン", "rarity": 2 },
-  { "id": 253, "name": "ドラゴンライダー", "rarity": 2 },
-  { "id": 254, "name": "プリティキャット", "rarity": 2 },
-  { "id": 255, "name": "サイクロプス", "rarity": 2 },
-  { "id": 256, "name": "ゴーレム", "rarity": 1 },
-  { "id": 257, "name": "天空神ゼウス", "rarity": 4 },
-  { "id": 258, "name": "守護神アヌビス", "rarity": 4 },
-  { "id": 259, "name": "美女神アフロディーテ", "rarity": 4 },
-  { "id": 260, "name": "ネコウェイ", "rarity": 3 },
-  { "id": 261, "name": "天誅ハヤブサ", "rarity": 4 },
-  { "id": 262, "name": "ニャームス", "rarity": 1 },
-  { "id": 263, "name": "ポチ", "rarity": 1 },
-  { "id": 264, "name": "クロミ", "rarity": 1 },
-  { "id": 265, "name": "せつ子", "rarity": 1 },
-  { "id": 266, "name": "ねば～る君", "rarity": 1 },
-  { "id": 267, "name": "ネコタイフーン", "rarity": 3 },
-  { "id": 268, "name": "ネコずきんミーニャ", "rarity": 1 },
-  { "id": 269, "name": "幼獣ガオ", "rarity": 4 },
-  { "id": 270, "name": "狂乱のユキ", "rarity": 4 },
-  { "id": 271, "name": "太陽神アマテラス", "rarity": 4 },
-  { "id": 272, "name": "繁栄神ガネーシャ", "rarity": 4 },
-  { "id": 273, "name": "チアにゃんこ", "rarity": 3 },
-  { "id": 274, "name": "トロピカルカリファ", "rarity": 4 },
-  { "id": 275, "name": "真夏のホワイトラビット", "rarity": 4 },
-  { "id": 276, "name": "夏色ねねこ", "rarity": 3 },
-  { "id": 277, "name": "なめこ", "rarity": 2 },
-  { "id": 278, "name": "なめこタンク", "rarity": 1 },
-  { "id": 279, "name": "白ネコなめこ", "rarity": 1 },
-  { "id": 280, "name": "要塞なめこ", "rarity": 1 },
-  { "id": 281, "name": "ふてニャン", "rarity": 2 },
-  { "id": 282, "name": "ネコ阿波踊り", "rarity": 2 },
-  { "id": 283, "name": "猫飯拳パイパイ", "rarity": 4 },
-  { "id": 284, "name": "ネコ特急", "rarity": 3 },
-  { "id": 285, "name": "286-1", "rarity": 1 },
-  { "id": 286, "name": "閃雷機兵レイ", "rarity": 4 },
-  { "id": 287, "name": "ネコ球児", "rarity": 3 },
-  { "id": 288, "name": "鹿目まどか", "rarity": 4 },
-  { "id": 289, "name": "暁美ほむら", "rarity": 4 },
-  { "id": 290, "name": "美樹さやか", "rarity": 4 },
-  { "id": 291, "name": "巴マミ", "rarity": 4 },
-  { "id": 292, "name": "佐倉杏子", "rarity": 4 },
-  { "id": 293, "name": "キュゥべえ", "rarity": 3 },
-  { "id": 294, "name": "ネコまどか", "rarity": 2 },
-  { "id": 295, "name": "ネコほむら", "rarity": 2 },
-  { "id": 296, "name": "ネコさやか", "rarity": 2 },
-  { "id": 297, "name": "ネコマミ", "rarity": 2 },
-  { "id": 298, "name": "ネコ杏子", "rarity": 2 },
-  { "id": 299, "name": "ちびまどか", "rarity": 2 },
-  { "id": 300, "name": "ちびほむら", "rarity": 1 },
-  { "id": 301, "name": "ネコキュゥべえ", "rarity": 2 },
-  { "id": 302, "name": "ネコアイスゴースト", "rarity": 4 },
-  { "id": 303, "name": "ネコ屋台", "rarity": 2 },
-  { "id": 304, "name": "帝国陸軍カタパルズ", "rarity": 4 },
-  { "id": 305, "name": "古代軍船ガレーズ", "rarity": 4 },
-  { "id": 306, "name": "飛空襲撃ボンバーズ", "rarity": 4 },
-  { "id": 307, "name": "ネコジャンパー", "rarity": 3 },
-  { "id": 308, "name": "ネコバサミ", "rarity": 2 },
-  { "id": 309, "name": "ネコ博士", "rarity": 1 },
-  { "id": 310, "name": "ネコナースキャンドル", "rarity": 4 },
-  { "id": 311, "name": "ちびネコフィッシュ", "rarity": 1 },
-  { "id": 312, "name": "ちびネコトカゲ", "rarity": 1 },
-  { "id": 313, "name": "ちび巨神ネコ", "rarity": 1 },
-  { "id": 314, "name": "大掃除ねねこ", "rarity": 3 },
-  { "id": 315, "name": "ピコ太郎", "rarity": 2 },
-  { "id": 316, "name": "海王神ポセイドン", "rarity": 4 },
-  { "id": 317, "name": "CPAC", "rarity": 1 },
-  { "id": 318, "name": "巫女姫ミタマ", "rarity": 4 },
-  { "id": 319, "name": "殺意のネコ", "rarity": 2 },
-  { "id": 320, "name": "321_1", "rarity": 2 },
-  { "id": 321, "name": "ナゾウサギ", "rarity": 1 },
-  { "id": 322, "name": "さるかに合戦", "rarity": 4 },
-  { "id": 323, "name": "宮木武蔵", "rarity": 1 },
-  { "id": 324, "name": "ネコストーン", "rarity": 2 },
-  { "id": 325, "name": "ネコボクサー", "rarity": 2 },
-  { "id": 326, "name": "メビウス", "rarity": 4 },
-  { "id": 327, "name": "ベリアル", "rarity": 3 },
-  { "id": 328, "name": "ハッピー100", "rarity": 1 },
-  { "id": 329, "name": "ネコエッグ", "rarity": 2 },
-  { "id": 330, "name": "上杉謙信・春", "rarity": 4 },
-  { "id": 331, "name": "道化師エッグダック", "rarity": 4 },
-  { "id": 332, "name": "イースターねねこ", "rarity": 3 },
-  { "id": 333, "name": "黒獣ガオウ", "rarity": 4 },
-  { "id": 334, "name": "狐娘ヒメユリ", "rarity": 4 },
-  { "id": 335, "name": "人魚娘ルリィ", "rarity": 4 },
-  { "id": 336, "name": "ミイラ娘レイカ", "rarity": 4 },
-  { "id": 337, "name": "プリンセスケリ姫号", "rarity": 4 },
-  { "id": 338, "name": "今川義元", "rarity": 4 },
-  { "id": 339, "name": "340_1", "rarity": 1 },
-  { "id": 340, "name": "赤髪のゆきにゃん", "rarity": 2 },
-  { "id": 341, "name": "失われし世界のユキ", "rarity": 4 },
-  { "id": 342, "name": "ネコまねき", "rarity": 1 },
-  { "id": 343, "name": "なめネコ", "rarity": 2 },
-  { "id": 344, "name": "オルトス", "rarity": 3 },
-  { "id": 345, "name": "ミシェリア", "rarity": 4 },
-  { "id": 346, "name": "とどめき", "rarity": 4 },
-  { "id": 347, "name": "ぐでたまにゃんこ", "rarity": 1 },
-  { "id": 348, "name": "ぐでたまプレート", "rarity": 2 },
-  { "id": 349, "name": "ぐでぐでプリン", "rarity": 3 },
-  { "id": 350, "name": "ニセたま軍団", "rarity": 4 },
-  { "id": 351, "name": "双掌星のシシル＆コマリ", "rarity": 4 },
-  { "id": 352, "name": "ネコ仙人", "rarity": 1 },
-  { "id": 353, "name": "チョコレート", "rarity": 2 },
-  { "id": 354, "name": "常夏の果実カイ", "rarity": 4 },
-  { "id": 355, "name": "観測兵器ガリレオ", "rarity": 4 },
-  { "id": 356, "name": "ノラ", "rarity": 1 },
-  { "id": 357, "name": "狼娘ディル", "rarity": 4 },
-  { "id": 358, "name": "ゾンビ娘ヴェルヴェーヌ", "rarity": 4 },
-  { "id": 359, "name": "火の精霊メララ", "rarity": 4 },
-  { "id": 360, "name": "水の精霊ミズリィ", "rarity": 4 },
-  { "id": 361, "name": "風の精霊エアル", "rarity": 4 },
-  { "id": 362, "name": "セイバー", "rarity": 4 },
-  { "id": 363, "name": "遠坂 凛", "rarity": 4 },
-  { "id": 364, "name": "イリヤスフィール", "rarity": 4 },
-  { "id": 365, "name": "アーチャー", "rarity": 4 },
-  { "id": 366, "name": "ランサー", "rarity": 4 },
-  { "id": 367, "name": "ライダー", "rarity": 4 },
-  { "id": 368, "name": "ギルガメッシュ", "rarity": 4 },
-  { "id": 369, "name": "ネコセイバー", "rarity": 1 },
-  { "id": 370, "name": "ネコ桜", "rarity": 2 },
-  { "id": 371, "name": "ネコ凛", "rarity": 2 },
-  { "id": 372, "name": "ネコイリヤ", "rarity": 2 },
-  { "id": 373, "name": "ちび士郎", "rarity": 2 },
-  { "id": 374, "name": "ちび桜", "rarity": 1 },
-  { "id": 375, "name": "記念ネコ", "rarity": 1 },
-  { "id": 376, "name": "ネコ探査機", "rarity": 2 },
-  { "id": 377, "name": "ネコフェンシング", "rarity": 3 },
-  { "id": 378, "name": "黒無垢のミタマ", "rarity": 4 },
-  { "id": 379, "name": "ネコバレー", "rarity": 2 },
-  { "id": 380, "name": "幼傑ダルターニャ", "rarity": 4 },
-  { "id": 381, "name": "ねこ農家", "rarity": 1 },
-  { "id": 382, "name": "ガラスネコ", "rarity": 2 },
-  { "id": 383, "name": "謎仮面のウララー", "rarity": 1 },
-  { "id": 384, "name": "氷上聡里＆ネコ", "rarity": 1 },
-  { "id": 385, "name": "矢部明雄", "rarity": 2 },
-  { "id": 386, "name": "虹谷彩理", "rarity": 2 },
-  { "id": 387, "name": "紺野美崎", "rarity": 2 },
-  { "id": 388, "name": "片桐恋", "rarity": 2 },
-  { "id": 389, "name": "猫塚かりん", "rarity": 2 },
-  { "id": 390, "name": "早川あおい", "rarity": 3 },
-  { "id": 391, "name": "橘みずき", "rarity": 3 },
-  { "id": 392, "name": "六道聖", "rarity": 3 },
-  { "id": 393, "name": "新島早紀", "rarity": 4 },
-  { "id": 394, "name": "星井スバル", "rarity": 4 },
-  { "id": 395, "name": "小山雅", "rarity": 4 },
-  { "id": 396, "name": "古龍ガングリオン", "rarity": 4 },
-  { "id": 397, "name": "風隼さくら", "rarity": 4 },
-  { "id": 398, "name": "ハニトンくん", "rarity": 1 },
-  { "id": 399, "name": "めんトリ", "rarity": 2 },
-  { "id": 400, "name": "イモウト", "rarity": 1 },
-  { "id": 401, "name": "雷の精霊ボルト", "rarity": 4 },
-  { "id": 402, "name": "ちびシンジ", "rarity": 2 },
-  { "id": 403, "name": "ネコゲンドウ＆ネコ冬月", "rarity": 1 },
-  { "id": 404, "name": "ネコキリン初号機", "rarity": 2 },
-  { "id": 405, "name": "ちびカヲル", "rarity": 1 },
-  { "id": 406, "name": "ネコレイ", "rarity": 2 },
-  { "id": 407, "name": "ネコアスカ", "rarity": 2 },
-  { "id": 408, "name": "ネコマリ", "rarity": 2 },
-  { "id": 409, "name": "ちびレイ", "rarity": 3 },
-  { "id": 410, "name": "ちびアスカ", "rarity": 3 },
-  { "id": 411, "name": "ちびマリ", "rarity": 3 },
-  { "id": 412, "name": "エヴァ零号機", "rarity": 4 },
-  { "id": 413, "name": "エヴァ初号機", "rarity": 4 },
-  { "id": 414, "name": "エヴァ２号機", "rarity": 4 },
-  { "id": 415, "name": "ネコシンジ", "rarity": 4 },
-  { "id": 416, "name": "ゼロムーンオペレーターズ", "rarity": 4 },
-  { "id": 417, "name": "温泉天国テルマエ", "rarity": 4 },
-  { "id": 418, "name": "狂乱のもねこ", "rarity": 1 },
-  { "id": 419, "name": "ポコタ", "rarity": 2 },
-  { "id": 420, "name": "オビス", "rarity": 2 },
-  { "id": 421, "name": "ココ", "rarity": 2 },
-  { "id": 422, "name": "太秦萌＆ネコ", "rarity": 2 },
-  { "id": 423, "name": "松賀咲＆ネコ", "rarity": 2 },
-  { "id": 424, "name": "小野ミサ＆ネコ", "rarity": 2 },
-  { "id": 425, "name": "太秦麗＆ネコ", "rarity": 1 },
-  { "id": 426, "name": "ぶんぶんネコライダー", "rarity": 1 },
-  { "id": 427, "name": "ネコクエスト", "rarity": 4 },
-  { "id": 428, "name": "そうまにゃん", "rarity": 2 },
-  { "id": 429, "name": "オタネコギーク", "rarity": 3 },
-  { "id": 430, "name": "ぐでネコマシン", "rarity": 4 },
-  { "id": 431, "name": "亡者探偵ヴィグラー", "rarity": 4 },
-  { "id": 432, "name": "433_1", "rarity": 2 },
-  { "id": 433, "name": "434_1", "rarity": 1 },
-  { "id": 434, "name": "白にゃんこ剣士", "rarity": 1 },
-  { "id": 435, "name": "ちびネコヴァルキリー", "rarity": 4 },
-  { "id": 436, "name": "ノビルガ", "rarity": 4 },
-  { "id": 437, "name": "激・神さま", "rarity": 1 },
-  { "id": 438, "name": "灼熱のビーチクウ", "rarity": 4 },
-  { "id": 439, "name": "時空神クロノス", "rarity": 4 },
-  { "id": 440, "name": "ベベ", "rarity": 4 },
-  { "id": 441, "name": "影傑ダークダルターニャ", "rarity": 4 },
-  { "id": 442, "name": "子連れにゃんこ", "rarity": 2 },
-  { "id": 443, "name": "戦隊ドリラ", "rarity": 3 },
-  { "id": 444, "name": "戦隊ウチコンガ", "rarity": 3 },
-  { "id": 445, "name": "戦隊チョキンドス", "rarity": 3 },
-  { "id": 446, "name": "戦隊ショベリン", "rarity": 3 },
-  { "id": 447, "name": "戦隊チャッソ", "rarity": 3 },
-  { "id": 448, "name": "宮本武蔵", "rarity": 5 },
-  { "id": 449, "name": "聖会長ジャンヌダルク", "rarity": 5 },
-  { "id": 450, "name": "天城龍バベル", "rarity": 5 },
-  { "id": 451, "name": "うしわか丸", "rarity": 5 },
-  { "id": 452, "name": "古代ネコ", "rarity": 2 },
-  { "id": 453, "name": "きたろう", "rarity": 1 },
-  { "id": 454, "name": "目玉おやじ", "rarity": 1 },
-  { "id": 455, "name": "ワンダー・モモコ", "rarity": 5 },
-  { "id": 456, "name": "間桐 桜", "rarity": 4 },
-  { "id": 457, "name": "ネコ士郎", "rarity": 1 },
-  { "id": 458, "name": "アーチャーネコ", "rarity": 2 },
-  { "id": 459, "name": "ネコライダー", "rarity": 2 },
-  { "id": 460, "name": "ネコ言峰＆ネコギルガメッシュ", "rarity": 3 },
-  { "id": 461, "name": "レジェルガ", "rarity": 5 },
-  { "id": 462, "name": "フィリバスターX", "rarity": 1 },
-  { "id": 463, "name": "終末兵器ムー", "rarity": 5 },
-  { "id": 464, "name": "土偶戦士ドグ丸", "rarity": 1 },
-  { "id": 465, "name": "majimeow（仮）", "rarity": 2 },
-  { "id": 466, "name": "ブラックゼウス", "rarity": 5 },
-  { "id": 467, "name": "スーパーゼウス", "rarity": 4 },
-  { "id": 468, "name": "聖フェニックス", "rarity": 4 },
-  { "id": 469, "name": "スーパーデビル", "rarity": 4 },
-  { "id": 470, "name": "サタンマリア", "rarity": 4 },
-  { "id": 471, "name": "ヘラクライスト", "rarity": 4 },
-  { "id": 472, "name": "ネロ魔身", "rarity": 3 },
-  { "id": 473, "name": "ヤマト王子", "rarity": 2 },
-  { "id": 474, "name": "十字架天使", "rarity": 1 },
-  { "id": 475, "name": "ネコ若神子", "rarity": 1 },
-  { "id": 476, "name": "ネコデビル", "rarity": 1 },
-  { "id": 477, "name": "ネコの助", "rarity": 1 },
-  { "id": 478, "name": "幻の精霊ルミナ", "rarity": 5 },
-  { "id": 479, "name": "グミネコ", "rarity": 1 },
-  { "id": 480, "name": "ねこ娘", "rarity": 2 },
-  { "id": 481, "name": "超越科学者ヘヴン博士", "rarity": 5 },
-  { "id": 482, "name": "幸せを願った少年ソウマ", "rarity": 4 },
-  { "id": 483, "name": "カノとソウマ", "rarity": 2 },
-  { "id": 484, "name": "黒ちびネコヴァルキリー", "rarity": 4 },
-  { "id": 485, "name": "カレット", "rarity": 4 },
-  { "id": 486, "name": "ひな", "rarity": 3 },
-  { "id": 487, "name": "エヴァ８号機", "rarity": 4 },
-  { "id": 488, "name": "空中艦艇ネコヴンダー", "rarity": 4 },
-  { "id": 489, "name": "ちびミサト", "rarity": 3 },
-  { "id": 490, "name": "ちびリツコ", "rarity": 3 },
-  { "id": 491, "name": "ちびアヤナミレイ(仮称)", "rarity": 3 },
-  { "id": 492, "name": "493_1", "rarity": 2 },
-  { "id": 493, "name": "創造神ガイア", "rarity": 5 },
-  { "id": 494, "name": "潮風のセーラーカッパー", "rarity": 4 },
-  { "id": 495, "name": "ネコマタドール", "rarity": 2 },
-  { "id": 496, "name": "成田甲斐", "rarity": 4 },
-  { "id": 497, "name": "498_1", "rarity": 1 },
-  { "id": 498, "name": "499_1", "rarity": 1 },
-  { "id": 499, "name": "500_1", "rarity": 1 },
-  { "id": 500, "name": "501_1", "rarity": 1 },
-  { "id": 501, "name": "ネコ兄弟S", "rarity": 2 },
-  { "id": 502, "name": "英雄令嬢メルシュ", "rarity": 4 },
-  { "id": 503, "name": "ネコ２Ｄ", "rarity": 2 },
-  { "id": 504, "name": "おやじネコ(店主)", "rarity": 1 },
-  { "id": 505, "name": "角龍グラディオス", "rarity": 4 },
-  { "id": 506, "name": "アイウォルツ", "rarity": 4 },
-  { "id": 507, "name": "スーパーにゃん", "rarity": 2 },
-  { "id": 508, "name": "ネコリュウ", "rarity": 2 },
-  { "id": 509, "name": "ネコ春麗", "rarity": 1 },
-  { "id": 510, "name": "豪鬼", "rarity": 5 },
-  { "id": 511, "name": "リュウ", "rarity": 4 },
-  { "id": 512, "name": "春麗", "rarity": 4 },
-  { "id": 513, "name": "ガイル", "rarity": 4 },
-  { "id": 514, "name": "ザンギエフ", "rarity": 4 },
-  { "id": 515, "name": "ブランカ", "rarity": 4 },
-  { "id": 516, "name": "ダルシム", "rarity": 4 },
-  { "id": 517, "name": "ケン", "rarity": 4 },
-  { "id": 518, "name": "ゴウキリン", "rarity": 2 },
-  { "id": 519, "name": "ラスヴォース", "rarity": 4 },
-  { "id": 520, "name": "ネコ七福神", "rarity": 3 },
-  { "id": 521, "name": "ネコメデューサ", "rarity": 2 },
-  { "id": 522, "name": "泉のネコ女神", "rarity": 3 },
-  { "id": 523, "name": "ネコ武闘家", "rarity": 2 },
-  { "id": 524, "name": "ソラカラちゃん", "rarity": 2 },
-  { "id": 525, "name": "きんたろう", "rarity": 4 },
-  { "id": 526, "name": "冬天使のシシル＆コマリ", "rarity": 4 },
-  { "id": 527, "name": "ネコスライム", "rarity": 2 },
-  { "id": 528, "name": "ネコサック", "rarity": 2 },
-  { "id": 529, "name": "厄災の子キャスリィ", "rarity": 4 },
-  { "id": 530, "name": "エルメ", "rarity": 4 },
-  { "id": 531, "name": "ネコックマ", "rarity": 2 },
-  { "id": 532, "name": "フェンリルとウルス", "rarity": 1 },
-  { "id": 533, "name": "マッドシューター・サキ", "rarity": 4 },
-  { "id": 534, "name": "冥界神ハデス", "rarity": 4 },
-  { "id": 535, "name": "初音ミク", "rarity": 4 },
-  { "id": 536, "name": "桜ミク", "rarity": 4 },
-  { "id": 537, "name": "鏡音リン＆レン", "rarity": 4 },
-  { "id": 538, "name": "ネコミク", "rarity": 2 },
-  { "id": 539, "name": "ラガーにゃん", "rarity": 2 },
-  { "id": 540, "name": "ネコU.F.O.", "rarity": 2 },
-  { "id": 541, "name": "ネコヤキソバン", "rarity": 1 },
-  { "id": 542, "name": "ネコ少年", "rarity": 1 },
-  { "id": 543, "name": "禍根の魔女キャスリィ", "rarity": 4 },
-  { "id": 544, "name": "京坂七穂", "rarity": 5 },
-  { "id": 545, "name": "ネコファントム", "rarity": 2 },
-  { "id": 546, "name": "オイルガ", "rarity": 4 },
-  { "id": 547, "name": "白夜姫のレイ", "rarity": 4 },
-  { "id": 548, "name": "第４の使徒", "rarity": 4 },
-  { "id": 549, "name": "第６の使徒", "rarity": 4 },
-  { "id": 550, "name": "第１０の使徒", "rarity": 4 },
-  { "id": 551, "name": "第９の使徒", "rarity": 4 },
-  { "id": 552, "name": "ネコカヲル", "rarity": 2 },
-  { "id": 553, "name": "ネコベーカリー", "rarity": 2 },
-  { "id": 554, "name": "達人ウリル", "rarity": 1 },
-  { "id": 555, "name": "シャーマンカーン", "rarity": 4 },
-  { "id": 556, "name": "騎神アリババ", "rarity": 3 },
-  { "id": 557, "name": "天子男ジャック", "rarity": 1 },
-  { "id": 558, "name": "レアガチャネコ", "rarity": 1 },
-  { "id": 559, "name": "地獄警官エマ", "rarity": 4 },
-  { "id": 560, "name": "巡音ルカ", "rarity": 4 },
-  { "id": 561, "name": "MEIKO＆ネコ", "rarity": 3 },
-  { "id": 562, "name": "ネコルカ", "rarity": 2 },
-  { "id": 563, "name": "アクアシューター・サキ", "rarity": 4 },
-  { "id": 564, "name": "ネコルガの夏", "rarity": 4 },
-  { "id": 565, "name": "日焼けネコ", "rarity": 3 },
-  { "id": 566, "name": "救命にゃんこ", "rarity": 3 },
-  { "id": 567, "name": "チビクロプスネコタマゴ", "rarity": 1 },
-  { "id": 568, "name": "イディ:N", "rarity": 1 },
-  { "id": 569, "name": "石の精霊ゴロー", "rarity": 4 },
-  { "id": 570, "name": "竜騎士スカルバルス", "rarity": 4 },
-  { "id": 571, "name": "エドモンド本田", "rarity": 4 },
-  { "id": 572, "name": "バイソン", "rarity": 4 },
-  { "id": 573, "name": "バルログ", "rarity": 4 },
-  { "id": 574, "name": "サガット", "rarity": 4 },
-  { "id": 575, "name": "ベガ", "rarity": 4 },
-  { "id": 576, "name": "ネコモンド本田", "rarity": 3 },
-  { "id": 577, "name": "ネコバイソン", "rarity": 2 },
-  { "id": 578, "name": "ネコバルログ", "rarity": 2 },
-  { "id": 579, "name": "ネコサガット", "rarity": 2 },
-  { "id": 580, "name": "ネコベガ", "rarity": 2 },
-  { "id": 581, "name": "ごろにゃん", "rarity": 2 },
-  { "id": 582, "name": "初音ミク マジカルミライ2020大阪", "rarity": 4 },
-  { "id": 583, "name": "初音ミク マジカルミライ2020東京", "rarity": 4 },
-  { "id": 584, "name": "前田サンタ慶次", "rarity": 4 },
-  { "id": 585, "name": "幼獣ガル", "rarity": 4 },
-  { "id": 586, "name": "ネコ王子", "rarity": 5 },
-  { "id": 587, "name": "恋女神ショコラディーテ", "rarity": 4 },
-  { "id": 588, "name": "初恋令嬢メルシュ", "rarity": 4 },
-  { "id": 589, "name": "バレンタインねねこ", "rarity": 3 },
-  { "id": 590, "name": "雪ミク 2021", "rarity": 4 },
-  { "id": 591, "name": "KAITO＆ネコ", "rarity": 3 },
-  { "id": 592, "name": "ネコリン", "rarity": 2 },
-  { "id": 593, "name": "ネコレン", "rarity": 2 },
-  { "id": 594, "name": "空中商会コロンブス", "rarity": 4 },
-  { "id": 595, "name": "春龍かむくら", "rarity": 4 },
-  { "id": 596, "name": "早乙女乱馬(男)", "rarity": 4 },
-  { "id": 597, "name": "天道あかね", "rarity": 4 },
-  { "id": 598, "name": "響良牙(ブタ)", "rarity": 4 },
-  { "id": 599, "name": "シャンプー(猫)", "rarity": 4 },
-  { "id": 600, "name": "ムース(アヒル)", "rarity": 4 },
-  { "id": 601, "name": "八宝斉", "rarity": 3 },
-  { "id": 602, "name": "久遠寺右京(男装)", "rarity": 3 },
-  { "id": 603, "name": "九能帯刀(道着)", "rarity": 3 },
-  { "id": 604, "name": "ネコ乱馬(男)", "rarity": 2 },
-  { "id": 605, "name": "ネコあかね", "rarity": 2 },
-  { "id": 606, "name": "ネコパンダ", "rarity": 1 },
-  { "id": 607, "name": "冒険家カンナ", "rarity": 4 },
-  { "id": 608, "name": "ネコウエハース", "rarity": 1 },
-  { "id": 609, "name": "黒獣ガルディアン", "rarity": 4 },
-  { "id": 610, "name": "金塊ネコ", "rarity": 1 },
-  { "id": 611, "name": "ネコゴジラ", "rarity": 2 },
-  { "id": 612, "name": "ネコ王女", "rarity": 4 },
-  { "id": 613, "name": "古神面ドロン", "rarity": 1 },
-  { "id": 614, "name": "渚のかぐやひめ", "rarity": 4 },
-  { "id": 615, "name": "カブトネコ", "rarity": 1 },
-  { "id": 616, "name": "クワガタネコ", "rarity": 1 },
-  { "id": 617, "name": "召喚少年サトル", "rarity": 4 },
-  { "id": 618, "name": "天草四郎", "rarity": 4 },
-  { "id": 619, "name": "妖賢女リリン", "rarity": 4 },
-  { "id": 620, "name": "邪龍ヘヴィジャーク", "rarity": 4 },
-  { "id": 621, "name": "悪魔研究家", "rarity": 2 },
-  { "id": 622, "name": "ジャガンドーJr", "rarity": 1 },
-  { "id": 623, "name": "ネコハーメルン", "rarity": 2 },
-  { "id": 624, "name": "熱血硬派くにおくん", "rarity": 4 },
-  { "id": 625, "name": "オコルガ", "rarity": 4 },
-  { "id": 626, "name": "ネコキリンモドキ", "rarity": 1 },
-  { "id": 627, "name": "ネコノトリッキー", "rarity": 1 },
-  { "id": 628, "name": "ネコノドラゴーン", "rarity": 1 },
-  { "id": 629, "name": "洗脳されしネコ", "rarity": 3 },
-  { "id": 630, "name": "ネコ書道", "rarity": 2 },
-  { "id": 631, "name": "闇の精霊ヤミィ", "rarity": 4 },
-  { "id": 632, "name": "超竜戦機デス・トロイ", "rarity": 4 },
-  { "id": 633, "name": "舌切りすずめ", "rarity": 4 },
-  { "id": 634, "name": "白騎士キュクロプス", "rarity": 4 },
-  { "id": 635, "name": "100万ドルのネコ", "rarity": 1 },
-  { "id": 636, "name": "洗脳されしタンクネコ", "rarity": 3 },
-  { "id": 637, "name": "シャオチョン＆ネコ", "rarity": 1 },
-  { "id": 638, "name": "ナナ＆ネコ", "rarity": 2 },
-  { "id": 639, "name": "エミリア＆ネコ", "rarity": 2 },
-  { "id": 640, "name": "ジェアー＆ネコ", "rarity": 1 },
-  { "id": 641, "name": "踊り子イズ", "rarity": 4 },
-  { "id": 642, "name": "堕天神ルシファー", "rarity": 4 },
-  { "id": 643, "name": "ネコ超人", "rarity": 0 },
-  { "id": 644, "name": "白い恋人メカ子", "rarity": 4 },
-  { "id": 645, "name": "洗脳されしバトルネコ", "rarity": 3 },
-  { "id": 646, "name": "爆竹ネコ", "rarity": 1 },
-  { "id": 647, "name": "狩猟娘テルン", "rarity": 4 },
-  { "id": 648, "name": "恋番長・鬼にゃんま", "rarity": 4 },
-  { "id": 649, "name": "服部半蔵", "rarity": 4 },
-  { "id": 650, "name": "幼馴染にゃん子", "rarity": 1 },
-  { "id": 651, "name": "おてんばネコライオン", "rarity": 1 },
-  { "id": 652, "name": "ネコクバンケシ", "rarity": 1 },
-  { "id": 653, "name": "古獣ナーラ", "rarity": 1 },
-  { "id": 654, "name": "洗脳されしキモネコ", "rarity": 3 },
-  { "id": 655, "name": "氷の精霊フリズ", "rarity": 4 },
-  { "id": 656, "name": "古びたタマゴ:N001", "rarity": 1 },
-  { "id": 657, "name": "悲嘆の踊り子イズ", "rarity": 4 },
-  { "id": 658, "name": "古びたタマゴ:N101", "rarity": 2 },
-  { "id": 659, "name": "古びたタマゴ:N102", "rarity": 2 },
-  { "id": 660, "name": "海龍ダライアサン", "rarity": 4 },
-  { "id": 661, "name": "祝福神クロノス", "rarity": 4 },
-  { "id": 662, "name": "洗脳されしウシネコ", "rarity": 3 },
-  { "id": 663, "name": "古びたタマゴ:N103", "rarity": 2 },
-  { "id": 664, "name": "古びたタマゴ:N104", "rarity": 2 },
-  { "id": 665, "name": "古びたタマゴ:N201", "rarity": 1 },
-  { "id": 666, "name": "ナイトビーチリリン", "rarity": 4 },
-  { "id": 667, "name": "洗脳されしネコノトリ", "rarity": 3 },
-  { "id": 668, "name": "ネコ天狗", "rarity": 4 },
-  { "id": 669, "name": "古びたタマゴ:N003", "rarity": 1 },
-  { "id": 670, "name": "古びたタマゴ:N202", "rarity": 1 },
-  { "id": 671, "name": "早乙女らんま(レオタード)", "rarity": 4 },
-  { "id": 672, "name": "早乙女玄馬(パンダ)", "rarity": 3 },
-  { "id": 673, "name": "ネコチーター", "rarity": 4 },
-  { "id": 674, "name": "周遊芸団カルーセルズ", "rarity": 4 },
-  { "id": 675, "name": "古びたタマゴ:N105", "rarity": 2 },
-  { "id": 676, "name": "古びたタマゴ:N106", "rarity": 2 },
-  { "id": 677, "name": "三雲修＆ネコ", "rarity": 2 },
-  { "id": 678, "name": "空閑遊真＆ネコ", "rarity": 2 },
-  { "id": 679, "name": "雨取千佳＆ネコ", "rarity": 1 },
-  { "id": 680, "name": "さくら", "rarity": 4 },
-  { "id": 681, "name": "ルーク", "rarity": 4 },
-  { "id": 682, "name": "女神ベガ", "rarity": 4 },
-  { "id": 683, "name": "伯爵・真田幸村", "rarity": 4 },
-  { "id": 684, "name": "洗脳されしネコフィッシュ", "rarity": 3 },
-  { "id": 685, "name": "古びたタマゴ:N004", "rarity": 1 },
-  { "id": 686, "name": "光の女神シリウス", "rarity": 4 },
-  { "id": 687, "name": "トナカイ娘テルン", "rarity": 4 },
-  { "id": 688, "name": "洗脳されしネコトカゲ", "rarity": 3 },
-  { "id": 689, "name": "石の上にも10年ネコ", "rarity": 1 },
-  { "id": 690, "name": "運命の子フォノ", "rarity": 4 },
-  { "id": 691, "name": "古びたタマゴ:N000", "rarity": 1 },
-  { "id": 692, "name": "いっすん法師", "rarity": 4 },
-  { "id": 693, "name": "白執事探偵ヴィグラー", "rarity": 4 },
-  { "id": 694, "name": "洗脳されし巨神ネコ", "rarity": 3 },
-  { "id": 695, "name": "殺意のタンクネコ", "rarity": 2 },
-  { "id": 696, "name": "ネコ委員長", "rarity": 1 },
-  { "id": 697, "name": "古びたタマゴ:N107", "rarity": 2 },
-  { "id": 698, "name": "サンダージャック", "rarity": 4 },
-  { "id": 699, "name": "決闘少年ラビットサトル", "rarity": 4 },
-  { "id": 700, "name": "古びたタマゴ:N005", "rarity": 1 },
-  { "id": 701, "name": "にゃんこ仮面ライダー", "rarity": 2 },
-  { "id": 702, "name": "ゴジラにゃんこ", "rarity": 2 },
-  { "id": 703, "name": "エヴァンゲリオンにゃんこ", "rarity": 2 },
-  { "id": 704, "name": "ウルトラマンにゃんこ", "rarity": 2 },
-  { "id": 705, "name": "非命の王フォノウ", "rarity": 4 },
-  { "id": 706, "name": "古びたタマゴ:N108", "rarity": 3 },
-  { "id": 707, "name": "古びたタマゴ:N109", "rarity": 2 },
-  { "id": 708, "name": "ネコジェット", "rarity": 2 },
-  { "id": 709, "name": "隻眼の少女アスカ", "rarity": 4 },
-  { "id": 710, "name": "エヴァ第１３号機", "rarity": 4 },
-  { "id": 711, "name": "バララガの誓い", "rarity": 4 },
-  { "id": 712, "name": "カオルガ", "rarity": 4 },
-  { "id": 713, "name": "古びたタマゴ:N203", "rarity": 1 },
-  { "id": 714, "name": "波打ち際の冒険家カンナ", "rarity": 4 },
-  { "id": 715, "name": "建築兵団スフィンクス", "rarity": 4 },
-  { "id": 716, "name": "古びたタマゴ:N111", "rarity": 3 },
-  { "id": 717, "name": "古びたタマゴ:N110", "rarity": 2 },
-  { "id": 718, "name": "ネコもろこし", "rarity": 2 },
-  { "id": 719, "name": "鉄の精霊カッチン", "rarity": 4 },
-  { "id": 720, "name": "古びたタマゴ:N006", "rarity": 1 },
-  { "id": 721, "name": "花園高校番長りき", "rarity": 4 },
-  { "id": 722, "name": "初音ミク 16th", "rarity": 4 },
-  { "id": 723, "name": "光翼神イシス", "rarity": 4 },
-  { "id": 724, "name": "古びたタマゴ:N112", "rarity": 2 },
-  { "id": 725, "name": "忍者娘トモエ", "rarity": 4 },
-  { "id": 726, "name": "ネコメダル王", "rarity": 1 },
-  { "id": 727, "name": "ソル・デ・ロカ", "rarity": 4 },
-  { "id": 728, "name": "論の賢者ソラクティス", "rarity": 1 },
-  { "id": 729, "name": "730_1", "rarity": 1 },
-  { "id": 730, "name": "古びたタマゴ:N204", "rarity": 1 },
-  { "id": 731, "name": "暁のイザナギ", "rarity": 5 },
-  { "id": 732, "name": "733_1", "rarity": 5 },
-  { "id": 733, "name": "鉄籠のペガサ", "rarity": 4 },
-  { "id": 734, "name": "735_1", "rarity": 4 },
-  { "id": 735, "name": "ネコ校長", "rarity": 1 },
-  { "id": 736, "name": "ネコアイスホワイトスター", "rarity": 4 },
-  { "id": 737, "name": "スプリングカリファ", "rarity": 4 },
-  { "id": 738, "name": "宵のイザナミ", "rarity": 5 },
-  { "id": 739, "name": "740_1", "rarity": 5 },
-  { "id": 740, "name": "741-1", "rarity": 1 },
-  { "id": 741, "name": "742-1", "rarity": 4 },
-  { "id": 742, "name": "743-1", "rarity": 2 },
-  { "id": 743, "name": "744-1", "rarity": 2 },
-  { "id": 744, "name": "745-1", "rarity": 1 },
-  { "id": 745, "name": "746-1", "rarity": 1 },
-  { "id": 746, "name": "緋村剣心", "rarity": 4 },
-  { "id": 747, "name": "相楽左之助", "rarity": 4 },
-  { "id": 748, "name": "四乃森蒼紫", "rarity": 4 },
-  { "id": 749, "name": "斎藤一", "rarity": 4 },
-  { "id": 750, "name": "ちび薫", "rarity": 3 },
-  { "id": 751, "name": "ちび弥彦", "rarity": 3 },
-  { "id": 752, "name": "ネコ剣心", "rarity": 2 },
-  { "id": 753, "name": "ネコ薫", "rarity": 1 },
-  { "id": 754, "name": "明智光秀", "rarity": 4 },
-  { "id": 755, "name": "756_1", "rarity": 4 },
-  { "id": 756, "name": "ネコケーキマシン挙式", "rarity": 4 },
-  { "id": 757, "name": "古びたタマゴ:N205", "rarity": 1 },
-  { "id": 758, "name": "謎の傭兵トリクシー", "rarity": 4 },
-  { "id": 759, "name": "サマーフェスサンディア", "rarity": 4 },
-  { "id": 760, "name": "砲龍ガンドロス", "rarity": 4 },
-  { "id": 761, "name": "762_1", "rarity": 4 },
-  { "id": 762, "name": "天空神スーパーゼウス", "rarity": 4 },
-  { "id": 763, "name": "ネコダイナザウルス", "rarity": 4 },
-  { "id": 764, "name": "765_1", "rarity": 4 },
-  { "id": 765, "name": "古びたタマゴ:N206", "rarity": 1 },
-  { "id": 766, "name": "イワシ", "rarity": 1 },
-  { "id": 767, "name": "イカ", "rarity": 1 },
-  { "id": 768, "name": "たいてんき", "rarity": 4 },
-  { "id": 769, "name": "花咲かじいさん", "rarity": 4 },
-  { "id": 770, "name": "771-1", "rarity": 4 },
-  { "id": 771, "name": "生命の賢者Dr.ノーヴァ", "rarity": 1 },
-  { "id": 772, "name": "パンプキンソドム", "rarity": 4 },
-  { "id": 773, "name": "スモウ・ザ・ミイラ", "rarity": 3 },
-  { "id": 774, "name": "特命機動アクセル", "rarity": 4 },
-  { "id": 775, "name": "776-1", "rarity": 4 },
-  { "id": 776, "name": "見習い武者ネコ", "rarity": 1 },
-  { "id": 777, "name": "冬将軍・成田甲斐", "rarity": 4 },
-  { "id": 778, "name": "ネコまどか＆ほむら", "rarity": 4 },
-  { "id": 779, "name": "幼天女ルーナ", "rarity": 4 },
-  { "id": 780, "name": "ネコボウラー", "rarity": 2 },
-  { "id": 781, "name": "マモルガ", "rarity": 4 },
-  { "id": 782, "name": "783-1", "rarity": 4 },
-  { "id": 783, "name": "こねこ", "rarity": 4 },
-  { "id": 784, "name": "チョコサプネコC", "rarity": 1 },
-  { "id": 785, "name": "殺意のキモネコ", "rarity": 2 },
-  { "id": 786, "name": "マジシャンキャットマン", "rarity": 4 },
-  { "id": 787, "name": "冥護の天女ルナーシャ", "rarity": 4 },
-  { "id": 788, "name": "789-1", "rarity": 1 },
-  { "id": 789, "name": "範馬刃牙", "rarity": 4 },
-  { "id": 790, "name": "烈海王", "rarity": 4 },
-  { "id": 791, "name": "花山薫", "rarity": 4 },
-  { "id": 792, "name": "愚地克巳", "rarity": 4 },
-  { "id": 793, "name": "ジャック・ハンマー", "rarity": 4 },
-  { "id": 794, "name": "ネコオーガ", "rarity": 3 },
-  { "id": 795, "name": "ちび刃牙", "rarity": 1 },
-  { "id": 796, "name": "ネコ刃牙", "rarity": 1 },
-  { "id": 797, "name": "ネコ海王", "rarity": 1 },
-  { "id": 798, "name": "ネコ独歩", "rarity": 1 },
-  { "id": 799, "name": "曲射砲台ランチャーズ", "rarity": 4 },
-  { "id": 800, "name": "801-1", "rarity": 4 },
-  { "id": 801, "name": "理の賢者ニュトーン", "rarity": 1 },
-  { "id": 802, "name": "802-1", "rarity": 1 },
-  { "id": 803, "name": "ソニック", "rarity": 4 },
-  { "id": 804, "name": "テイルス", "rarity": 4 },
-  { "id": 805, "name": "ナックルズ", "rarity": 4 },
-  { "id": 806, "name": "シャドウ", "rarity": 4 },
-  { "id": 807, "name": "ネコソニック", "rarity": 2 },
-  { "id": 808, "name": "ネコテイルス", "rarity": 1 },
-  { "id": 809, "name": "ネコシャドウ", "rarity": 2 },
-  { "id": 810, "name": "エージェント・スタール", "rarity": 4 },
-  { "id": 811, "name": "韋駄天スカンダ", "rarity": 4 },
-  { "id": 812, "name": "812-1", "rarity": 4 },
-  { "id": 813, "name": "タスマニアオオガニ", "rarity": 1 },
-  { "id": 814, "name": "エヴァ量産機", "rarity": 4 },
-  { "id": 815, "name": "月影の少年カヲル", "rarity": 5 },
-  { "id": 816, "name": "817-1", "rarity": 5 },
-  { "id": 817, "name": "樹の精霊コモリ", "rarity": 4 },
-  { "id": 818, "name": "819-1", "rarity": 4 },
-  { "id": 819, "name": "ネコ大工", "rarity": 2 },
-  { "id": 820, "name": "シーサイドペガサ", "rarity": 4 },
-  { "id": 821, "name": "822_1", "rarity": 4 },
-  { "id": 822, "name": "ネココンサルタント", "rarity": 1 },
-  { "id": 823, "name": "ネコ店長＆ネコ店員", "rarity": 1 },
-  { "id": 824, "name": "魔導師シドミ", "rarity": 4 },
-  { "id": 825, "name": "826-1", "rarity": 4 },
-  { "id": 826, "name": "キャミィ", "rarity": 4 },
-  { "id": 827, "name": "ジュリ", "rarity": 4 },
-  { "id": 828, "name": "ネコザンギエフ", "rarity": 3 },
-  { "id": 829, "name": "ネコジェイミー", "rarity": 3 },
-  { "id": 830, "name": "獅子番長ラクレス", "rarity": 4 },
-  { "id": 831, "name": "スカーフにゃんこ", "rarity": 1 },
-  { "id": 832, "name": "ハットにゃんこ", "rarity": 1 },
-  { "id": 833, "name": "ヘルメットにゃんこ", "rarity": 1 },
-  { "id": 834, "name": "ゴーグルにゃんこ", "rarity": 1 },
-  { "id": 835, "name": "リボンにゃんこ", "rarity": 1 },
-  { "id": 836, "name": "ニャンコオー", "rarity": 4 },
-  { "id": 837, "name": "2026新年超極_新規", "rarity": 4 }
-
-]
-
-//837は、2026新年超極_新規の予測のため手動で入力したもののためアップデートされた際には削除すること
-
-====================
 FILE: data_loader.js
 ====================
-/**
- * data_loader.js
- * データの読み込み、解析、マスタデータの構築を担当
- */
+/** @file data_loader.js @description 外部データ（CSV/TSV）の非同期取得とマスタデータの構築を担当 @dependency cats.js, gacha_series.js */
 
 /**
  * [gatya.tsv Data Structure Memo]
@@ -1068,10 +219,7 @@ function applyTsvRates(gachasMaster, tsvContent) {
 ====================
 FILE: gacha_selector.js
 ====================
-/**
- * gacha_selector.js
- * ガチャ選択用プルダウンのオプション生成ロジック
- */
+/** @file gacha_selector.js @description ガチャ選択用プルダウンのオプション項目生成を担当 @dependency data_loader.js, schedule_logic.js */
 
 function getGachaSelectorOptions(selectedId) {
     const now = new Date();
@@ -1201,8 +349,9 @@ function getGachaSelectorOptions(selectedId) {
 ====================
 FILE: gacha_series.js
 ====================
+/** @file gacha_series.js @description 各ガチャシリーズのメタデータ（名称、デフォルトレート、ソート順）の定義 @dependency なし */
+
 /**
- * gacha_series.js
  * Sortの区分について
  * 100～199：ネコ祭
  * 200～299：バスターズ
@@ -1213,7 +362,6 @@ FILE: gacha_series.js
  * 700～799：新年その他
  * 800～899：過去分
  */
-
 
 const gacha_series = [
     {"series_id":0,"name":"ネコルガ族", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":300},
@@ -1423,8 +571,8 @@ FILE: index.html
             <h3 style="margin-top:0;">【基本操作】</h3>
             <ul style="padding-left: 20px; margin-bottom:10px;">
                 <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、シーカー等で特定した実行前シードを入力してOKを押してください。</li>
-                <li><strong>ガチャ選択:</strong> 表のヘッダー（開催期間やガチャ名が表示されている部分）下部のプルダウンから、表示したいガチャを選択できます。</li>
-                <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧（前日～）のガチャを一括で追加します。</li>
+                <li><strong>ガチャ選択:</strong> 表のヘッダー下部のプルダウンから、表示したいガチャを選択できます。</li>
+                <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧のガチャを一括で追加します。</li>
             </ul>
 
             <h3 style="margin-top:0;">【主要機能】</h3>
@@ -1445,30 +593,28 @@ FILE: index.html
                         ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
                     </span>
                     また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
-                        ・自動回避・誘発： レア被りによる再抽選（Reroll）の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
-                        ・A列⇔B列のルート切り替え： 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列、B列からA列へ移動するルートを計算します。<br>
-                        ・追記機能： 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
-                        ・確定枠クリック： G列(Guar)のキャラをクリックすると、前の行までのルート＋確定ロール(11g等)を自動入力します。<br>
-                        ※自動計算では「超激レア確定」「プラチナ」「レジェンド」ガチャは使用しません。<br>
+                    ・自動回避・誘発： レア被りによる再抽選の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
+                    ・A列⇔B列のルート切り替え： 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列へ移動するルートを計算します。<br>
+                    ・追記機能： 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
+                    ・確定枠クリック： G列(Guar)のキャラをクリックすると、前の行までのルート＋確定ロール(11g等)を自動入力します。<br>
+                    ※自動計算では「超激レア確定」「プラチナ」「レジェンド」ガチャは使用しません。
                 </dd>
                 
                 <dt><strong>3. skd (スケジュール)</strong></dt>
                 <dd>
-                    「skd」ボタンで、直近のガチャ開催スケジュールをガントチャートとリスト形式で確認できます。<br>
+                    「skd」ボタンで、直近のガチャ開催スケジュールを確認できます。
                 </dd>
-
             </dl>
 
             <h3 style="margin-top:0;">【表示・用語について】</h3>
             <ul style="padding-left: 20px; margin-bottom:0;">
-                <li><span style="background-color:#adff2f; padding:0 4px;">緑背景</span>: Findターゲット（伝説レア、限定キャラ、新キャラ、または手動で指定したキャラ）。</li>
-                <li><strong>Guar列:</strong> 確定ガチャ（11連等）を引いた場合の「確定枠キャラ」と「移動先アドレス」を表示します。</li>
-                <li><strong>NO列のハイライト:</strong> 常設ガチャでのレア被り位置を黄色で、波動バスターズ利用のレア被り位置をオレンジ色でハイライトします。</li>
+                <li><span style="background-color:#adff2f; padding:0 4px;">緑背景</span>: Findターゲット。</li>
+                <li><strong>Guar列:</strong> 確定枠キャラと移動先アドレスを表示します。</li>
+                <li><strong>NO列のハイライト:</strong> 常設でのレア被りを黄色、波動バスターズ利用のレア被りをオレンジでハイライトします。</li>
             </ul>
         </div>
         
         <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
-            
             <div id="seed-input-container" class="control-group hidden" style="margin-bottom: 0; display: flex; align-items: center; gap: 5px;">
                 <label for="seed" style="font-size:0.9em;">Seed:</label>
                 <input type="number" id="seed" placeholder="Seed" value="12345" style="width:100px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
@@ -1482,6 +628,9 @@ FILE: index.html
                 <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
                 <button onclick="backSimConfig()" style="margin-left: 5px; font-size: 11px; min-width: 40px;">Back</button>
                 <button onclick="clearSimConfig()" style="margin-left: 2px; font-size: 11px;">Clear</button>
+                
+                <span id="sim-notif-msg" style="color: #28a745; font-size: 0.8em; margin-left: 5px; font-weight: bold; display: none;"></span>
+
                 <div id="sim-error-msg" style="color: #d9534f; font-size: 0.85em; margin-left: 5px; display: none;"></div>
             </div>
         </div>
@@ -1521,6 +670,8 @@ FILE: index.html
 ====================
 FILE: limited_cats.js
 ====================
+/** @file limited_cats.js @description 限定キャラクター（祭限定など）のIDリスト管理 @dependency なし */
+
 const limitedCats = [283,286,318,333,378,380,397,435,441,484,529,543,559,585,586,609,612,641,657,690,705,758,779,783,787,810,837];
 const AnniversaryLimited = [435,484,758,783,810,837];
 
@@ -1529,14 +680,9 @@ const AnniversaryLimited = [435,484,758,783,810,837];
 ====================
 FILE: logic.js
 ====================
-/**
- * lojic.js
- * ガチャ抽選ロジック
- */
+/** @file logic.js @description ガチャ抽選の核心ロジック（Xorshift32、レア被り再抽選）を担当 @dependency なし */
 
-/**
- * 乱数生成クラス
- */
+/** 乱数生成クラス */
 class Xorshift32 {
     constructor(seed) { this.seed = (seed >>> 0) || 1;
 }
@@ -1795,9 +941,41 @@ function calculateGuaranteedLookahead(startSeedIndex, gachaConfig, allSeeds, ini
 ====================
 FILE: main.js
 ====================
+/** @file main.js @description アプリのエントリーポイント（window.onloadでの初期化フロー実行） @dependency data_loader.js, ui_controller.js */
+
 /**
- * main.js
- * アプリケーションのエントリーポイント
+ * ==============================================================================
+ * [R_Rolls] システム相関図 (System Dependency Map)
+ * ==============================================================================
+ * * 【1. Entry Point / Controller】
+ * main.js --------------------> アプリ初期化フローの実行
+ * |
+ * +--> ui_controller.js ----> 表示切替(Sim/skd/概要)・描画指示の司令塔
+ * +--> url_manager.js ------> URLとアプリ状態の同期
+ * * 【2. Data & Logic Layer】
+ * data_loader.js -------------> CSV/TSV取得・マスタデータ構築
+ * |                             (cats.js, gacha_series.js を参照)
+ * logic.js -------------------> ガチャ抽選・再抽選の核心計算ロジック
+ * simulation.js --------------> 経路探索(ビームサーチ)・回避誘発判定
+ * schedule_logic.js ----------> gatya.tsv解析・日付計算
+ * * 【3. View / Rendering Layer】
+ * view_table.js --------------> テーブル描画の主制御
+ * |
+ * +--> view_header.js ------> ヘッダー(固定名/操作ボタン)生成
+ * +--> view_cell_renderer.js -> 各セルのHTML生成
+ * |      +--> view_analysis.js -> レア被りハイライト判定
+ * |
+ * +--> view_forecast.js ----> Findエリア・予報HTML生成
+ * +--> view_master.js ------> マスタ詳細情報HTML生成
+ * +--> view_schedule.js ----> スケジュール・ガントチャート描画
+ * * 【4. Event Handlers / UI Parts】
+ * ui_table_handler.js --------> 列追加/削除/変更のイベント
+ * ui_target_handler.js -------> Findターゲットの管理
+ * ui_schedule_handler.js -----> skdモード切替・スケジュール列追加
+ * gacha_selector.js ----------> プルダウンの選択肢生成
+ * * 【5. Core State】
+ * ui_globals.js --------------> 全ファイルで共有されるグローバル変数
+ * * ==============================================================================
  */
 
 window.onload = async function() {
@@ -1824,10 +1002,7 @@ window.onload = async function() {
 ====================
 FILE: schedule_logic.js
 ====================
-/**
- * schedule_logic.js
- * gatya.tsvの解析、日付処理、初期データ決定などのロジックを担当
- */
+/** @file schedule_logic.js @description gatya.tsvの解析、日付・時刻計算のユーティリティを担当 @dependency なし */
 
 // YYYYMMDD -> M/D (年は無視、20300101は「永続」)
 function formatDateJP(dateStr) {
@@ -2007,7 +1182,8 @@ function findDefaultGachaState(data) {
 ====================
 FILE: simulation.js
 ====================
-//simulation.js
+/** @file simulation.js @description 自動経路探索（ビームサーチ）、回避・誘発の判定、Config解析を担当 @dependency logic.js, ui_globals.js */
+
 // --- sim-config ヘルパー関数 ---
 
 function parseSimConfig(configStr) {
@@ -3300,11 +2476,7 @@ th {
 ====================
 FILE: ui_controller.js
 ====================
-/**
- * ui_controller.js
- * アプリケーションのメインコントローラー
- * 初期化、モード管理、基本UI操作を担当
- */
+/** @file ui_controller.js @description UIのメイン制御（初期化、モード切替、描画指示）を担当 @dependency ui_globals.js, view_table.js */
 
 // マスター情報の表示状態管理フラグ
 let isMasterInfoVisible = true;
@@ -3327,7 +2499,6 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
-              
                     return now >= startDt && now <= endDt;
                 });
 
@@ -3335,7 +2506,6 @@ function initializeDefaultGachas() {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
-                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); 
                     });
@@ -3360,7 +2530,6 @@ function initializeDefaultGachas() {
                 const sortedGachas = Object.values(gachaMasterData.gachas)
                     .filter(gacha => gacha.sort < 800)
                     .sort((a, b) => a.sort - b.sort);
-
                 if (sortedGachas.length > 0) {
                     tableGachaIds.push(sortedGachas[0].id);
                     uberAdditionCounts.push(0);
@@ -3378,7 +2547,6 @@ function initializeDefaultGachas() {
         toggleSeedInput();
     }
 }
-
 
 // --- モード切替 ---
 
@@ -3426,7 +2594,7 @@ function resetAndGenerateTable() {
     }
     
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView(); // ここでマスター情報を更新
+    updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
@@ -3435,7 +2603,6 @@ function addMoreRolls() {
     if (typeof generateRollsTable === 'function') generateRollsTable();
 }
 
-// シード更新（セルクリック時などに呼ばれる）
 function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
@@ -3448,21 +2615,25 @@ function updateSeedAndRefresh(newSeed) {
     }
 }
 
-// シミュレーションConfigクリア
 function clearSimConfig() {
     const el = document.getElementById('sim-config');
     if(el) el.value = '';
-    // エラーメッセージもクリア
+    
+    // エラーメッセージと通知メッセージの両方をクリア
     const errorEl = document.getElementById('sim-error-msg');
     if (errorEl) {
         errorEl.textContent = '';
         errorEl.style.display = 'none';
     }
+    const notifEl = document.getElementById('sim-notif-msg');
+    if (notifEl) {
+        notifEl.textContent = '';
+        notifEl.style.display = 'none';
+    }
 
     resetAndGenerateTable();
 }
 
-// シミュレーションConfig 一つ戻る (Back)
 function backSimConfig() {
     const el = document.getElementById('sim-config');
     if (el && typeof removeLastConfigSegment === 'function') {
@@ -3471,7 +2642,6 @@ function backSimConfig() {
     }
 }
 
-// シミュレーション結果のシードをStart Seedに反映
 function updateSeedFromSim() {
     if (finalSeedForUpdate) {
         document.getElementById('seed').value = finalSeedForUpdate;
@@ -3479,7 +2649,6 @@ function updateSeedFromSim() {
         resetAndGenerateTable(); 
     }
 }
-
 
 // --- SEED入力欄の制御 ---
 
@@ -3489,15 +2658,12 @@ function toggleSeedInput() {
     
     if (!container) return;
 
-    // hiddenクラスがあれば表示、なければ非表示（キャンセル）
     if (container.classList.contains('hidden')) {
         container.classList.remove('hidden');
-        // トリガーボタンは消さずにactiveクラスを付与
         if (trigger) {
             trigger.classList.remove('hidden');
             trigger.classList.add('active');
         }
-        
         const input = document.getElementById('seed');
         if (input) input.focus();
     } else {
@@ -3513,32 +2679,27 @@ function applySeedInput() {
     const trigger = document.getElementById('seed-input-trigger');
     
     if (container) container.classList.add('hidden');
-    // activeクラスを外す
     if (trigger) {
         trigger.classList.remove('hidden');
         trigger.classList.remove('active');
     }
 }
 
-// 追加: SEED入力をキャンセルして閉じる
 function cancelSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     const input = document.getElementById('seed');
-    // 現在のURLパラメータから値を復元（変更を破棄）
     const urlParams = new URLSearchParams(window.location.search);
     const currentSeed = urlParams.get('seed') || "12345";
     if (input) input.value = currentSeed;
 
     if (container) container.classList.add('hidden');
-    // activeクラスを外す
     if (trigger) {
         trigger.classList.remove('hidden');
         trigger.classList.remove('active');
     }
 }
 
-// 追加: SEEDをクリップボードにコピー
 function copySeedToClipboard() {
     const seedInput = document.getElementById('seed');
     if (!seedInput) return;
@@ -3546,7 +2707,6 @@ function copySeedToClipboard() {
         console.error('Failed to copy: ', err);
     });
 }
-
 
 // --- 表示切替 ---
 
@@ -3561,21 +2721,16 @@ function updateToggleButtons() {
     if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
 }
 
-// マスター情報の表示切替
 function toggleMasterInfo() {
     isMasterInfoVisible = !isMasterInfoVisible;
     const content = document.getElementById('master-info-content');
-    
-    // 表示切替
     if (content) {
         content.style.display = isMasterInfoVisible ? 'block' : 'none';
     }
     
-    // ボタンの見た目更新のためテーブル再描画
     if (typeof generateRollsTable === 'function') {
         generateRollsTable();
     }
-    // ★重要: 再描画後に必ず最新のHTMLを注入して表記ゆれを防ぐ
     if (typeof updateMasterInfoView === 'function') {
         updateMasterInfoView();
     }
@@ -3584,37 +2739,25 @@ function toggleMasterInfo() {
 function toggleDescription() {
     const content = document.getElementById('description-content');
     const toggle = document.getElementById('toggle-description');
-    // UI要素の取得
     const tableContainer = document.getElementById('rolls-table-container');
     const simWrapper = document.getElementById('sim-control-wrapper');
     const resultDiv = document.getElementById('result');
     const mainControls = document.getElementById('main-controls');
     const scheduleContainer = document.getElementById('schedule-container');
 
-    // モード切替
     isDescriptionMode = !isDescriptionMode;
-
     if (isDescriptionMode) {
-        // --- 概要モード ON ---
-
-        // 1. スケジュールモードが開いていれば閉じる
         if (typeof isScheduleMode !== 'undefined' && isScheduleMode && typeof toggleSchedule === 'function') {
             toggleSchedule();
         }
-
-        // 2. ボタン状態更新
         if (toggle) {
             toggle.classList.add('active');
         }
-
-        // 3. メイン画面の要素を隠す
         if (tableContainer) tableContainer.classList.add('hidden');
         if (simWrapper) simWrapper.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
-
-        // 4. 概要コンテンツを表示＆スタイル調整
         if (content) {
             content.classList.remove('hidden');
             content.style.flexGrow = '1';       
@@ -3624,16 +2767,10 @@ function toggleDescription() {
             content.style.minHeight = '0';
             content.style.maxHeight = 'none';
         }
-
     } else {
-        // --- 概要モード OFF ---
-
-        // 1. ボタン状態更新
         if (toggle) {
             toggle.classList.remove('active');
         }
-
-        // 2. 概要コンテンツを隠す＆スタイルリセット
         if (content) {
             content.classList.add('hidden');
             content.style.flexGrow = '';
@@ -3643,11 +2780,8 @@ function toggleDescription() {
             content.style.maxHeight = '';
             content.style.webkitOverflowScrolling = '';
         }
-
-        // 3. メイン画面の要素を復帰
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (mainControls) mainControls.classList.remove('hidden');
-        
         if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
         if (showResultDisplay && resultDiv) resultDiv.classList.remove('hidden');
     }
@@ -3656,11 +2790,9 @@ function toggleDescription() {
 function toggleFindInfo() {
     showFindInfo = !showFindInfo;
     const btn = document.getElementById('toggle-find-info-btn');
-
     if (typeof generateRollsTable === 'function') {
         generateRollsTable();
     }
-    // テキスト変更なし、activeクラスのみ
     if (btn) {
         if (showFindInfo) {
             btn.classList.add('active');
@@ -3672,16 +2804,13 @@ function toggleFindInfo() {
 
 // --- 共通View更新 ---
 
-// マスター情報の更新
 function updateMasterInfoView() {
     const el = document.getElementById('master-info-area');
     if (!el || typeof generateMasterInfoHTML !== 'function') return;
 
-    // columnConfigsを再構築（現在のtableGachaIdsに基づいて）
     const configs = [];
     tableGachaIds.forEach(idStr => {
         let gachaId = idStr;
-        // 末尾の識別子除去
         if (gachaId.endsWith('g') || gachaId.endsWith('s') || gachaId.endsWith('f')) {
             gachaId = gachaId.slice(0, -1);
         }
@@ -3689,22 +2818,14 @@ function updateMasterInfoView() {
             configs.push(gachaMasterData.gachas[gachaId]);
         }
     });
-
     el.innerHTML = generateMasterInfoHTML(configs);
 }
 
 /**
  * セルクリック時のハンドラ
- * Simモード時: ルートを計算してConfigに入力
- * 通常時: キャラ名をクリップボードにコピー（またはSimモードへ誘導）
- * @param targetSeedIndex クリックされたセルのシードインデックス
- * @param gachaId ガチャID
- * @param charName キャラ名
- * @param guaranteedType (optional) 確定枠クリック時の指定 (例: '11g', '15g', '7g')
  */
-function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null) {
+function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null, fromFind = false) {
     if (isSimulationMode) {
-        // まずエラー表示をクリア
         const errorEl = document.getElementById('sim-error-msg');
         if (errorEl) {
             errorEl.textContent = '';
@@ -3712,44 +2833,33 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
         }
 
         const visibleIds = tableGachaIds.map(id => id);
-        // Config欄の現在の値を取得
         const configInput = document.getElementById('sim-config');
         const currentConfig = configInput ? configInput.value : "";
 
-        // ルート計算 (simulation.js)
         if (typeof calculateRouteToCell === 'function') {
             let routeConfig;
             if (guaranteedType) {
-                // 確定枠クリック時の特別なアクション
                 const finalAction = { 
                     id: gachaId, 
                     rolls: parseInt(guaranteedType.replace('g', ''), 10), 
-               
                     g: true 
                 };
-                // 第5引数に finalAction を渡す
                 routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction);
             } else {
-                // 通常クリック
                 routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
             }
 
             if (routeConfig) {
-                // 成功: Configに入力して更新
                 if (configInput) {
                     configInput.value = routeConfig;
                     if (typeof updateUrlParams === 'function') updateUrlParams();
                     resetAndGenerateTable();
                 }
             } else {
-                // 失敗: ルートが見つからない場合
-                // Configは更新せず、エラーメッセージを表示する
                 if (errorEl) {
-                    // セル番号の計算 (SeedIndex -> A1, B10 etc.)
                     const row = Math.floor(targetSeedIndex / 2) + 1;
                     const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
                     const cellLabel = `${side}${row}`;
-                    
                     errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
                     errorEl.style.display = 'block'; 
                 }
@@ -3757,24 +2867,27 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
             }
         }
     } else {
-        // 通常モード時の挙動
-        const confirmSwitch = confirm(`Simモードに切り替えて、このセル(${charName})へのルートを計算しますか？`);
-        if (confirmSwitch) {
-            toggleAppMode();
-            setTimeout(() => {
-                onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType);
-            }, 100);
+        // 自動でSimモードへ切り替え
+        toggleAppMode();
+        
+        if (fromFind) {
+            const notifEl = document.getElementById('sim-notif-msg');
+            if (notifEl) {
+                notifEl.textContent = 'Findのセル番地クリックによりSIMモードに切り替えました';
+                notifEl.style.display = 'inline';
+            }
         }
+        
+        setTimeout(() => {
+            onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType, fromFind);
+        }, 100);
     }
 }
 
 ====================
 FILE: ui_globals.js
 ====================
-/**
- * ui_globals.js
- * アプリケーション全体で共有される状態変数の定義
- */
+/** @file ui_globals.js @description アプリケーション全体で共有されるグローバルな状態変数の定義 @dependency なし */
 
 // UI状態変数 (Global)
 let tableGachaIds = [];
@@ -3801,10 +2914,7 @@ let uberAdditionCounts = [];
 ====================
 FILE: ui_schedule_handler.js
 ====================
-/**
- * ui_schedule_handler.js
- * スケジュールデータの解析、skdモード切替、スケジュールからの列追加ロジック
- */
+/** @file ui_schedule_handler.js @description スケジュールモード（skd）の切替、スケジュールからの列追加を担当 @dependency schedule_logic.js, view_schedule.js */
 
 // スケジュール情報の事前解析
 function prepareScheduleInfo() {
@@ -3982,10 +3092,7 @@ function addGachasFromSchedule() {
 ====================
 FILE: ui_table_handler.js
 ====================
-/**
- * ui_table_handler.js
- * テーブルの列操作（追加、削除、変更）および列内コントロールのロジック
- */
+/** @file ui_table_handler.js @description テーブルの列操作（追加、削除、変更）のイベントハンドラを担当 @dependency view_table.js */
 
 // 新しいガチャ列を追加 (デフォルト選択)
 function addGachaColumn() {
@@ -4112,10 +3219,7 @@ function addGachaById() {
 ====================
 FILE: ui_target_handler.js
 ====================
-/**
- * ui_target_handler.js
- * Find機能（ターゲット指定、表示/非表示切り替え）のロジック
- */
+/** @file ui_target_handler.js @description Find機能のターゲット指定（伝説・限定）の管理を担当 @dependency ui_globals.js, view_table.js */
 
 // 自動ターゲット対象かどうか
 // 変更: 伝説レア・限定キャラを除外し、手動追加（sim-new）のみを自動対象とする
@@ -4274,10 +3378,7 @@ function toggleLimitedTargets() {
 ====================
 FILE: url_manager.js
 ====================
-/**
- * url_manager.js
- * URLパラメータの読み込みと更新を担当
- */
+/** @file url_manager.js @description URLパラメータとアプリ状態の同期（保存・復元）を担当 @dependency ui_globals.js, ui_controller.js */
 
 function processUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -4396,10 +3497,7 @@ function updateUrlParams() {
 ====================
 FILE: view_analysis.js
 ====================
-/**
- * view_analysis.js
- * レア被り（黄色・オレンジ）の判定ロジック
- */
+/** @file view_analysis.js @description レア被り位置（黄色・オレンジ）のハイライト判定を担当 @dependency なし */
 
 const RowAnalysis = {
     // 常設レア被り（黄色）: n+1とn+3のスロットが同じ
@@ -4449,11 +3547,7 @@ const RowAnalysis = {
 ====================
 FILE: view_cell_renderer.js
 ====================
-
-/**
- * view_cell_renderer.js
- * セル単位のHTML生成ロジック
- */
+/** @file view_cell_renderer.js @description テーブル内の個別のセル（通常・確定枠・計算列）のHTML生成を担当 @dependency logic.js, view_analysis.js */
 
 // アドレスフォーマット (例: 1A, 2B)
 function formatAddress(idx) {
@@ -4516,8 +3610,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
             if (roll.isRerolled) {
                 const finalPoolSize = roll.uniqueTotal;
                 const finalVal = roll.reRollIndex;
-                // reRoll時は seedsConsumed 分だけ進む
-                // ここでは単純表示のため seedIndex + seedsConsumed - 1 を使用
                 const finalSeedIndex = seedIndex + roll.seedsConsumed - 1;
                 const sNumFinal = finalSeedIndex + 1;
                 colReRoll = `<td>(S${sNumFinal})<br>%${finalPoolSize}<br>${finalVal}</td>`;
@@ -4527,7 +3619,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
         }
     }
 
-    // Guar列の簡易計算（シミュレーション）
     let tempSeedIdx = seedIndex;
     let tempDraw = null;
     let validSim = true;
@@ -4561,57 +3652,61 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     const gachaName = gachaConfig ? gachaConfig.name : "";
     const isPlatOrLegend = gachaName.includes("プラチナ") || gachaName.includes("レジェンド");
     
-    let isLimited = false;
     const charId = fullRoll.finalChar.id;
     const charIdStr = String(charId);
+
+    // --- 限定キャラ判定 ---
+    let isLimited = false;
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
         if (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charIdStr)) {
             isLimited = true;
         }
     }
 
+    // --- Findターゲット判定 ---
+    const isAuto = isAutomaticTarget(charId);
+    const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
+    const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
+    const isFindTarget = (isAuto && !isHidden) || isManual;
+
     let hlClass = '';
     let isSimRoute = false;
+    let style = '';
+
     if (isSimulationMode) {
         if (highlightMap.get(seedIndex) === id) {
-            hlClass = ' highlight';
             isSimRoute = true;
-        }
-        if (hlClass && fullRoll.rarity === 'uber') hlClass = ' highlight-uber';
-    }
-
-    let style = '';
-    if (isSimRoute) {
-        if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend') style = 'background-color: #32CD32;';
-        else style = 'background-color: #98FB98;';
-    } else {
-        if (isLimited) style = 'background-color: #66FFFF;';
-        else if (isPlatOrLegend) style = '';
-        else {
-            if (!hlClass) {
-                const sv = seeds[seedIndex] % 10000;
-                if(sv >= 9970) style = 'background-color: #DDA0DD;';
-                else if(sv >= 9940) style = 'background-color: #de59de;';
-                else if(sv >= 9500) style = 'background-color: #FF4C4C;';
-                else if(sv >= 9100) style = 'background-color: #FFB6C1;';
-                else if(sv >= 6970) style = 'background-color: #ffff33;';
-                else if(sv >= 6470) style = 'background-color: #FFFFcc;';
+            // 修正：Findターゲット、限定、伝説、超激レアがルート上にある場合は「青ハイライト＋太字赤字」
+            if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend' || isFindTarget) {
+                style = 'background-color: #32CD32;'; // view_table.jsで青色(COLOR_ROUTE_UBER)に置換
+                hlClass = ' highlight highlight-uber'; // 太字・赤字クラス
+            } else {
+                style = 'background-color: #98FB98;'; // view_table.jsで水色(COLOR_ROUTE_HIGHLIGHT)に置換
+                hlClass = ' highlight';
             }
         }
     }
 
+    // Simルート外、またはSimモードOFFの場合の通常着色
     if (!isSimRoute) {
-        let isAuto = isAutomaticTarget(charId);
-        const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
-        const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
-
-        if ((isAuto && !isHidden) || isManual) {
+        if (isFindTarget) {
             style = 'background-color: #adff2f; font-weight: bold;';
+        } else if (isLimited) {
+            style = 'background-color: #66FFFF;';
+        } else if (isPlatOrLegend) {
+            style = '';
+        } else {
+            const sv = seeds[seedIndex] % 10000;
+            if(sv >= 9970) style = 'background-color: #DDA0DD;';
+            else if(sv >= 9940) style = 'background-color: #de59de;';
+            else if(sv >= 9500) style = 'background-color: #FF4C4C;';
+            else if(sv >= 9100) style = 'background-color: #FFB6C1;';
+            else if(sv >= 6970) style = 'background-color: #ffff33;';
+            else if(sv >= 6470) style = 'background-color: #FFFFcc;';
         }
     }
 
-    // --- クリックイベント設定 (経路計算用) ---
-    // キャラ名のエスケープ処理 (簡易)
+    // クリックイベント
     const charNameForCopy = fullRoll.finalChar.name.replace(/'/g, "\\'");
     const clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${charNameForCopy}')"`;
     style += ' cursor: pointer;';
@@ -4624,16 +3719,12 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             const originalName = fullRoll.originalChar.name;
             const finalName = fullRoll.finalChar.name;
             let originalHtml = originalName;
-            // 内部リンクには stopPropagation を追加してセルのonclick発火を防止
             if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
             let finalHtml = finalName;
             if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
-            
             const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
             let addr = formatAddress(nextSeedIdx);
-            if (fullRoll.isForceDuplicate) {
-                addr = 'R' + addr;
-            }
+            if (fullRoll.isForceDuplicate) addr = 'R' + addr;
             content = `${originalHtml}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${finalHtml}`;
         } else {
             const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
@@ -4643,9 +3734,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         if (fullRoll.isRerolled) {
             const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
             let addr = formatAddress(nextSeedIdx);
-            if (fullRoll.isForceDuplicate) {
-                addr = 'R' + addr;
-            }
+            if (fullRoll.isForceDuplicate) addr = 'R' + addr;
             content = `${fullRoll.originalChar.name}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${fullRoll.finalChar.name}`;
         }
     }
@@ -4656,11 +3745,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
 ====================
 FILE: view_forecast.js
 ====================
-// view_forecast.js
-/**
- * view_forecast.js
- * 「Find (高速予報)」機能のHTML生成を担当
- */
+/** @file view_forecast.js @description Find（高速予報）エリアおよび操作ボタンのHTML生成を担当 @dependency logic.js, ui_target_handler.js */
 
 function generateFastForecast(initialSeed, columnConfigs) {
     const scanRows = 2000;
@@ -4697,7 +3782,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span style="font-weight:bold; color:#e91e63; background:#ffe0eb; padding:1px 4px; border-radius:3px;">伝説枠</span>
                 <span style="font-family: monospace; margin-left: 5px;">${legendStr}</span>
             </div>
-            
             <div>
                 <span style="font-weight:bold; color:#9c27b0; background:#f3e5f5; padding:1px 4px; border-radius:3px;">昇格枠</span>
                 <span style="font-family: monospace; margin-left: 5px;">${promotedStr}</span>
@@ -4706,7 +3790,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
     `;
 
     // --- ボタンの状態判定 ---
-    // 現在のテーブルに含まれる全ての伝説・限定キャラを収集
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
@@ -4724,11 +3807,9 @@ function generateFastForecast(initialSeed, columnConfigs) {
         if (processedGachaIdsForBtn.has(config.id)) return;
         processedGachaIdsForBtn.add(config.id);
 
-        // 伝説
         if (config.pool.legend && config.pool.legend.length > 0) {
             config.pool.legend.forEach(c => availableLegendIds.push(c.id));
         }
-        // 限定
         ['rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r]) {
                 config.pool[r].forEach(c => {
@@ -4741,7 +3822,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
     });
 
-    // 状態判定
     const isLegendActive = (availableLegendIds.length > 0) && availableLegendIds.every(cid => userTargetIds.has(cid));
     const isLimitedActive = (availableLimitedIds.length > 0) && availableLimitedIds.every(cid => userTargetIds.has(cid));
     const isMasterActive = (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true;
@@ -4750,24 +3830,37 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
 
+    // マスターボタンON時の説明文スタイル
+    const masterDescStyle = isMasterActive ? '' : 'display: none;';
+
+    // 特殊ガチャ設定に応じたメッセージ
+    const specialStatusText = (typeof useSpecialInRoute !== 'undefined' && useSpecialInRoute)
+        ? `<span style="color: #d9534f; font-weight: bold;">[特殊ガチャ許可ON]</span> 現在、プラチナ・レジェンドを経路に使用します。`
+        : `超激確定・プラチナ・レジェンドは消費を避けるため使用しません。`;
+
     // ボタンエリア HTML生成
     summaryHtml += `
-        <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px;">
-            <span onclick="clearAllTargets()" class="text-btn" title="全て非表示">×</span>
-            <span class="separator">|</span>
-            <span onclick="toggleLegendTargets()" class="${legendBtnClass}">伝説</span>
-            <span class="separator">|</span>
-            <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
-            <span class="separator">|</span>
-            <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
-            
-            <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
+        <div style="margin-bottom: 10px; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span onclick="clearAllTargets()" class="text-btn" title="全て非表示">×</span>
+                <span class="separator">|</span>
+                <span onclick="toggleLegendTargets()" class="${legendBtnClass}">伝説</span>
+                <span class="separator">|</span>
+                <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
+                <span class="separator">|</span>
+                <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
+                <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
+            </div>
+            <div style="font-size: 0.75em; color: #d9534f; font-weight: bold; padding-left: 2px; ${masterDescStyle}">
+                ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。<br>
+                <span style="color: #666; font-weight: normal;">
+                    ※Simモードの自動計算：${specialStatusText}
+                </span>
+            </div>
         </div>
     `;
 
     const processedGachaIds = new Set();
-    
-    // アニバーサリー限定セット
     const anniversarySet = new Set();
     if (typeof AnniversaryLimited !== 'undefined' && Array.isArray(AnniversaryLimited)) {
         AnniversaryLimited.forEach(id => {
@@ -4827,7 +3920,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
             let targetPool = null;
             let isLegendRank = false;
-
             if (rarity === 'legend' && hasLegend) {
                 targetPool = config.pool.legend;
                 isLegendRank = true;
@@ -4840,15 +3932,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
-
                 if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) {
                     continue;
                 }
-                // 手動ターゲットに入っていないものはスキップ（Legend/Limitedが自動対象ではなくなったため）
-                // ただし、sim-new は自動対象(toggleでhiddenに入る)なので、ここでの判定は不要(hidden checkのみ)
                 const cStr = String(cid);
                 const isNew = cStr.startsWith('sim-new-');
-                // 自動対象(isNew) または 手動リスト入り(userTargetIds) の場合のみ表示
                 if (!isNew && !userTargetIds.has(cid) && !userTargetIds.has(parseInt(cid))) {
                      continue;
                 }
@@ -4884,7 +3972,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 if (item.isNew) return 1;
                 if (item.isLegend && item.isLimited) return 2;
                 if (item.isLegend) return 3;
-                 if (item.isAnniversary) return 4;
+                if (item.isAnniversary) return 4;
                 if (item.isLimited) return 5;
                 return 6; 
             };
@@ -4909,10 +3997,20 @@ function generateFastForecast(initialSeed, columnConfigs) {
             else if (data.isLimited) nameStyle += ' color:#d35400;'; 
             else nameStyle += ' color:#333;'; 
 
-            const resultStr = data.hits.join(", ");
+            // セル番地をクリック可能なリンク（自動Simモード切り替え対応）に変更
+            const hitLinks = data.hits.map(addr => {
+                const row = parseInt(addr);
+                const side = addr.endsWith('B') ? 1 : 0;
+                const sIdx = (row - 1) * 2 + side;
+                const escapedName = data.name.replace(/'/g, "\\'");
+                
+                return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
+                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true)">${addr}</span>`;
+            }).join("");
+
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
             
-            return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${resultStr}</span></div>`;
+            return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${hitLinks}</span></div>`;
         });
 
         summaryHtml += `<div style="margin-bottom: 8px;">
@@ -4932,10 +4030,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
 ====================
 FILE: view_header.js
 ====================
-/**
- * view_header.js
- * テーブルヘッダーのHTML生成ロジック
- */
+/** @file view_header.js @description テーブルヘッダー（固定行・操作行）のHTML生成を担当 @dependency gacha_selector.js */
 
 // 変更: 名前行（固定表示）のHTMLを生成
 function generateNameHeaderHTML() {
@@ -5052,10 +4147,7 @@ function generateControlHeaderHTML(isInteractive) {
 ====================
 FILE: view_master.js
 ====================
-/**
- * view_master.js
- * ガチャマスター情報のHTML生成を担当
- */
+/** @file view_master.js @description ガチャマスタ（キャラリスト）の詳細情報のHTML生成を担当 @dependency data_loader.js */
 
 function generateMasterInfoHtml() {
     if (!gachaMasterData || !gachaMasterData.gachas) return '<p>データがありません</p>';
@@ -5171,11 +4263,7 @@ function generateMasterInfoHtml() {
 ====================
 FILE: view_schedule.js
 ====================
-/**
- * view_schedule.js
- * スケジュール表・ガントチャートのレンダリング及び画像保存を担当
- * 依存: schedule_logic.js (Utility functions)
- */
+/** @file view_schedule.js @description スケジュール表およびガントチャートのレンダリングを担当 @dependency schedule_logic.js */
 
 // 文字列の表示幅を概算する関数 (動的幅調整用)
 function calcTextWidth(text) {
@@ -5539,10 +4627,7 @@ function renderScheduleTable(tsvContent, containerId) {
 ====================
 FILE: view_table.js
 ====================
-/**
- * view_table.js
- * ガチャ結果テーブルの構築（メインコントローラー）
- */
+/** @file view_table.js @description ガチャ結果テーブル全体のHTML構築と描画の主制御を担当 @dependency logic.js, view_cell_renderer.js, view_header.js */
 
 // Simルートのハイライト色 (通常: 鮮やかな水色)
 const COLOR_ROUTE_HIGHLIGHT = '#aaddff';

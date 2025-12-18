@@ -1,5 +1,6 @@
+/** @file gacha_series.js @description 各ガチャシリーズのメタデータ（名称、デフォルトレート、ソート順）の定義 @dependency なし */
+
 /**
- * gacha_series.js
  * Sortの区分について
  * 100～199：ネコ祭
  * 200～299：バスターズ
@@ -10,7 +11,6 @@
  * 700～799：新年その他
  * 800～899：過去分
  */
-
 
 const gacha_series = [
     {"series_id":0,"name":"ネコルガ族", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":300},
