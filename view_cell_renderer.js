@@ -150,10 +150,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     }
 
     if (!isSimRoute) {
-        let isAuto = false;
-        if (fullRoll.rarity === 'legend') isAuto = true;
-        else if (isLimited) isAuto = true;
-        else if (charIdStr.startsWith('sim-new-')) isAuto = true;
+        let isAuto = isAutomaticTarget(charId);
         const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
         const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
 

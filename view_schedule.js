@@ -23,7 +23,7 @@ function calcTextWidth(text) {
 function saveGanttImage() {
     const element = document.querySelector('.gantt-chart-container');
     if (!element) return;
-    // ガントチャートのコンテンツ幅を取得
+    
     const header = element.querySelector('.gantt-header');
     if (!header) return;
     const contentWidth = header.style.width;
@@ -33,13 +33,13 @@ function saveGanttImage() {
     
     const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
     const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-    // キャプチャ用に一時的にスタイル変更
+    
     element.style.overflow = 'visible';
     element.style.width = contentWidth; 
     
     if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
+    
     html2canvas(element).then(canvas => {
-        // スタイル復元
         element.style.overflow = originalOverflow;
         element.style.width = originalWidth;
         if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
@@ -62,6 +62,7 @@ function renderGanttChart(data) {
     const filteredData = data.filter(item => !isPlatinumOrLegend(item));
 
     if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
+    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0); 
@@ -72,10 +73,8 @@ function renderGanttChart(data) {
         return '<p>現在開催中または予定されているガチャはありません。</p>';
     }
 
-    // 表示範囲の決定
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
-    // 動的幅計算用の最大幅変数
     let maxLabelTextWidth = 0;
 
     activeData.forEach(item => {
@@ -85,30 +84,25 @@ function renderGanttChart(data) {
         const eDt = parseDateTime(item.rawEnd, item.endTime);
         if (eDt > maxEndDateTime) maxEndDateTime = eDt;
 
-        // --- 幅計算ロジック ---
         let displayName = item.seriesName;
-        
         if (item.guaranteed) displayName += " [確定]";
-        // 表示名の長さを計算
+        
         const textW = calcTextWidth(displayName);
         if (textW > maxLabelTextWidth) {
             maxLabelTextWidth = textW;
         }
     });
-    // 幅の設定
-    // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
+    
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
-    if (labelWidth > 320) labelWidth = 320; // 上限設定
+    if (labelWidth > 320) labelWidth = 320; 
 
     let minDate = parseDateStr(String(minDateInt));
-    // 表示開始日を調整
     const viewStartDate = new Date(yesterday);
     viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) {
         minDate = viewStartDate;
     }
 
-    // --- 終了日の決定 ---
     let limitDate = new Date(minDate);
     limitDate.setDate(limitDate.getDate() + 35);
     let chartEnd = new Date(maxEndDateTime);
@@ -116,7 +110,6 @@ function renderGanttChart(data) {
         chartEnd = limitDate;
     }
 
-    // 右端
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
@@ -124,9 +117,8 @@ function renderGanttChart(data) {
     if (totalDays <= 0) return '';
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    // 全体幅計算
     const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
-    // 現在時刻線の位置計算
+    
     const now = new Date();
     let currentLineHtml = '';
     if (now >= minDate && now < chartEnd) {
@@ -174,19 +166,16 @@ function renderGanttChart(data) {
         if (widthPx <= 0) return;
 
         let displayName = item.seriesName;
-        // 確定なら表記追加
-        if (item.guaranteed) {
-            displayName += " [確定]";
-        }
+        if (item.guaranteed) displayName += " [確定]";
 
         let barClass = 'gantt-bar';
         if (displayName.includes("極選抜")) barClass += ' g-kyoku';
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
+        
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
 
-        // 行のスタイル判定
         let rowClass = 'gantt-row';
         if (now > endDateTime) {
             rowClass += ' row-ended';
@@ -247,25 +236,25 @@ function fmtRate(val) {
 function renderScheduleTable(tsvContent, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-
-    // parseGachaTSV等は schedule_logic.js に依存
+    
     const data = parseGachaTSV(tsvContent);
     const ganttHtml = renderGanttChart(data);
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayInt = getDateInt(yesterday);
+    
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
+    
+    // ソート順：通常ガチャ（日付順） -> 特別枠（プラチナ・レジェンド、日付順）
     filteredData.sort((a, b) => {
         const isSpecialA = isPlatinumOrLegend(a);
         const isSpecialB = isPlatinumOrLegend(b);
-        
         if (isSpecialA && !isSpecialB) return 1; 
         if (!isSpecialA && isSpecialB) return -1; 
-        
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
+
     let html = `
         <h3 style="margin-top:0;">開催スケジュール</h3>
         ${ganttHtml}
@@ -286,11 +275,11 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
+    
     const now = new Date();
 
-    filteredData.forEach(item => {
+    filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
-        
         if (item.guaranteed) {
             seriesDisplay += " [確定]";
         }
@@ -299,12 +288,33 @@ function renderScheduleTable(tsvContent, containerId) {
         
         const endDateFormatted = formatDateJP(item.rawEnd);
         let endStr = endDateFormatted;
-        if (endDateFormatted !== '永続') {
+
+        // --- プラチナ/レジェンドガチャの「至」の調整ロジック ---
+        const isPlat = item.seriesName.includes("プラチナ");
+        const isLeg = item.seriesName.includes("レジェンド");
+        let isAppliedNextStart = false;
+
+        if (isPlat || isLeg) {
+            // 現在の行より後のデータから、同じ種類のガチャ（プラチナ同士 or レジェンド同士）を検索
+            const nextSameType = filteredData.slice(index + 1).find(nextItem => {
+                if (isPlat) return nextItem.seriesName.includes("プラチナ");
+                if (isLeg) return nextItem.seriesName.includes("レジェンド");
+                return false;
+            });
+
+            if (nextSameType) {
+                // 次に見つかった同じ種類の「自（開始日時）」を、この行の「至（終了日時）」として表示
+                endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
+                isAppliedNextStart = true;
+            }
+        }
+
+        // 通常の終了時間表示（上記特殊処理が行われなかった場合）
+        if (!isAppliedNextStart && endDateFormatted !== '永続') {
             endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
         }
         
         const isPlatLeg = isPlatinumOrLegend(item);
-
         const uberRateVal = parseInt(item.uber);
         let uberStyle = '';
         if (!isPlatLeg && uberRateVal !== 500) {
@@ -317,10 +327,8 @@ function renderScheduleTable(tsvContent, containerId) {
             legendStyle = 'color:red; font-weight:bold;';
         }
 
-        // 行の背景色決定
         const endDateTime = parseDateTime(item.rawEnd, item.endTime);
         let rowClass = "";
-        
         if (now > endDateTime) {
             rowClass = "row-ended";
         } else if (item.guaranteed) {

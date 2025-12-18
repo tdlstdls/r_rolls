@@ -22,12 +22,12 @@ function prepareScheduleInfo() {
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                        if (gachaMasterData && 
+                            gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
          
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
-                                gachaMasterData.gachas[gId].name += " [確定]";
-             
+                                 gachaMasterData.gachas[gId].name += " [確定]";
                             }
                         }
                     }
@@ -64,22 +64,26 @@ function toggleSchedule() {
         return;
     }
 
+    // モードを反転させる
+    isScheduleMode = !isScheduleMode;
+
     // もし概要モードが開いていれば、先に閉じる (排他制御)
-    if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function') {
-        toggleDescription(); 
+    if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function' && isScheduleMode) {
+        toggleDescription();
     }
 
-    isScheduleMode = !isScheduleMode;
     const scheduleBtn = document.getElementById('toggle-schedule-btn');
     const simWrapper = document.getElementById('sim-control-wrapper');
     const tableContainer = document.getElementById('rolls-table-container');
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const mainControls = document.getElementById('main-controls');
-    
+
     if (isScheduleMode) {
-        scheduleBtn.textContent = 'Back';
+        // テキスト変更削除
+        // scheduleBtn.textContent = 'Back'; 
         scheduleBtn.classList.add('active');
+
         if (simWrapper) simWrapper.classList.add('hidden');
         if (tableContainer) tableContainer.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
@@ -92,8 +96,10 @@ function toggleSchedule() {
             }
         }
     } else {
-        scheduleBtn.textContent = 'skd';
+        // テキスト変更削除
+        // scheduleBtn.textContent = 'skd';
         scheduleBtn.classList.remove('active');
+
         if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');

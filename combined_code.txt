@@ -1397,7 +1397,7 @@ FILE: index.html
         <div class="header-row">
             <h1>R_Rolls</h1>
             <div class="header-actions">
-                <span id="seed-input-trigger" class="text-btn" onclick="showSeedInput()">SEED</span>
+                <span id="seed-input-trigger" class="text-btn" onclick="toggleSeedInput()">SEED</span>
                 
                 <span class="separator">|</span>
                 <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
@@ -1444,7 +1444,7 @@ FILE: index.html
                         (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
                         ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
                     </span>
-                        また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
+                    また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
                         ・自動回避・誘発： レア被りによる再抽選（Reroll）の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
                         ・A列⇔B列のルート切り替え： 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列、B列からA列へ移動するルートを計算します。<br>
                         ・追記機能： 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
@@ -2251,10 +2251,9 @@ function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
 
     // Normal Rolls
     for(let k=0; k < normalRolls; k++) {
-        if (tempIdx >= seeds.length - 5) break; 
+        if (tempIdx >= seeds.length - 5) break;
         const rr = rollWithSeedConsumptionFixed(tempIdx, conf, seeds, tempLastDraw);
         if (rr.seedsConsumed === 0) break;
-        
         tempLastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
         tempIdx += rr.seedsConsumed;
     }
@@ -2272,7 +2271,7 @@ function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
 
 /**
  * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
- * ★修正機能: 途中セルがクリックされた場合、既存のConfigを遡って最大限維持する
+ * ★修正: 途中セルがクリックされた場合、既存のConfigを遡って最大限維持し、そこからルートを再計算する
  */
 function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null) {
     // シード配列の準備 (Start Seedから生成)
@@ -2302,10 +2301,9 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         for (const segment of existingConfigs) {
             // このセグメントを実行した場合の到達点を計算
             const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
-            
-            // もしこのセグメントを実行すると、ターゲットを超えてしまう（または同じ位置になってしまう）場合
+
+            // もしこのセグメントを実行すると、ターゲットを超えてしまう場合
             // このセグメント以降は採用せず、ここから経路探索を行う
-            // ※「同じ位置」の場合も、そのセルの直前のアクションを再計算する可能性があるため止める
             if (res.nextIndex > targetSeedIndex) {
                 break;
             }
@@ -2315,10 +2313,11 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
             tempIdx = res.nextIndex;
             tempLastDraw = res.lastDraw;
             
-            // ターゲット地点ぴったりに到達した場合も、そこからの追加操作（確定枠等）があるかもしれないので
-            // ここで止めても良いが、通常はTargetIndexを超えるまで維持して良い。
-            // ただし、もしターゲット位置ぴったりですでにクリックされた場合、
-            // 追加アクションがないなら「ルート検索」は空になる。
+            // ターゲット地点ぴったりに到達した場合、そこまでのConfigは確定としループを抜ける
+            // (これ以上既存Configを読み込むとオーバーするため)
+            if (tempIdx === targetSeedIndex) {
+                break;
+            }
         }
 
         startIdx = tempIdx;
@@ -2340,13 +2339,15 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         if (conf.name.includes('プラチナ') || conf.name.includes('レジェンド')) return null;
         return conf;
     }).filter(c => c !== null);
+
     if (usableConfigs.length === 0) return null;
 
     // 3. 経路探索実行 (startIdx から targetSeedIndex まで)
-    const route = findPathGreedy(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
+    // findPathBeamSearch に名称変更
+    const route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
     
     if (route) {
-        // ★修正: クリックしたセルの処理
+        // クリックしたセルの処理
         if (finalActionOverride) {
             // 確定枠などの指定がある場合はそのアクションを追加
             route.push(finalActionOverride);
@@ -2356,6 +2357,7 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         }
 
         const newRouteStr = compressRoute(route);
+
         if (baseConfigStr) {
             // 維持したConfig + 新しいルート
             return baseConfigStr + " " + newRouteStr;
@@ -2364,80 +2366,155 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         }
     } else {
         // ルートが見つからない場合
-        // StartIdxがTargetSeedIndexを超えている（理論上ありえないが）、
-        // または探索不能な場合
         return null;
     }
 }
 
 /**
- * 貪欲法による経路探索
+ * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
+ * ビームサーチ(Beam Search)を使用し、最適なルートを探索する
  */
-function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
-    let currentIdx = startIdx;
-    let path = []; // { id: gachaId, rolls: 1 }
-    let lastDraw = initialLastDraw;
-    // { rarity, charId, isRerolled }
+function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
+    // ビームサーチ設定
+    const BEAM_WIDTH = 20;
+    // 同時に探索するルート候補の数（増やしすぎると重くなるが精度が上がる）
+    const MAX_STEPS = 1000; // 無限ループ防止
 
-    // 安全装置: 無限ループ防止
+    // targetGachaId を優先的に試行するためにリストを並び替える
+    const sortedConfigs = [...configs].sort((a, b) => {
+        if (a.id == targetGachaId) return -1;
+        if (b.id == targetGachaId) return 1;
+        return 0;
+    });
+
+    // 候補リスト: { idx, path, lastDraw, score }
+    // scoreが大きいほど優先度が高い
+    let candidates = [{
+        idx: startIdx,
+        path: [],
+        lastDraw: initialLastDraw,
+        score: 0
+    }];
+
     let loopCount = 0;
-    const MAX_LOOPS = 2000;
 
-    while (currentIdx < targetIdx && loopCount < MAX_LOOPS) {
+    while (candidates.length > 0 && loopCount < MAX_STEPS) {
         loopCount++;
-        const dist = targetIdx - currentIdx;
+        let nextCandidates = [];
         
-        let possibleMoves = [];
-        for (const conf of configs) {
-            // このガチャを引いた場合の結果を予測
-            const res = rollWithSeedConsumptionFixed(currentIdx, conf, simSeeds, lastDraw);
-            // ターゲットを越える場合は除外
-            if (currentIdx + res.seedsConsumed > targetIdx) continue;
-            // 評価値計算 (小さいほど良い)
-            let score = 0;
-            // 1. パリティ（偶奇）チェック
-            const distIsOdd = (dist % 2 !== 0);
-            const moveIsOdd = (res.seedsConsumed % 2 !== 0);
-            
-            if (distIsOdd === moveIsOdd) {
-                score -= 100; // パリティが一致する手は高評価
-            } else {
-                score += 50; // パリティ不一致は後回し
+        // 現在の候補すべてについて、次の手を展開
+        for (const current of candidates) {
+            // すでにゴールしている場合は（念のため）リターン
+            if (current.idx === targetIdx) {
+                return current.path;
             }
 
-            // 2. ターゲットガチャ優先
-            if (conf.id == targetGachaId) score -= 10;
-            // 3. 直前のガチャと同じなら優先（圧縮効率・Stickiness）
-            const prevId = path.length > 0 ? path[path.length-1].id : null;
-            if (conf.id == prevId) score -= 5;
-            // 4. 消費シード数による重みづけ (パリティが合うなら大きく進む)
-            score -= res.seedsConsumed;
-            possibleMoves.push({ config: conf, result: res, score: score });
+            // 残りの距離
+            const dist = targetIdx - current.idx;
+            if (dist < 0) continue; // 行き過ぎたルートは破棄
+
+            for (const conf of sortedConfigs) {
+                // このガチャを引いた場合の結果を予測
+                const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, current.lastDraw);
+
+                // ターゲットを越える場合は除外
+                if (current.idx + res.seedsConsumed > targetIdx) continue;
+
+                // --- スコアリング (大きいほど良い) ---
+                let score = current.score;
+
+                // 1. パリティ（偶奇）チェック
+                // 「残り距離」と「移動距離」の偶奇が一致すれば、トラック移動として非常に高評価
+                const distIsOdd = (dist % 2 !== 0);
+                const moveIsOdd = (res.seedsConsumed % 2 !== 0);
+                
+                if (distIsOdd === moveIsOdd) {
+                    score += 500; // パリティ一致は最優先
+                } else {
+                    score -= 50; // パリティ不一致は減点
+                }
+
+                // 2. レアリティ・ターゲットに基づく加点（優先順位指定あり）
+                let rarityScore = 0;
+                const cid = res.charId;
+                const cStr = String(cid);
+
+                // 限定キャラ判定（limited_cats.js）
+                const isLimited = (typeof limitedCats !== 'undefined' && (limitedCats.includes(cid) || limitedCats.includes(cStr)));
+                
+                // ユーザー指定ターゲット判定（ui_globals.js, ui_target_handler.js）
+                // userTargetIds は Set
+                const isUserTarget = (typeof userTargetIds !== 'undefined' && (userTargetIds.has(cid) || userTargetIds.has(parseInt(cid))));
+                
+                if (res.rarity === 'legend') {
+                    if (isUserTarget) rarityScore = 300; // Findで選択された伝説レア
+                    else rarityScore = 250;              // その他の伝説レア
+                } else if (isLimited) {
+                    if (isUserTarget) rarityScore = 200; // Findで選択された限定キャラ
+                    else rarityScore = 150;              // その他の限定キャラ
+                } else if (res.rarity === 'uber') {
+                    if (isUserTarget) rarityScore = 100; // Findで選択された超激レア
+                    else rarityScore = 80;               // その他の超激レア
+                } else if (isUserTarget) {
+                    rarityScore = 50;                    // Findで選択されたその他のレアリティ
+                }
+
+                score += rarityScore;
+
+                // 3. Stickiness（同じガチャを連続して引く）
+                const prevId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
+                if (conf.id == prevId) score += 40; // 加点を強化
+
+                // 4. Target Gacha の条件削除
+                // if (conf.id == targetGachaId) score += 30; // 削除済み
+
+                // 5. 進むこと自体への加点（停滞防止）
+                score += res.seedsConsumed;
+
+                // 新しい候補を作成
+                const newPath = [...current.path, { id: conf.id, rolls: 1 }];
+                const newLastDraw = { 
+                    rarity: res.rarity, 
+                    charId: res.charId, 
+                    isRerolled: res.isRerolled 
+                };
+
+                // もしこれでゴールなら即終了
+                if (current.idx + res.seedsConsumed === targetIdx) {
+                    return newPath;
+                }
+
+                nextCandidates.push({
+                    idx: current.idx + res.seedsConsumed,
+                    path: newPath,
+                    lastDraw: newLastDraw,
+                    score: score
+                });
+            }
         }
 
-        // 候補がない（詰み）
-        if (possibleMoves.length === 0) return null;
-        // スコア順にソート (昇順)
-        possibleMoves.sort((a, b) => a.score - b.score);
-        // 最良の手を採用
-        const bestMove = possibleMoves[0];
-        
-        path.push({ id: bestMove.config.id, rolls: 1 });
-        // 次のステップのために lastDraw を更新
-        lastDraw = { 
-            rarity: bestMove.result.rarity, 
-            charId: bestMove.result.charId, 
-            isRerolled: bestMove.result.isRerolled 
-        };
-        currentIdx += bestMove.result.seedsConsumed;
+        if (nextCandidates.length === 0) break; // 手詰まり
+
+        // スコア順にソート (降順)
+        nextCandidates.sort((a, b) => b.score - a.score);
+
+        // 重複除去（同じ到達点・同じLastDrawなら、スコアが高い方だけ残す）
+        const uniqueCandidates = [];
+        const seenState = new Set();
+
+        for (const cand of nextCandidates) {
+            const stateKey = `${cand.idx}-${cand.lastDraw.charId}`;
+            if (!seenState.has(stateKey)) {
+                seenState.add(stateKey);
+                uniqueCandidates.push(cand);
+            }
+            if (uniqueCandidates.length >= BEAM_WIDTH) break;
+        }
+
+        candidates = uniqueCandidates;
     }
 
-    // 到達チェック
-    if (currentIdx === targetIdx) {
-        return path;
-    }
-
-    return null;
+    return null; // ルートが見つからなかった
 }
 
 /**
@@ -2446,12 +2523,10 @@ function findPathGreedy(startIdx, targetIdx, targetGachaId, configs, simSeeds, i
  */
 function compressRoute(path) {
     if (!path || path.length === 0) return "";
-    
     let compressed = [];
     let currentId = path[0].id;
     let isG = path[0].g || false;
     let count = path[0].rolls || 1;
-
     for (let i = 1; i < path.length; i++) {
         const step = path[i];
         const stepG = step.g || false;
@@ -2469,7 +2544,6 @@ function compressRoute(path) {
     }
     // 最後の一つ
     compressed.push(`${currentId} ${count}${isG ? 'g' : ''}`);
-    
     return compressed.join(" ");
 }
 
@@ -3256,6 +3330,7 @@ function initializeDefaultGachas() {
               
                     return now >= startDt && now <= endDt;
                 });
+
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
@@ -3285,6 +3360,7 @@ function initializeDefaultGachas() {
                 const sortedGachas = Object.values(gachaMasterData.gachas)
                     .filter(gacha => gacha.sort < 800)
                     .sort((a, b) => a.sort - b.sort);
+
                 if (sortedGachas.length > 0) {
                     tableGachaIds.push(sortedGachas[0].id);
                     uberAdditionCounts.push(0);
@@ -3299,7 +3375,7 @@ function initializeDefaultGachas() {
 
     const seedEl = document.getElementById('seed');
     if (seedEl && (seedEl.value === '12345' || seedEl.value === '')) {
-        showSeedInput();
+        toggleSeedInput();
     }
 }
 
@@ -3320,11 +3396,8 @@ function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
         if (isSimulationMode) {
-            // Simモード中は「Back」と表示
-            btn.textContent = "Back";
             btn.classList.add('active');
         } else {
-            btn.textContent = "Sim";
             btn.classList.remove('active');
         }
     }
@@ -3353,7 +3426,7 @@ function resetAndGenerateTable() {
     }
     
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
+    updateMasterInfoView(); // ここでマスター情報を更新
     if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
@@ -3410,14 +3483,26 @@ function updateSeedFromSim() {
 
 // --- SEED入力欄の制御 ---
 
-function showSeedInput() {
+function toggleSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
-    if (container) container.classList.remove('hidden');
-    if (trigger) trigger.classList.add('hidden');
     
-    const input = document.getElementById('seed');
-    if (input) input.focus();
+    if (!container) return;
+
+    // hiddenクラスがあれば表示、なければ非表示（キャンセル）
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        // トリガーボタンは消さずにactiveクラスを付与
+        if (trigger) {
+            trigger.classList.remove('hidden');
+            trigger.classList.add('active');
+        }
+        
+        const input = document.getElementById('seed');
+        if (input) input.focus();
+    } else {
+        cancelSeedInput();
+    }
 }
 
 function applySeedInput() {
@@ -3428,7 +3513,11 @@ function applySeedInput() {
     const trigger = document.getElementById('seed-input-trigger');
     
     if (container) container.classList.add('hidden');
-    if (trigger) trigger.classList.remove('hidden');
+    // activeクラスを外す
+    if (trigger) {
+        trigger.classList.remove('hidden');
+        trigger.classList.remove('active');
+    }
 }
 
 // 追加: SEED入力をキャンセルして閉じる
@@ -3436,14 +3525,17 @@ function cancelSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     const input = document.getElementById('seed');
-
     // 現在のURLパラメータから値を復元（変更を破棄）
     const urlParams = new URLSearchParams(window.location.search);
     const currentSeed = urlParams.get('seed') || "12345";
     if (input) input.value = currentSeed;
 
     if (container) container.classList.add('hidden');
-    if (trigger) trigger.classList.remove('hidden');
+    // activeクラスを外す
+    if (trigger) {
+        trigger.classList.remove('hidden');
+        trigger.classList.remove('active');
+    }
 }
 
 // 追加: SEEDをクリップボードにコピー
@@ -3469,22 +3561,23 @@ function updateToggleButtons() {
     if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
 }
 
-// 追加: マスター情報の表示切替
+// マスター情報の表示切替
 function toggleMasterInfo() {
     isMasterInfoVisible = !isMasterInfoVisible;
-    const el = document.getElementById('master-info-area');
-    const btn = document.getElementById('toggle-master-info-btn');
+    const content = document.getElementById('master-info-content');
     
-    if (el) {
-        if (isMasterInfoVisible) {
-            el.classList.remove('hidden');
-        } else {
-            el.classList.add('hidden');
-        }
+    // 表示切替
+    if (content) {
+        content.style.display = isMasterInfoVisible ? 'block' : 'none';
     }
     
-    if (btn) {
-        btn.textContent = isMasterInfoVisible ? 'マスター情報を隠す' : 'マスター情報を表示';
+    // ボタンの見た目更新のためテーブル再描画
+    if (typeof generateRollsTable === 'function') {
+        generateRollsTable();
+    }
+    // ★重要: 再描画後に必ず最新のHTMLを注入して表記ゆれを防ぐ
+    if (typeof updateMasterInfoView === 'function') {
+        updateMasterInfoView();
     }
 }
 
@@ -3500,6 +3593,7 @@ function toggleDescription() {
 
     // モード切替
     isDescriptionMode = !isDescriptionMode;
+
     if (isDescriptionMode) {
         // --- 概要モード ON ---
 
@@ -3510,7 +3604,6 @@ function toggleDescription() {
 
         // 2. ボタン状態更新
         if (toggle) {
-            toggle.textContent = 'Back';
             toggle.classList.add('active');
         }
 
@@ -3520,6 +3613,7 @@ function toggleDescription() {
         if (resultDiv) resultDiv.classList.add('hidden');
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
+
         // 4. 概要コンテンツを表示＆スタイル調整
         if (content) {
             content.classList.remove('hidden');
@@ -3536,7 +3630,6 @@ function toggleDescription() {
 
         // 1. ボタン状態更新
         if (toggle) {
-            toggle.textContent = '概要';
             toggle.classList.remove('active');
         }
 
@@ -3563,17 +3656,41 @@ function toggleDescription() {
 function toggleFindInfo() {
     showFindInfo = !showFindInfo;
     const btn = document.getElementById('toggle-find-info-btn');
+
     if (typeof generateRollsTable === 'function') {
         generateRollsTable();
     }
-    if (btn) btn.textContent = showFindInfo ? 'Findを隠す' : 'Find';
+    // テキスト変更なし、activeクラスのみ
+    if (btn) {
+        if (showFindInfo) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
 }
 
 // --- 共通View更新 ---
 
+// マスター情報の更新
 function updateMasterInfoView() {
-    // マスター情報は generateRollsTable 内で生成されるため、ここでは何もしない
-    // (将来的に分離する場合はここにロジックを追加)
+    const el = document.getElementById('master-info-area');
+    if (!el || typeof generateMasterInfoHTML !== 'function') return;
+
+    // columnConfigsを再構築（現在のtableGachaIdsに基づいて）
+    const configs = [];
+    tableGachaIds.forEach(idStr => {
+        let gachaId = idStr;
+        // 末尾の識別子除去
+        if (gachaId.endsWith('g') || gachaId.endsWith('s') || gachaId.endsWith('f')) {
+            gachaId = gachaId.slice(0, -1);
+        }
+        if (gachaMasterData.gachas[gachaId]) {
+            configs.push(gachaMasterData.gachas[gachaId]);
+        }
+    });
+
+    el.innerHTML = generateMasterInfoHTML(configs);
 }
 
 /**
@@ -3618,21 +3735,6 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
             }
 
             if (routeConfig) {
-                // 【追加ロジック】
-                // Simモードでクリックした際、現在の構成（特に確定枠など）を書き換えて無理やり到達するルートを提示するのではなく、
-                // 「ここから先へのルート」として成立しない（過去改変が必要な）場合は「見つからない」扱いにする。
-                // 判定：currentConfigが空でなく、かつ、routeConfigがcurrentConfigから始まっていない（追記でない）場合は除外。
-                
-                const normCurrent = currentConfig.replace(/\s+/g, ' ').trim();
-                const normRoute = routeConfig.replace(/\s+/g, ' ').trim();
-
-                if (normCurrent.length > 0 && !normRoute.startsWith(normCurrent)) {
-                    // 履歴の書き換えが発生しているため、ルートとしては不採用（無効）とする
-                    routeConfig = null;
-                }
-            }
-
-            if (routeConfig) {
                 // 成功: Configに入力して更新
                 if (configInput) {
                     configInput.value = routeConfig;
@@ -3651,7 +3753,7 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                     errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
                     errorEl.style.display = 'block'; 
                 }
-                console.warn("Route not found or history rewrite rejected.");
+                console.warn("Route not found.");
             }
         }
     } else {
@@ -3723,12 +3825,12 @@ function prepareScheduleInfo() {
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                        if (gachaMasterData && 
+                            gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
          
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
-                                gachaMasterData.gachas[gId].name += " [確定]";
-             
+                                 gachaMasterData.gachas[gId].name += " [確定]";
                             }
                         }
                     }
@@ -3765,22 +3867,26 @@ function toggleSchedule() {
         return;
     }
 
+    // モードを反転させる
+    isScheduleMode = !isScheduleMode;
+
     // もし概要モードが開いていれば、先に閉じる (排他制御)
-    if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function') {
-        toggleDescription(); 
+    if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function' && isScheduleMode) {
+        toggleDescription();
     }
 
-    isScheduleMode = !isScheduleMode;
     const scheduleBtn = document.getElementById('toggle-schedule-btn');
     const simWrapper = document.getElementById('sim-control-wrapper');
     const tableContainer = document.getElementById('rolls-table-container');
     const scheduleContainer = document.getElementById('schedule-container');
     const resultDiv = document.getElementById('result');
     const mainControls = document.getElementById('main-controls');
-    
+
     if (isScheduleMode) {
-        scheduleBtn.textContent = 'Back';
+        // テキスト変更削除
+        // scheduleBtn.textContent = 'Back'; 
         scheduleBtn.classList.add('active');
+
         if (simWrapper) simWrapper.classList.add('hidden');
         if (tableContainer) tableContainer.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
@@ -3793,8 +3899,10 @@ function toggleSchedule() {
             }
         }
     } else {
-        scheduleBtn.textContent = 'skd';
+        // テキスト変更削除
+        // scheduleBtn.textContent = 'skd';
         scheduleBtn.classList.remove('active');
+
         if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
@@ -4009,23 +4117,13 @@ FILE: ui_target_handler.js
  * Find機能（ターゲット指定、表示/非表示切り替え）のロジック
  */
 
-// 自動ターゲット対象かどうか（伝説レア、限定キャラなど）
+// 自動ターゲット対象かどうか
+// 変更: 伝説レア・限定キャラを除外し、手動追加（sim-new）のみを自動対象とする
 function isAutomaticTarget(charId) {
     const idStr = String(charId);
     if (idStr.startsWith('sim-new-')) return true;
     
-    if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-        if (limitedCats.includes(charId) || limitedCats.includes(parseInt(charId)) || limitedCats.includes(idStr)) {
-            return true;
-        }
-    }
-    
-    if (typeof gachaMasterData !== 'undefined' && gachaMasterData.cats) {
-        const catInfo = gachaMasterData.cats[charId];
-        if (catInfo && catInfo.rarity === 'legend') {
-            return true;
-        }
-    }
+    // 以前のロジック（限定・伝説を自動対象とする）を無効化
     return false;
 }
 
@@ -4037,16 +4135,19 @@ function toggleCharVisibility(charId) {
     }
     
     if (isAutomaticTarget(idVal)) {
-        // 自動ターゲットの場合は hidden リストで管理（デフォルト表示→非表示にする）
+        // 自動ターゲット（sim-new等）は hidden リストで管理（デフォルト表示→非表示にする）
         if (hiddenFindIds.has(idVal)) hiddenFindIds.delete(idVal);
         else hiddenFindIds.add(idVal);
     } else {
-        // 手動ターゲットの場合は userTarget リストで管理（デフォルト非表示→表示にする）
-        if (userTargetIds.has(idVal)) userTargetIds.delete(idVal); 
+        // 手動ターゲット（伝説・限定含む）は userTarget リストで管理（デフォルト非表示→表示にする）
+        if (userTargetIds.has(idVal)) userTargetIds.delete(idVal);
         else userTargetIds.add(idVal);
     }
     
+    // テーブルとFindエリアの更新
     if (typeof generateRollsTable === 'function') generateRollsTable();
+    // マスター情報の表示更新（ハイライト切り替えのため追加）
+    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
 }
 
 // ターゲット一括操作: 全消去 (×ボタン)
@@ -4056,23 +4157,9 @@ function clearAllTargets() {
         if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
         return id;
     }))];
-
+    
     uniqueIds.forEach(id => {
-        const config = gachaMasterData.gachas[id];
-        if (!config) return;
-        ['rare', 'super', 'uber', 'legend'].forEach(r => {
-            if (config.pool[r]) {
-                config.pool[r].forEach(c => {
-                    const cid = c.id;
-                    // 自動ターゲットは全てHiddenに追加して隠す
-                    if (isAutomaticTarget(cid)) {
-                        hiddenFindIds.add(cid);
-                    }
-                });
-            }
-        });
-        
-        // 追加キャラ(sim-new)も隠す
+        // 追加キャラ(sim-new)を隠す
         const colIndex = tableGachaIds.findIndex(tid => tid.startsWith(id));
         const addCount = (colIndex >= 0 && uberAdditionCounts[colIndex]) ? uberAdditionCounts[colIndex] : 0;
         for(let k=1; k<=addCount; k++){
@@ -4080,36 +4167,56 @@ function clearAllTargets() {
         }
     });
 
-    // 手動ターゲットリストは空にする
+    // 手動ターゲットリスト（伝説・限定含む）を空にする
     userTargetIds.clear();
     
     if (typeof generateRollsTable === 'function') generateRollsTable();
+    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
 }
 
-// ターゲット一括操作: 伝説ON
-function activateLegendTargets() {
+// ターゲット一括操作: 伝説トグル
+// 変更: 現在の状態を確認し、全て選択済みなら解除、それ以外なら全選択を行う
+function toggleLegendTargets() {
     const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
         let id = idStr;
         if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
         return id;
     }))];
 
+    // まず対象となるIDを全て収集
+    let allLegendIds = [];
     uniqueIds.forEach(id => {
         const config = gachaMasterData.gachas[id];
         if (!config || !config.pool.legend) return;
         config.pool.legend.forEach(c => {
-            const cid = c.id;
-            // Hiddenリストから削除 (＝表示状態にする)
-            if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
-            if (hiddenFindIds.has(String(cid))) hiddenFindIds.delete(String(cid));
+            allLegendIds.push(c.id);
         });
     });
 
+    if (allLegendIds.length === 0) return;
+
+    // 現在全て選択されているかチェック
+    const isAllSelected = allLegendIds.every(cid => userTargetIds.has(cid));
+
+    if (isAllSelected) {
+        // 全て選択済み -> 全解除
+        allLegendIds.forEach(cid => userTargetIds.delete(cid));
+    } else {
+        // 未選択がある -> 全選択
+        allLegendIds.forEach(cid => userTargetIds.add(cid));
+        // もしHiddenに入っていたら削除（自動ターゲットの場合の保険）
+        allLegendIds.forEach(cid => {
+             if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
+        });
+    }
+
     if (typeof generateRollsTable === 'function') generateRollsTable();
+    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
 }
 
-// ターゲット一括操作: 限定ON
-function activateLimitedTargets() {
+// ターゲット一括操作: 限定トグル
+// 変更: 現在の状態を確認し、全て選択済みなら解除、それ以外なら全選択を行う
+function toggleLimitedTargets() {
     const uniqueIds = [...new Set(tableGachaIds.map(idStr => {
         let id = idStr;
         if (id.endsWith('f') || id.endsWith('s') || id.endsWith('g')) id = id.slice(0, -1);
@@ -4124,6 +4231,8 @@ function activateLimitedTargets() {
         });
     }
 
+    // まず対象となるIDを全て収集
+    let allLimitedIds = [];
     uniqueIds.forEach(id => {
         const config = gachaMasterData.gachas[id];
         if (!config) return;
@@ -4133,15 +4242,33 @@ function activateLimitedTargets() {
                     const cid = c.id;
                     const cStr = String(cid);
                     if (limitedSet.has(cid) || limitedSet.has(cStr)) {
-                        if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
-                        if (hiddenFindIds.has(cStr)) hiddenFindIds.delete(cStr);
+                        allLimitedIds.push(cid);
                     }
                 });
             }
         });
     });
 
+    if (allLimitedIds.length === 0) return;
+
+    // 現在全て選択されているかチェック
+    const isAllSelected = allLimitedIds.every(cid => userTargetIds.has(cid));
+
+    if (isAllSelected) {
+        // 全て選択済み -> 全解除
+        allLimitedIds.forEach(cid => userTargetIds.delete(cid));
+    } else {
+        // 未選択がある -> 全選択
+        allLimitedIds.forEach(cid => userTargetIds.add(cid));
+        // もしHiddenに入っていたら削除
+        allLimitedIds.forEach(cid => {
+             if (hiddenFindIds.has(cid)) hiddenFindIds.delete(cid);
+             if (hiddenFindIds.has(String(cid))) hiddenFindIds.delete(String(cid));
+        });
+    }
+
     if (typeof generateRollsTable === 'function') generateRollsTable();
+    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
 }
 
 ====================
@@ -4474,10 +4601,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     }
 
     if (!isSimRoute) {
-        let isAuto = false;
-        if (fullRoll.rarity === 'legend') isAuto = true;
-        else if (isLimited) isAuto = true;
-        else if (charIdStr.startsWith('sim-new-')) isAuto = true;
+        let isAuto = isAutomaticTarget(charId);
         const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
         const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
 
@@ -4549,6 +4673,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
     let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 0; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0;">`;
+
     const legendSlots = [];
     const promotedSlots = []; 
     for (let n = 0; n < scanRows * 2; n++) {
@@ -4565,6 +4690,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const legendStr = legendSlots.length > 0 ? legendSlots.join(", ") : "なし";
     const promotedStr = promotedSlots.length > 0 ? promotedSlots.join(", ") : "なし";
+
     summaryHtml += `
         <div style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #eee; font-size: 0.85em;">
             <div style="margin-bottom: 4px;">
@@ -4578,22 +4704,13 @@ function generateFastForecast(initialSeed, columnConfigs) {
             </div>
         </div>
     `;
-    
-    // 現在のマスター情報表示状態に基づくボタンラベル
-    const masterInfoBtnLabel = (typeof isMasterInfoVisible !== 'undefined' && !isMasterInfoVisible) ? 'マスター情報を表示' : 'マスター情報を隠す';
 
-    // ▼▼▼ ボタンエリア変更: [×] [伝説] [限定] [マスター情報を隠す] ▼▼▼
-    summaryHtml += `
-        <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 5px;">
-            <button onclick="clearAllTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px;"
-                title="全て非表示">×</button>
-            <button onclick="activateLegendTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px; background-color: #ffb6c1; color: #333; border: 1px solid #ccc;">伝説</button>
-            <button onclick="activateLimitedTargets()" class="secondary" style="font-size: 11px; padding: 2px 8px; background-color: #e0f7fa; color: #333; border: 1px solid #ccc;">限定</button>
-            <button id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="secondary" style="font-size: 11px; padding: 2px 8px; border: 1px solid #ccc;">${masterInfoBtnLabel}</button>
-            <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
-        </div>
-    `;
-    const processedGachaIds = new Set();
+    // --- ボタンの状態判定 ---
+    // 現在のテーブルに含まれる全ての伝説・限定キャラを収集
+    const processedGachaIdsForBtn = new Set();
+    let availableLegendIds = [];
+    let availableLimitedIds = [];
+    
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
         limitedCats.forEach(id => {
@@ -4602,6 +4719,55 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
     }
 
+    columnConfigs.forEach((config) => {
+        if (!config) return;
+        if (processedGachaIdsForBtn.has(config.id)) return;
+        processedGachaIdsForBtn.add(config.id);
+
+        // 伝説
+        if (config.pool.legend && config.pool.legend.length > 0) {
+            config.pool.legend.forEach(c => availableLegendIds.push(c.id));
+        }
+        // 限定
+        ['rare', 'super', 'uber'].forEach(r => {
+            if (config.pool[r]) {
+                config.pool[r].forEach(c => {
+                    const cStr = String(c.id);
+                    if (limitedSet.has(c.id) || limitedSet.has(cStr)) {
+                        availableLimitedIds.push(c.id);
+                    }
+                });
+            }
+        });
+    });
+
+    // 状態判定
+    const isLegendActive = (availableLegendIds.length > 0) && availableLegendIds.every(cid => userTargetIds.has(cid));
+    const isLimitedActive = (availableLimitedIds.length > 0) && availableLimitedIds.every(cid => userTargetIds.has(cid));
+    const isMasterActive = (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true;
+
+    const legendBtnClass = isLegendActive ? 'text-btn active' : 'text-btn';
+    const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
+    const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
+
+    // ボタンエリア HTML生成
+    summaryHtml += `
+        <div style="margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px;">
+            <span onclick="clearAllTargets()" class="text-btn" title="全て非表示">×</span>
+            <span class="separator">|</span>
+            <span onclick="toggleLegendTargets()" class="${legendBtnClass}">伝説</span>
+            <span class="separator">|</span>
+            <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
+            <span class="separator">|</span>
+            <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
+            
+            <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
+        </div>
+    `;
+
+    const processedGachaIds = new Set();
+    
+    // アニバーサリー限定セット
     const anniversarySet = new Set();
     if (typeof AnniversaryLimited !== 'undefined' && Array.isArray(AnniversaryLimited)) {
         AnniversaryLimited.forEach(id => {
@@ -4620,7 +4786,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
         const hasLegend = (config.rarity_rates.legend > 0 && config.pool.legend && config.pool.legend.length > 0);
         if (hasLegend) {
-            
             config.pool.legend.forEach(c => targetIds.add(c.id));
         }
 
@@ -4628,13 +4793,12 @@ function generateFastForecast(initialSeed, columnConfigs) {
             if (config.pool[r] && config.pool[r].length > 0) {
                  config.pool[r].forEach(charObj => {
                     const cid = charObj.id;
-                  
                     const cStr = String(cid);
                     const isNew = cStr.startsWith('sim-new-');
                     const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
-                    if (isNew 
-                        || isLimited || isManual) {
+                    
+                    if (isNew || isLimited || isManual) {
                         targetIds.add(cid);
                         poolsToCheck[r] = true;
                     }
@@ -4643,6 +4807,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
 
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
+
         const resultMap = new Map();
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
@@ -4654,19 +4819,15 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const uberR = rates.uber;
             const legendR = rates.legend;
 
-            if (rVal < rareR) { rarity = 'rare';
-            }
-            else if (rVal < rareR + superR) { rarity = 'super';
-            }
-            else if (rVal < rareR + superR + uberR) { rarity = 'uber';
-            }
-            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend';
-            }
-            else { rarity = 'rare';
-            }
+            if (rVal < rareR) { rarity = 'rare'; }
+            else if (rVal < rareR + superR) { rarity = 'super'; }
+            else if (rVal < rareR + superR + uberR) { rarity = 'uber'; }
+            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend'; }
+            else { rarity = 'rare'; }
 
             let targetPool = null;
             let isLegendRank = false;
+
             if (rarity === 'legend' && hasLegend) {
                 targetPool = config.pool.legend;
                 isLegendRank = true;
@@ -4679,22 +4840,28 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
+
                 if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) {
                     continue;
+                }
+                // 手動ターゲットに入っていないものはスキップ（Legend/Limitedが自動対象ではなくなったため）
+                // ただし、sim-new は自動対象(toggleでhiddenに入る)なので、ここでの判定は不要(hidden checkのみ)
+                const cStr = String(cid);
+                const isNew = cStr.startsWith('sim-new-');
+                // 自動対象(isNew) または 手動リスト入り(userTargetIds) の場合のみ表示
+                if (!isNew && !userTargetIds.has(cid) && !userTargetIds.has(parseInt(cid))) {
+                     continue;
                 }
 
                 if (isLegendRank || targetIds.has(cid)) {
                     if (!resultMap.has(cid)) {
-                        const cStr = String(cid);
                         resultMap.set(cid, { 
                             name: charObj.name, 
                             hits: [], 
                             isLegend: isLegendRank,
-         
-                            isNew: cStr.startsWith('sim-new-'),
+                            isNew: isNew,
                             isLimited: limitedSet.has(cid) || limitedSet.has(cStr),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(cStr)
-                  
                         });
                     }
                     const row = Math.floor(n / 2) + 1;
@@ -4705,51 +4872,47 @@ function generateFastForecast(initialSeed, columnConfigs) {
         }
 
         if (resultMap.size === 0) return;
+
         let listItems = [];
         resultMap.forEach((data, id) => {
             data.id = id;
             listItems.push(data);
         });
+
         listItems.sort((a, b) => {
             const getPriority = (item) => {
                 if (item.isNew) return 1;
                 if (item.isLegend && item.isLimited) return 2;
                 if (item.isLegend) return 3;
                  if (item.isAnniversary) return 4;
- 
                 if (item.isLimited) return 5;
                 return 6; 
             };
             const pA = getPriority(a);
             const pB = getPriority(b);
             if (pA !== pB) return pA - pB;
-   
             if (pA === 1) {
                 const nA = parseInt(String(a.id).replace('sim-new-', ''), 10);
                 const nB = parseInt(String(b.id).replace('sim-new-', ''), 10);
                 return nB - nA;
             }
-             if 
-            (pA >= 2 && pA <= 5) return parseInt(b.id) - parseInt(a.id);
+            if (pA >= 2 && pA <= 5) return parseInt(b.id) - parseInt(a.id);
             const firstHitA = parseInt(a.hits[0]);
             const firstHitB = parseInt(b.hits[0]);
             return firstHitA - firstHitB;
         });
-        // ▼▼▼ リスト表示のフォントサイズ調整 ▼▼▼
+
         const itemHtmls = listItems.map(data => {
-            let nameStyle = 'font-weight:bold; font-size: 0.9em;'; // 名前も少し小さく
+            let nameStyle = 'font-weight:bold; font-size: 0.9em;'; 
             if (data.isNew) nameStyle += ' color:#007bff;'; 
             else if (data.isLegend) nameStyle += ' color:#e91e63;'; 
             else if (data.isLimited) nameStyle += ' color:#d35400;'; 
-         
             else nameStyle += ' color:#333;'; 
 
             const resultStr = data.hits.join(", ");
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
             
-            // アドレス列のフォントサイズを縮小
             return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${resultStr}</span></div>`;
-      
         });
 
         summaryHtml += `<div style="margin-bottom: 8px;">
@@ -4758,7 +4921,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
             </div>
             <div style="font-family: monospace; font-size: 1em;">
                 ${itemHtmls.join('')}
-         
             </div>
         </div>`;
     });
@@ -4970,7 +5132,7 @@ function generateMasterInfoHtml() {
                 const isLegendRank = (r.key === 'legend');
                 const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                 const isNew = cStr.startsWith('sim-new-');
-                const isAuto = isLegendRank || isLimited || isNew;
+                const isAuto = isAutomaticTarget(cid);
 
                 // --- 状態チェック ---
                 const isHidden = hiddenFindIds.has(cid) || (typeof cid === 'number' && hiddenFindIds.has(cid));
@@ -5034,7 +5196,7 @@ function calcTextWidth(text) {
 function saveGanttImage() {
     const element = document.querySelector('.gantt-chart-container');
     if (!element) return;
-    // ガントチャートのコンテンツ幅を取得
+    
     const header = element.querySelector('.gantt-header');
     if (!header) return;
     const contentWidth = header.style.width;
@@ -5044,13 +5206,13 @@ function saveGanttImage() {
     
     const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
     const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-    // キャプチャ用に一時的にスタイル変更
+    
     element.style.overflow = 'visible';
     element.style.width = contentWidth; 
     
     if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
+    
     html2canvas(element).then(canvas => {
-        // スタイル復元
         element.style.overflow = originalOverflow;
         element.style.width = originalWidth;
         if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
@@ -5073,6 +5235,7 @@ function renderGanttChart(data) {
     const filteredData = data.filter(item => !isPlatinumOrLegend(item));
 
     if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
+    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0); 
@@ -5083,10 +5246,8 @@ function renderGanttChart(data) {
         return '<p>現在開催中または予定されているガチャはありません。</p>';
     }
 
-    // 表示範囲の決定
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
-    // 動的幅計算用の最大幅変数
     let maxLabelTextWidth = 0;
 
     activeData.forEach(item => {
@@ -5096,30 +5257,25 @@ function renderGanttChart(data) {
         const eDt = parseDateTime(item.rawEnd, item.endTime);
         if (eDt > maxEndDateTime) maxEndDateTime = eDt;
 
-        // --- 幅計算ロジック ---
         let displayName = item.seriesName;
-        
         if (item.guaranteed) displayName += " [確定]";
-        // 表示名の長さを計算
+        
         const textW = calcTextWidth(displayName);
         if (textW > maxLabelTextWidth) {
             maxLabelTextWidth = textW;
         }
     });
-    // 幅の設定
-    // ベース幅160px、最大300pxまで拡張。padding分(+20px)を加味
+    
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
-    if (labelWidth > 320) labelWidth = 320; // 上限設定
+    if (labelWidth > 320) labelWidth = 320; 
 
     let minDate = parseDateStr(String(minDateInt));
-    // 表示開始日を調整
     const viewStartDate = new Date(yesterday);
     viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) {
         minDate = viewStartDate;
     }
 
-    // --- 終了日の決定 ---
     let limitDate = new Date(minDate);
     limitDate.setDate(limitDate.getDate() + 35);
     let chartEnd = new Date(maxEndDateTime);
@@ -5127,7 +5283,6 @@ function renderGanttChart(data) {
         chartEnd = limitDate;
     }
 
-    // 右端
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
@@ -5135,9 +5290,8 @@ function renderGanttChart(data) {
     if (totalDays <= 0) return '';
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    // 全体幅計算
     const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
-    // 現在時刻線の位置計算
+    
     const now = new Date();
     let currentLineHtml = '';
     if (now >= minDate && now < chartEnd) {
@@ -5185,19 +5339,16 @@ function renderGanttChart(data) {
         if (widthPx <= 0) return;
 
         let displayName = item.seriesName;
-        // 確定なら表記追加
-        if (item.guaranteed) {
-            displayName += " [確定]";
-        }
+        if (item.guaranteed) displayName += " [確定]";
 
         let barClass = 'gantt-bar';
         if (displayName.includes("極選抜")) barClass += ' g-kyoku';
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
+        
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
 
-        // 行のスタイル判定
         let rowClass = 'gantt-row';
         if (now > endDateTime) {
             rowClass += ' row-ended';
@@ -5258,25 +5409,25 @@ function fmtRate(val) {
 function renderScheduleTable(tsvContent, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-
-    // parseGachaTSV等は schedule_logic.js に依存
+    
     const data = parseGachaTSV(tsvContent);
     const ganttHtml = renderGanttChart(data);
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayInt = getDateInt(yesterday);
+    
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-
+    
+    // ソート順：通常ガチャ（日付順） -> 特別枠（プラチナ・レジェンド、日付順）
     filteredData.sort((a, b) => {
         const isSpecialA = isPlatinumOrLegend(a);
         const isSpecialB = isPlatinumOrLegend(b);
-        
         if (isSpecialA && !isSpecialB) return 1; 
         if (!isSpecialA && isSpecialB) return -1; 
-        
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
+
     let html = `
         <h3 style="margin-top:0;">開催スケジュール</h3>
         ${ganttHtml}
@@ -5297,11 +5448,11 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
+    
     const now = new Date();
 
-    filteredData.forEach(item => {
+    filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
-        
         if (item.guaranteed) {
             seriesDisplay += " [確定]";
         }
@@ -5310,12 +5461,33 @@ function renderScheduleTable(tsvContent, containerId) {
         
         const endDateFormatted = formatDateJP(item.rawEnd);
         let endStr = endDateFormatted;
-        if (endDateFormatted !== '永続') {
+
+        // --- プラチナ/レジェンドガチャの「至」の調整ロジック ---
+        const isPlat = item.seriesName.includes("プラチナ");
+        const isLeg = item.seriesName.includes("レジェンド");
+        let isAppliedNextStart = false;
+
+        if (isPlat || isLeg) {
+            // 現在の行より後のデータから、同じ種類のガチャ（プラチナ同士 or レジェンド同士）を検索
+            const nextSameType = filteredData.slice(index + 1).find(nextItem => {
+                if (isPlat) return nextItem.seriesName.includes("プラチナ");
+                if (isLeg) return nextItem.seriesName.includes("レジェンド");
+                return false;
+            });
+
+            if (nextSameType) {
+                // 次に見つかった同じ種類の「自（開始日時）」を、この行の「至（終了日時）」として表示
+                endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
+                isAppliedNextStart = true;
+            }
+        }
+
+        // 通常の終了時間表示（上記特殊処理が行われなかった場合）
+        if (!isAppliedNextStart && endDateFormatted !== '永続') {
             endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
         }
         
         const isPlatLeg = isPlatinumOrLegend(item);
-
         const uberRateVal = parseInt(item.uber);
         let uberStyle = '';
         if (!isPlatLeg && uberRateVal !== 500) {
@@ -5328,10 +5500,8 @@ function renderScheduleTable(tsvContent, containerId) {
             legendStyle = 'color:red; font-weight:bold;';
         }
 
-        // 行の背景色決定
         const endDateTime = parseDateTime(item.rawEnd, item.endTime);
         let rowClass = "";
-        
         if (now > endDateTime) {
             rowClass = "row-ended";
         } else if (item.guaranteed) {
@@ -5374,10 +5544,10 @@ FILE: view_table.js
  * ガチャ結果テーブルの構築（メインコントローラー）
  */
 
-// Simルートのハイライト色 (通常: 水色)
-const COLOR_ROUTE_HIGHLIGHT = '#d0ebff';
-// Simルートのハイライト色 (超激・伝説・限定: 青色)
-const COLOR_ROUTE_UBER = '#89c4f4';
+// Simルートのハイライト色 (通常: 鮮やかな水色)
+const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
+// Simルートのハイライト色 (超激・伝説・限定: 鮮やかな青色)
+const COLOR_ROUTE_UBER = '#66b2ff';
 
 function generateRollsTable() {
     try {
@@ -5630,9 +5800,9 @@ function generateRollsTable() {
                 let cellHtml = generateCell(seedIndexA, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
                 // 色置換
                 if (isSimulationMode) {
-                    // 通常ルート(薄緑) -> 水色
+                    // 通常ルート(薄緑) -> 鮮やかな水色
                     cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
-                    // 高レア・限定ルート(濃い緑) -> 青色
+                    // 高レア・限定ルート(濃い緑) -> 鮮やかな青色
                     cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
                 }
                 rowHtml += cellHtml;

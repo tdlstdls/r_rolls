@@ -78,7 +78,7 @@ function generateMasterInfoHtml() {
                 const isLegendRank = (r.key === 'legend');
                 const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                 const isNew = cStr.startsWith('sim-new-');
-                const isAuto = isLegendRank || isLimited || isNew;
+                const isAuto = isAutomaticTarget(cid);
 
                 // --- 状態チェック ---
                 const isHidden = hiddenFindIds.has(cid) || (typeof cid === 'number' && hiddenFindIds.has(cid));

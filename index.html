@@ -95,7 +95,7 @@
         <div class="header-row">
             <h1>R_Rolls</h1>
             <div class="header-actions">
-                <span id="seed-input-trigger" class="text-btn" onclick="showSeedInput()">SEED</span>
+                <span id="seed-input-trigger" class="text-btn" onclick="toggleSeedInput()">SEED</span>
                 
                 <span class="separator">|</span>
                 <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
@@ -142,7 +142,7 @@
                         (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
                         ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
                     </span>
-                        また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
+                    また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
                         ・自動回避・誘発： レア被りによる再抽選（Reroll）の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
                         ・A列⇔B列のルート切り替え： 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列、B列からA列へ移動するルートを計算します。<br>
                         ・追記機能： 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>

@@ -1,6 +1,3 @@
-//====================
-//FILE: simulation.js
-//====================
 //simulation.js
 // --- sim-config ヘルパー関数 ---
 

@@ -6,6 +6,7 @@
 
 // マスター情報の表示状態管理フラグ
 let isMasterInfoVisible = true;
+
 // --- 初期化ロジック ---
 
 function initializeDefaultGachas() {
@@ -27,6 +28,7 @@ function initializeDefaultGachas() {
               
                     return now >= startDt && now <= endDt;
                 });
+
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
@@ -56,6 +58,7 @@ function initializeDefaultGachas() {
                 const sortedGachas = Object.values(gachaMasterData.gachas)
                     .filter(gacha => gacha.sort < 800)
                     .sort((a, b) => a.sort - b.sort);
+
                 if (sortedGachas.length > 0) {
                     tableGachaIds.push(sortedGachas[0].id);
                     uberAdditionCounts.push(0);
@@ -70,7 +73,7 @@ function initializeDefaultGachas() {
 
     const seedEl = document.getElementById('seed');
     if (seedEl && (seedEl.value === '12345' || seedEl.value === '')) {
-        showSeedInput();
+        toggleSeedInput();
     }
 }
 
@@ -91,11 +94,8 @@ function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
         if (isSimulationMode) {
-            // Simモード中は「Back」と表示
-            btn.textContent = "Back";
             btn.classList.add('active');
         } else {
-            btn.textContent = "Sim";
             btn.classList.remove('active');
         }
     }
@@ -124,7 +124,7 @@ function resetAndGenerateTable() {
     }
     
     if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
+    updateMasterInfoView(); // ここでマスター情報を更新
     if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
@@ -181,14 +181,26 @@ function updateSeedFromSim() {
 
 // --- SEED入力欄の制御 ---
 
-function showSeedInput() {
+function toggleSeedInput() {
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
-    if (container) container.classList.remove('hidden');
-    if (trigger) trigger.classList.add('hidden');
     
-    const input = document.getElementById('seed');
-    if (input) input.focus();
+    if (!container) return;
+
+    // hiddenクラスがあれば表示、なければ非表示（キャンセル）
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        // トリガーボタンは消さずにactiveクラスを付与
+        if (trigger) {
+            trigger.classList.remove('hidden');
+            trigger.classList.add('active');
+        }
+        
+        const input = document.getElementById('seed');
+        if (input) input.focus();
+    } else {
+        cancelSeedInput();
+    }
 }
 
 function applySeedInput() {
@@ -199,7 +211,11 @@ function applySeedInput() {
     const trigger = document.getElementById('seed-input-trigger');
     
     if (container) container.classList.add('hidden');
-    if (trigger) trigger.classList.remove('hidden');
+    // activeクラスを外す
+    if (trigger) {
+        trigger.classList.remove('hidden');
+        trigger.classList.remove('active');
+    }
 }
 
 // 追加: SEED入力をキャンセルして閉じる
@@ -213,7 +229,11 @@ function cancelSeedInput() {
     if (input) input.value = currentSeed;
 
     if (container) container.classList.add('hidden');
-    if (trigger) trigger.classList.remove('hidden');
+    // activeクラスを外す
+    if (trigger) {
+        trigger.classList.remove('hidden');
+        trigger.classList.remove('active');
+    }
 }
 
 // 追加: SEEDをクリップボードにコピー
@@ -239,22 +259,23 @@ function updateToggleButtons() {
     if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
 }
 
-// 追加: マスター情報の表示切替
+// マスター情報の表示切替
 function toggleMasterInfo() {
     isMasterInfoVisible = !isMasterInfoVisible;
-    const el = document.getElementById('master-info-area');
-    const btn = document.getElementById('toggle-master-info-btn');
-    if (el) {
-        if (isMasterInfoVisible) {
-            el.classList.remove('hidden');
-        } else {
-            el.classList.add('hidden');
-        }
+    const content = document.getElementById('master-info-content');
+    
+    // 表示切替
+    if (content) {
+        content.style.display = isMasterInfoVisible ? 'block' : 'none';
     }
     
-    if (btn) {
-        btn.textContent = isMasterInfoVisible ?
-        'マスター情報を隠す' : 'マスター情報を表示';
+    // ボタンの見た目更新のためテーブル再描画
+    if (typeof generateRollsTable === 'function') {
+        generateRollsTable();
+    }
+    // ★重要: 再描画後に必ず最新のHTMLを注入して表記ゆれを防ぐ
+    if (typeof updateMasterInfoView === 'function') {
+        updateMasterInfoView();
     }
 }
 
@@ -270,6 +291,7 @@ function toggleDescription() {
 
     // モード切替
     isDescriptionMode = !isDescriptionMode;
+
     if (isDescriptionMode) {
         // --- 概要モード ON ---
 
@@ -280,7 +302,6 @@ function toggleDescription() {
 
         // 2. ボタン状態更新
         if (toggle) {
-            toggle.textContent = 'Back';
             toggle.classList.add('active');
         }
 
@@ -290,6 +311,7 @@ function toggleDescription() {
         if (resultDiv) resultDiv.classList.add('hidden');
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
+
         // 4. 概要コンテンツを表示＆スタイル調整
         if (content) {
             content.classList.remove('hidden');
@@ -306,7 +328,6 @@ function toggleDescription() {
 
         // 1. ボタン状態更新
         if (toggle) {
-            toggle.textContent = '概要';
             toggle.classList.remove('active');
         }
 
@@ -333,17 +354,41 @@ function toggleDescription() {
 function toggleFindInfo() {
     showFindInfo = !showFindInfo;
     const btn = document.getElementById('toggle-find-info-btn');
+
     if (typeof generateRollsTable === 'function') {
         generateRollsTable();
     }
-    if (btn) btn.textContent = showFindInfo ? 'Findを隠す' : 'Find';
+    // テキスト変更なし、activeクラスのみ
+    if (btn) {
+        if (showFindInfo) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
 }
 
 // --- 共通View更新 ---
 
+// マスター情報の更新
 function updateMasterInfoView() {
-    // マスター情報は generateRollsTable 内で生成されるため、ここでは何もしない
-    // (将来的に分離する場合はここにロジックを追加)
+    const el = document.getElementById('master-info-area');
+    if (!el || typeof generateMasterInfoHTML !== 'function') return;
+
+    // columnConfigsを再構築（現在のtableGachaIdsに基づいて）
+    const configs = [];
+    tableGachaIds.forEach(idStr => {
+        let gachaId = idStr;
+        // 末尾の識別子除去
+        if (gachaId.endsWith('g') || gachaId.endsWith('s') || gachaId.endsWith('f')) {
+            gachaId = gachaId.slice(0, -1);
+        }
+        if (gachaMasterData.gachas[gachaId]) {
+            configs.push(gachaMasterData.gachas[gachaId]);
+        }
+    });
+
+    el.innerHTML = generateMasterInfoHTML(configs);
 }
 
 /**
@@ -377,6 +422,7 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                 const finalAction = { 
                     id: gachaId, 
                     rolls: parseInt(guaranteedType.replace('g', ''), 10), 
+               
                     g: true 
                 };
                 // 第5引数に finalAction を渡す
