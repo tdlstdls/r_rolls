@@ -50,10 +50,10 @@
  * +--> view_schedule_table.js -> スケジュール表描画
  *
  * 【4. Event Handlers / UI Parts】
- * ui_table_handler.js --------> 列操作（追加/削除/変更）
- * ui_target_handler.js -------> Findターゲット管理
- * ui_schedule_handler.js -----> skdモード切替・スケジュール列一括追加
- * gacha_selector.js ----------> プルダウン選択肢生成
+ * ui_table_handler.js --------> 列追加/削除/変更のイベント
+ * ui_target_handler.js -------> Findターゲットの管理
+ * ui_schedule_handler.js -----> skdモード切替・スケジュール列追加
+ * gacha_selector.js ----------> プルダウンの選択肢生成
  *
  * 【5. Core State】
  * ui_globals.js --------------> 全ファイルで共有されるグローバル変数
@@ -61,22 +61,22 @@
  */
 
 window.onload = async function() {
-    // 1. データの読み込み (data_loader.js) [cite: 1276]
+    // 1. データの読み込み (data_loader.js)
     const success = await loadAllData();
     if (!success) {
         alert("データの読み込みに失敗しました。");
         return;
     }
 
-    // 2. URLパラメータの処理 (url_manager.js) [cite: 1278]
+    // 2. URLパラメータの処理 (url_manager.js)
     processUrlParams();
 
-    // 3. デフォルトガチャの初期化 (ui_mode_logic.js) [cite: 1278]
+    // 3. デフォルトガチャの初期化 (ui_mode_logic.js)
     initializeDefaultGachas();
 
-    // 4. スケジュールUIの準備 (ui_schedule_handler.js) [cite: 1278]
+    // 4. スケジュールUIの準備 (ui_schedule_handler.js)
     setupScheduleUI();
 
-    // 5. 初回描画 (ui_mode_logic.js経由) [cite: 1279]
+    // 5. 初回描画 (ui_mode_logic.js)
     onModeChange();
 };

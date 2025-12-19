@@ -61,7 +61,8 @@ function saveGanttImage() {
 
         const link = document.createElement('a');
         link.download = 'gacha_schedule.png';
-        link.href = canvas.toToDataURL('image/png');
+        // 修正箇所: toToDataURL -> toDataURL
+        link.href = canvas.toDataURL('image/png');
         link.click();
     }).catch(err => {
         console.error("Image capture failed:", err);
