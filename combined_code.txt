@@ -459,33 +459,24 @@ FILE: index.html
     <style>
         /* モバイル最適化用の追加スタイル */
         @media (max-width: 768px) {
-            /* 画面全体の高さを確保し、はみ出しを禁止 */
             html, body {
                 height: 100%;
                 margin: 0;
-                padding: 0 !important; /* bodyのpaddingをなくす */
-                overflow: hidden; /* 全体スクロールを無効化 */
+                padding: 0 !important;
+                overflow: hidden;
             }
-
             .container {
                 height: 100%;
                 display: flex;
                 flex-direction: column;
-                padding: 4px; /* コンテナ側で少し余白を取る */
+                padding: 4px;
                 box-sizing: border-box;
             }
-
-            /* ヘッダーとコントロールエリアは高さを固定（縮小させない） */
-            .header-row, 
-            .controls, 
-            .description-box, 
-            #result,
-            .forecast-summary-container { /* Find表示エリアも含める */
+            .header-row, .controls, .description-box, #result, .forecast-summary-container {
                 flex-shrink: 0;
             }
-
             .header-row {
-                flex-direction: row !important; /* 横並びを強制 */
+                flex-direction: row !important;
                 flex-wrap: wrap;
                 align-items: center;
                 gap: 5px;
@@ -493,51 +484,25 @@ FILE: index.html
                 border-bottom: 1px solid #eee;
                 margin-bottom: 5px;
             }
-
-            h1 {
-                font-size: 16px !important;
-                margin-right: 5px;
-            }
-
-            .header-actions {
-                display: flex;
-                gap: 3px;
-                flex-wrap: wrap;
-            }
-
-            .header-actions button, 
-            .header-actions span {
+            h1 { font-size: 16px !important; margin-right: 5px; }
+            .header-actions { display: flex; gap: 3px; flex-wrap: wrap; }
+            .header-actions button, .header-actions span {
                 font-size: 10px !important;
                 padding: 2px 6px !important;
                 height: 24px;
                 line-height: 20px;
             }
-
-            /* テーブルコンテナを残りの領域いっぱいに広げる */
             #rolls-table-container {
                 flex-grow: 1;
-                max-height: none !important; /* 既存の制限を解除 */
-                margin-bottom: 0 !important;
-                overflow-y: auto; /* 縦スクロール許可 */
-                border-bottom: none; /* 下のボーダーを画面端に合わせる */
-            }
-            
-            /* スケジュール表示時も同様に */
-            #schedule-container {
-                flex-grow: 1;
-                overflow-y: auto;
-                padding-bottom: 0;
-            }
-            .schedule-scroll-wrapper {
                 max-height: none !important;
+                margin-bottom: 0 !important;
+                overflow-y: auto;
+                border-bottom: none;
             }
+            #schedule-container { flex-grow: 1; overflow-y: auto; padding-bottom: 0; }
+            .schedule-scroll-wrapper { max-height: none !important; }
         }
-
-        /* デスクトップ用 */
-        .header-actions button {
-            padding: 4px 8px;
-            font-size: 12px;
-        }
+        .header-actions button { padding: 4px 8px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -546,16 +511,12 @@ FILE: index.html
             <h1>R_Rolls</h1>
             <div class="header-actions">
                 <span id="seed-input-trigger" class="text-btn" onclick="toggleSeedInput()">SEED</span>
-                
                 <span class="separator">|</span>
                 <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
-                
                 <span class="separator">|</span>
                 <span id="mode-toggle-btn" class="text-btn" onclick="toggleAppMode()">Sim</span>
-                
                 <span class="separator">|</span>
                 <span id="toggle-schedule-btn" class="text-btn" onclick="toggleSchedule()">skd</span>
-
                 <span class="separator">|</span>
                 <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
             </div>
@@ -567,51 +528,25 @@ FILE: index.html
                 レアガチャの排出結果を予測・シミュレーションするツールです。<br>
                 各ガチャの排出キャラの確認や、確定枠等を利用したルート取りを支援します。
             </p>
-
             <h3 style="margin-top:0;">【基本操作】</h3>
             <ul style="padding-left: 20px; margin-bottom:10px;">
-                <li><strong>SEED設定:</strong> 上部メニューの「SEED」を押し、シーカー等で特定した実行前シードを入力してOKを押してください。</li>
+                <li><strong>SEED設定:</strong> SEEDを押し、実行前シードを入力してください。</li>
                 <li><strong>ガチャ選択:</strong> 表のヘッダー下部のプルダウンから、表示したいガチャを選択できます。</li>
                 <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧のガチャを一括で追加します。</li>
             </ul>
-
             <h3 style="margin-top:0;">【主要機能】</h3>
             <dl style="margin-bottom:10px;">
-                <dt><strong>1. Find (特定キャラの取得可能位置の予測)</strong></dt>
-                <dd style="margin-bottom:5px;">
-                    「Find」ボタンを押すと、2000ロール先までの「伝説枠」「昇格伝説枠」を検索して表示します。<br>
-                    リスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。
-                </dd>
-
+                <dt><strong>1. Find</strong></dt>
+                <dd style="margin-bottom:5px;">2000ロール先までの「伝説枠」等を検索して表示します。リスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。</dd>
                 <dt><strong>2. Sim (シミュレーションモード)</strong></dt>
                 <dd style="margin-bottom:5px;">
                     複数のガチャを跨いで引いた場合の結果をシミュレーションします。<br>
-                    「Config」欄に <code>ガチャID 回数 ガチャID 回数 ・・・</code> の形式で入力してください。<br>
-                    入力された内容に従って、シミュレーションしたルートをハイライトします。<br>
-                    <span style="font-size:0.9em; color:#666;">
-                        (例: <code>1006 11g 942 3</code> → ID1006で11連確定、その後ID942で単発3回)<br>
-                        ※ 数値のみは単発回数、末尾に「g」をつけると確定枠（11連/15連等）として扱われます。<br><br>
-                    </span>
-                    また、Simモードでテーブル上のキャラをクリックすると、そこまでのルートを自動計算します<br>
-                    ・自動回避・誘発： レア被りによる再抽選の「回避」や「誘発」が必要な場合、他のガチャ列を経由するルートを自動で構築します。<br>
-                    ・A列⇔B列のルート切り替え： 欲しいキャラが反対側のトラックにいる場合、自動的にレア被り等を挟んでA列からB列へ移動するルートを計算します。<br>
-                    ・追記機能： 既にConfigに入力がある場合、その続きからルートを計算して追記します。<br>
-                    ・確定枠クリック： G列(Guar)のキャラをクリックすると、前の行までのルート＋確定ロール(11g等)を自動入力します。<br>
-                    ※自動計算では「超激レア確定」「プラチナ」「レジェンド」ガチャは使用しません。
+                    「ルート」欄に <code>ガチャID 回数 ガチャID 回数 ・・・</code> の形式で入力してください。<br>
+                    また、Simモードでテーブル上のキャラ名をタップ（クリック）すると、そこまでのルートを自動計算します。自動計算では、超激確定・プラチナ・レジェンドは消費を避けるため使用しません。
                 </dd>
-                
                 <dt><strong>3. skd (スケジュール)</strong></dt>
-                <dd>
-                    「skd」ボタンで、直近のガチャ開催スケジュールを確認できます。
-                </dd>
+                <dd>「skd」ボタンで、直近のガチャ開催スケジュールを確認できます。</dd>
             </dl>
-
-            <h3 style="margin-top:0;">【表示・用語について】</h3>
-            <ul style="padding-left: 20px; margin-bottom:0;">
-                <li><span style="background-color:#adff2f; padding:0 4px;">緑背景</span>: Findターゲット。</li>
-                <li><strong>Guar列:</strong> 確定枠キャラと移動先アドレスを表示します。</li>
-                <li><strong>NO列のハイライト:</strong> 常設でのレア被りを黄色、波動バスターズ利用のレア被りをオレンジでハイライトします。</li>
-            </ul>
         </div>
         
         <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
@@ -619,19 +554,22 @@ FILE: index.html
                 <label for="seed" style="font-size:0.9em;">Seed:</label>
                 <input type="number" id="seed" placeholder="Seed" value="12345" style="width:100px; font-size:0.9em;" onkeydown="if(event.key==='Enter') applySeedInput()">
                 <button onclick="applySeedInput()" style="padding: 1px 6px; font-size: 11px;">OK</button>
-                <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Copy to Clipboard">Copy</button>
-                <button onclick="cancelSeedInput()" class="secondary" style="padding: 1px 6px; font-size: 11px;" title="Cancel">×</button>
+                <button onclick="copySeedToClipboard()" class="secondary" style="padding: 1px 6px; font-size: 11px;">Copy</button>
+                <button onclick="cancelSeedInput()" class="secondary" style="padding: 1px 6px; font-size: 11px;">×</button>
             </div>
 
             <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; width: 100%;">
-                <label for="sim-config" style="font-size:0.9em;">Config:</label>
-                <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
-                <button onclick="backSimConfig()" style="margin-left: 5px; font-size: 11px; min-width: 40px;">Back</button>
-                <button onclick="clearSimConfig()" style="margin-left: 2px; font-size: 11px;">Clear</button>
-                
-                <span id="sim-notif-msg" style="color: #28a745; font-size: 0.8em; margin-left: 5px; font-weight: bold; display: none;"></span>
-
-                <div id="sim-error-msg" style="color: #d9534f; font-size: 0.85em; margin-left: 5px; display: none;"></div>
+                <div style="display: flex; align-items: center; width: 100%; gap: 5px;">
+                    <label for="sim-config" style="font-size:0.9em;">ルート:</label>
+                    <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
+                    <button onclick="backSimConfig()" style="font-size: 11px; min-width: 40px;">Back</button>
+                    <button onclick="clearSimConfig()" style="font-size: 11px;">Clear</button>
+                    <button id="toggle-txt-btn" onclick="toggleTxtMode()" style="font-size: 11px;">Txt</button>
+                    <button id="copy-txt-btn" onclick="copyTxtToClipboard()" class="hidden" style="margin-left: 2px; font-size: 11px;">Copy</button>
+                    
+                    <span id="sim-notif-msg" style="color: #28a745; font-size: 0.8em; margin-left: 5px; font-weight: bold; display: none;"></span>
+                    <div id="sim-error-msg" style="color: #d9534f; font-size: 0.85em; margin-left: 5px; display: none;"></div>
+                </div>
             </div>
         </div>
 
@@ -1642,750 +1580,83 @@ function compressRoute(path) {
 FILE: style.css
 ====================
 @charset "UTF-8";
-/* =========================================
-   基本設定
-   ========================================= */
-/* HTMLとBODYの高さを100%にし、スクロールは内部で行うように設定 */
-html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden; /* Body自体のスクロールを禁止 */
-}
-
-body {
-    font-family: "Helvetica Neue", Arial, sans-serif;
-    padding: 20px;
-    box-sizing: border-box;
-    /* パディングを含めてサイズ計算 */
-    color: #333;
-    background-color: #fff;
-    /* Flexboxレイアウトに変更 */
-    display: flex;
-    flex-direction: column;
-}
-
-/* コンテナも高さを確保し、中身をFlex配置 */
-.container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* 縮小させたくない要素（ヘッダーやコントロール） */
-.header-row, 
-.controls, 
-.description-box, 
-#result, 
-.forecast-summary-container {
-    flex-shrink: 0;
-}
-
-/* ヘッダーレイアウト */
-.header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    flex-wrap: nowrap;
-    /* 1行表示を強制 */
-    gap: 10px;
-}
-
-h1 {
-    font-size: 20px;
-    margin: 0;
-    padding: 0;
-    white-space: nowrap; /* タイトルの折り返し禁止 */
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    /* 間隔を詰める */
-    flex-wrap: nowrap;
-}
-
-/* --- テキストボタン（ヘッダー用） --- */
-.text-btn {
-    cursor: pointer;
-    color: #007bff;
-    font-weight: bold;
-    font-size: 0.9em;
-    text-decoration: underline;
-    white-space: nowrap;
-    padding: 2px 4px;
-    user-select: none;
-}
-
-.text-btn:hover {
-    color: #0056b3;
-    background-color: #f0f8ff;
-    border-radius: 3px;
-}
-
-.text-btn.active {
-    color: #28a745;
-    text-decoration: none;
-    border: 1px solid #28a745;
-    border-radius: 3px;
-    padding: 1px 3px; /* ボーダー分のズレ補正 */
-}
-
-.separator {
-    color: #ccc;
-    font-size: 0.8em;
-    margin: 0 2px;
-    user-select: none;
-}
-
-/* =========================================
-   コントロールエリア
-   ========================================= */
-.controls {
-    background: #f4f4f4;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.control-group {
-    margin-bottom: 10px;
-}
-
-.control-group:last-child {
-    margin-bottom: 0;
-}
-
-label {
-    margin-right: 10px;
-    font-weight: bold;
-}
-
-input[type="text"],
-input[type="number"] {
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-/* =========================================
-   ボタン（通常）
-   ========================================= */
-button {
-    cursor: pointer;
-    padding: 6px 12px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-button:hover {
-    background: #0056b3;
-}
-
-button.secondary {
-    background: #6c757d;
-}
-
-button.secondary:hover {
-    background: #545b62;
-}
-
-button.active {
-    background: #28a745;
-}
-
-/* =========================================
-   ユーティリティ
-   ========================================= */
-.hidden {
-    display: none !important;
-}
-
-.description-box {
-    background: #e9ecef;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    font-size: 0.9em;
-}
-
-.result-box {
-    margin-bottom: 10px;
-    font-weight: bold;
-    color: #d9534f;
-}
-
-.error {
-    color: red;
-    font-weight: bold;
-}
-
-/* =========================================
-   テーブルスタイル (Gacha Rolls)
-   ========================================= */
-#rolls-table-container {
-    overflow-x: auto;
-    overflow-y: auto;
-    /* max-height: 80vh;  <-- 固定制限を削除 */
-    max-height: none; 
-    flex-grow: 1;
-    /* 残りの高さを全て埋める */
-    border: 1px solid #ddd;
-    margin-bottom: 0;
-}
-
-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    width: 100%;
-    margin-top: 0;
-    font-size: 12px;
-}
-
-th, td {
-    border: 1px solid #ddd;
-    padding: 6px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-/* 変更: th全体への sticky 指定を削除し、クラス指定に変更 */
-th {
-    background-color: #f8f9fa;
-    font-weight: bold;
-    /* position: sticky;  <-- 削除 */
-    /* top: 0;
-    <-- 削除 */
-    /* z-index: 10;       <-- 削除 */
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-    box-shadow: 0 1px 0 #ddd;
-}
-
-/* 新規追加: ガチャ名行（固定表示用）のスタイル */
-.sticky-row th {
-    position: sticky;
-    top: 0;
-    z-index: 20; /* 他の要素より手前に表示 */
-    border-bottom: none;
-    /* 下の行（操作行）との境界を目立たなくする */
-    box-shadow: 0 2px 2px rgba(0,0,0,0.1); /* 浮いている感を出すための影 */
-    background-color: #f8f9fa;
-    /* 背景色を明示 */
-}
-
-/* 新規追加: 操作ボタン行（スクロール用）のスタイル */
-.control-row th {
-    position: static;
-    /* 固定しない */
-    border-top: none; /* 上の行との一体感を出す */
-    background-color: #f8f9fa; /* 変更: タイトル行と同じ色に統一 (#f4f4f4 -> #f8f9fa) */
-    padding-top: 2px;
-    padding-bottom: 4px;
-    z-index: 1;
-}
-
-/* 列ごとのスタイル */
-.col-no {
-    background-color: #f8f9fa;
-    width: 30px;
-}
-
-.calc-column {
-    background-color: #f0f8ff;
-    font-size: 0.9em;
-    color: #555;
-}
-
-.gacha-column {
-    min-width: 120px;
-}
-
-.gacha-cell {
-    position: relative;
-}
-
-.highlight {
-    position: relative;
-}
-
-.highlight-uber {
-    font-weight: bold;
-    color: #c2185b;
-}
-
-.char-link:hover {
-    color: #0056b3;
-}
-
-.remove-btn {
-    background: #dc3545;
-    padding: 2px 6px;
-    font-size: 10px;
-    margin-left: 5px;
-}
-
-.add-gacha-btn {
-    background: #28a745;
-    padding: 2px 8px;
-    font-size: 11px;
-}
-
-.uber-add-select {
-    cursor: pointer;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    background-color: #fff;
-}
-
-/* =========================================
-   スケジュール表 & ガントチャート共通
-   ========================================= */
-#schedule-container {
-    padding: 20px;
-    background-color: #fff;
-    border-top: 1px solid #ddd;
-    /* コンテナ自体が画面幅を超えないように設定 */
-    max-width: 100%;
-    box-sizing: border-box;
-    /* スケジュール表示時も高さを埋める設定 */
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
-.schedule-scroll-wrapper {
-    overflow-x: auto;
-    /* max-height: 80vh;
-    <-- 固定制限を削除 */
-    max-height: none;
-    border: 1px solid #ddd;
-    /* 画面幅に収める */
-    max-width: 100%;
-}
-
-.schedule-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 0;
-    font-size: 14px;
-}
-
-.schedule-table th,
-.schedule-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.schedule-table td:nth-child(3) {
-    white-space: normal;
-    text-align: left;
-    min-width: 250px;
-}
-
-.schedule-table th {
-    background-color: #eee;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ccc;
-}
-
-.row-ended {
-    background-color: #e0e0e0 !important;
-    color: #666;
-}
-
-.row-ended .gantt-bar {
-    filter: grayscale(100%);
-    opacity: 0.6;
-}
-
-.row-guaranteed {
-    background-color: #ffffe0 !important;
-}
-
-/* =========================================
-   ガントチャート
-   ========================================= */
-.gantt-outer-wrapper * {
-    box-sizing: border-box;
-}
-
-.gantt-outer-wrapper {
-    display: inline-block;
-    max-width: 100%;
-    vertical-align: top;
-    width: 100%;
-    /* 幅を確保 */
-}
-
-.gantt-chart-container {
-    border: 1px solid #ccc;
-    background: #fff;
-    /* overflow: hidden;
-    を削除してスクロールバーを表示可能にする */
-    font-size: 12px;
-    margin-bottom: 20px;
-    max-width: 100%; /* はみ出し防止 */
-}
-
-.gantt-scroll-wrapper {
-    overflow-x: auto;
-    position: relative;
-    padding-bottom: 10px;
-    width: 100%; /* 幅を確保 */
-}
-
-.gantt-header {
-    display: flex;
-    border-bottom: 1px solid #ccc;
-    background: #f9f9f9;
-    position: sticky;
-    left: 0;
-    z-index: 6;
-}
-
-.gantt-label-col {
-    width: 160px;
-    min-width: 160px;
-    padding: 5px;
-    border-right: 1px solid #ccc;
-    background-color: inherit;
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    border-bottom: 1px solid #eee;
-}
-
-.gantt-header .gantt-label-col {
-    background-color: #f9f9f9;
-}
-
-.gantt-date-cell {
-    border-right: 1px solid #eee;
-    text-align: center;
-    padding: 5px 0;
-    font-size: 10px;
-    flex-shrink: 0;
-}
-
-.gantt-date-cell.today {
-    background-color: #ffeb3b;
-}
-
-.gantt-date-cell.weekend {
-    background-color: #e0f7fa;
-}
-
-.gantt-body {
-    position: relative;
-}
-
-.gantt-row {
-    display: flex;
-    border-bottom: 1px solid #eee;
-    height: 30px;
-    background-color: #fff;
-}
-
-.gantt-row:hover {
-    filter: brightness(0.95);
-}
-
-.gantt-row .gantt-label-col {
-    font-weight: normal;
-    text-align: center;
-    justify-content: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: block;
-    line-height: 20px;
-}
-
-.gantt-bar-area {
-    position: relative;
-    height: 100%;
-    flex-grow: 1;
-}
-
-.gantt-bar {
-    position: absolute;
-    top: 5px;
-    height: 20px;
-    background-color: #4caf50;
-    border: 1px solid #4caf50;
-    box-shadow: none;
-    border-radius: 3px;
-    color: #fff;
-    font-size: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    white-space: nowrap;
-    z-index: 2;
-}
-
-.gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
-.gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
-.gantt-bar.g-fest { background-color: #ff9800;
-    border-color: #ff9800; }
-.gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
-
-.gantt-bar-text {
-    padding: 0 4px;
-}
-
-.gantt-grid-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-right: 1px solid #f5f5f5;
-    z-index: 0;
-}
-
-.gantt-grid-line.weekend {
-    background-color: rgba(224, 247, 250, 0.3);
-}
-
-.gantt-current-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: #ff0000;
-    z-index: 1;
-    opacity: 0.7;
-    pointer-events: none;
-}
-
-/* =========================================
-   モバイル用・高密度表示レイアウト
-   ========================================= */
+/* ========================================= 基本設定 ========================================= */
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; box-sizing: border-box; color: #333; background-color: #fff; display: flex; flex-direction: column; }
+.container { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.header-row, .controls, .description-box, #result, .forecast-summary-container { flex-shrink: 0; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: nowrap; gap: 10px; }
+h1 { font-size: 20px; margin: 0; padding: 0; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+.text-btn { cursor: pointer; color: #007bff; font-weight: bold; font-size: 0.9em; text-decoration: underline; white-space: nowrap; padding: 2px 4px; user-select: none; }
+.text-btn:hover { color: #0056b3; background-color: #f0f8ff; border-radius: 3px; }
+.text-btn.active { color: #28a745; text-decoration: none; border: 1px solid #28a745; border-radius: 3px; padding: 1px 3px; }
+.separator { color: #ccc; font-size: 0.8em; margin: 0 2px; user-select: none; }
+/* ========================================= コントロールエリア ========================================= */
+.controls { background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+.control-group { margin-bottom: 10px; }
+.control-group:last-child { margin-bottom: 0; }
+label { margin-right: 10px; font-weight: bold; }
+input[type="text"], input[type="number"] { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+button { cursor: pointer; padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 14px; }
+button:hover { background: #0056b3; }
+button.secondary { background: #6c757d; }
+button.secondary:hover { background: #545b62; }
+button.active { background: #28a745; }
+/* ========================================= ユーティリティ ========================================= */
+.hidden { display: none !important; }
+.description-box { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em; }
+.result-box { margin-bottom: 10px; font-weight: bold; color: #d9534f; }
+.error { color: red; font-weight: bold; }
+/* ========================================= テーブルスタイル ========================================= */
+#rolls-table-container { overflow-x: auto; overflow-y: auto; max-height: none; flex-grow: 1; border: 1px solid #ddd; margin-bottom: 0; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; margin-top: 0; font-size: 12px; }
+th, td { border: 1px solid #ddd; padding: 6px; text-align: center; white-space: nowrap; }
+th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; box-shadow: 0 1px 0 #ddd; }
+.sticky-row th { position: sticky; top: 0; z-index: 20; border-bottom: none; box-shadow: 0 2px 2px rgba(0,0,0,0.1); background-color: #f8f9fa; }
+.control-row th { position: static; border-top: none; background-color: #f8f9fa; padding-top: 2px; padding-bottom: 4px; z-index: 1; }
+/* --- NO列の固定設定 --- */
+.col-no { background-color: #f8f9fa; width: 30px; }
+.col-no:first-child { position: sticky; left: 0; z-index: 10; background-color: #f8f9fa; box-shadow: 2px 0 2px rgba(0,0,0,0.1); }
+thead tr th.col-no:first-child { z-index: 30; }
+.calc-column { background-color: #f0f8ff; font-size: 0.9em; color: #555; }
+.gacha-column { min-width: 120px; }
+.gacha-cell { position: relative; }
+.highlight-uber { font-weight: bold; color: #c2185b; }
+.remove-btn { background: #dc3545; padding: 2px 6px; font-size: 10px; margin-left: 5px; }
+.add-gacha-btn { background: #28a745; padding: 2px 8px; font-size: 11px; }
+/* ========================================= スケジュール表示 ========================================= */
+#schedule-container { padding: 20px; background-color: #fff; border-top: 1px solid #ddd; max-width: 100%; box-sizing: border-box; flex-grow: 1; overflow-y: auto; }
+.schedule-scroll-wrapper { overflow-x: auto; max-height: none; border: 1px solid #ddd; max-width: 100%; }
+.schedule-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+.schedule-table th, .schedule-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
+.schedule-table td:nth-child(3) { white-space: normal; text-align: left; min-width: 250px; }
+.schedule-table th { background-color: #eee; position: sticky; top: 0; z-index: 10; border-top: 1px solid #ddd; border-bottom: 1px solid #ccc; }
+.row-ended { background-color: #e0e0e0 !important; color: #666; }
+.row-guaranteed { background-color: #ffffe0 !important; }
+/* ========================================= ガントチャート ========================================= */
+.gantt-outer-wrapper { width: 100%; }
+.gantt-chart-container { border: 1px solid #ccc; background: #fff; font-size: 12px; margin-bottom: 20px; max-width: 100%; }
+.gantt-scroll-wrapper { overflow-x: auto; position: relative; padding-bottom: 10px; }
+.gantt-header { display: flex; border-bottom: 1px solid #ccc; background: #f9f9f9; position: sticky; top: 0; z-index: 6; }
+.gantt-label-col { width: 160px; min-width: 160px; padding: 5px; border-right: 1px solid #ccc; position: sticky; left: 0; z-index: 5; background-color: inherit; }
+.gantt-date-cell { border-right: 1px solid #eee; text-align: center; padding: 5px 0; font-size: 10px; flex-shrink: 0; }
+.gantt-row { display: flex; border-bottom: 1px solid #eee; height: 30px; }
+.gantt-bar { position: absolute; top: 5px; height: 20px; border-radius: 3px; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.gantt-bar.g-kyoku { background-color: #e91e63; }
+.gantt-bar.g-cho { background-color: #9c27b0; }
+.gantt-bar.g-fest { background-color: #ff9800; }
+.gantt-bar.g-collab { background-color: #2196f3; }
+.gantt-current-line { position: absolute; top: 0; bottom: 0; width: 2px; background-color: #ff0000; z-index: 1; opacity: 0.7; }
+/* ========================================= モバイル最適化 ========================================= */
 @media (max-width: 768px) {
-    /* HTML, BODYの設定 */
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0 !important;
-        overflow: hidden;
-    }
-
-    /* 全体コンテナ */
-    .container {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        padding: 4px;
-        box-sizing: border-box;
-    }
-
-    /* 各エリアの縮小禁止 */
-    .header-row, 
-    .controls, 
-    .description-box, 
-    #result,
-    .forecast-summary-container {
-        flex-shrink: 0;
-    }
-
-    /* --- ヘッダーのモバイル調整（1行表示） --- */
-    .header-row {
-        flex-direction: row !important;
-        /* 横並び強制 */
-        flex-wrap: nowrap !important;
-        /* 折り返し禁止 */
-        overflow-x: auto;
-        /* 幅が足りない場合はスクロール */
-        align-items: center;
-        padding-bottom: 5px;
-        border-bottom: 1px solid #eee;
-        margin-bottom: 5px;
-        white-space: nowrap;
-    }
-
-    h1 {
-        font-size: 16px !important;
-        margin-right: 8px;
-        display: inline-block;
-    }
-
-    .header-actions {
-        width: auto;
-        flex-wrap: nowrap;
-        gap: 4px;
-    }
-
-    /* ボタン・文字サイズ調整 */
-    .text-btn {
-        font-size: 11px;
-        padding: 2px 3px;
-    }
-
-    .header-actions button, 
-    .header-actions span:not(.text-btn):not(.separator) {
-        font-size: 10px !important;
-        padding: 2px 6px !important;
-        height: 24px;
-        line-height: 20px;
-    }
-
-    /* テーブルエリアの拡張 */
-    #rolls-table-container {
-        flex-grow: 1;
-        max-height: none !important;
-        margin-bottom: 0 !important;
-        overflow-y: auto;
-        border-bottom: none;
-        width: 100%;
-        /* 横幅いっぱい */
-    }
-
-    /* スケジュールコンテナのモバイル調整（見切れ対策） */
-    #schedule-container {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding-bottom: 0;
-        width: 100%; /* 横幅を100%に制限 */
-        max-width: 100vw;
-        /* 画面幅を超えない */
-        box-sizing: border-box;
-    }
-    .schedule-scroll-wrapper {
-        max-height: none !important;
-        width: 100%;
-        /* コンテナ幅に合わせる */
-    }
-
-    /* フォント・パディングの微調整 */
-    .controls {
-        padding: 8px;
-        margin-bottom: 5px;
-    }
-
-    .control-group {
-        margin-bottom: 4px;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-
-    label {
-        font-size: 10px;
-        margin-right: 5px;
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select {
-        font-size: 11px;
-        padding: 2px 4px;
-        height: 24px;
-    }
-
-    #seed, #sim-config {
-        max-width: 120px;
-    }
-
-    button {
-        padding: 3px 8px;
-        font-size: 11px;
-        height: 24px;
-        line-height: 1;
-    }
-
-    table {
-        font-size: 10px;
-        margin-top: 5px;
-    }
-
-    th, td {
-        padding: 2px 3px;
-        height: auto;
-    }
-
-    .gacha-column {
-        min-width: 85px;
-        max-width: 100px;
-        overflow: hidden;
-    }
-    
-    .gacha-header-wrapper {
-        gap: 2px;
-        justify-content: flex-start !important;
-        width: 100%;
-    }
-    
-    .gacha-header-wrapper select {
-        transform: none !important;
-    }
-    
-    th div[style*="margin-top"] {
-        transform: scale(0.85);
-        transform-origin: center top;
-        width: 115%;
-        margin-left: -7.5%;
-        white-space: nowrap;
-    }
-
-    .gacha-cell {
-        line-height: 1.1;
-    }
-
-    .calc-column {
-        font-size: 9px;
-        width: auto;
-    }
-
-    .schedule-table th, 
-    .schedule-table td {
-        padding: 2px 4px;
-        font-size: 10px;
-    }
-    
-    .schedule-table td:nth-child(3) {
-        min-width: 140px;
-    }
-
-    .gantt-row {
-        height: 24px !important;
-    }
-
-    .gantt-label-col {
-        width: 100px !important;
-        min-width: 100px !important;
-        font-size: 10px !important;
-        line-height: 24px !important;
-        padding: 0 2px !important;
-    }
-    
-    .gantt-bar {
-        height: 16px !important;
-        top: 4px !important;
-        font-size: 9px !important;
-    }
-    
-    .gantt-date-cell {
-        font-size: 9px !important;
-    }
-    
-    #result {
-        font-size: 10px;
-    }
+    html, body { height: 100%; margin: 0; padding: 0 !important; overflow: hidden; }
+    .container { height: 100%; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; }
+    .header-row { flex-direction: row !important; flex-wrap: nowrap !important; overflow-x: auto; align-items: center; padding-bottom: 5px; border-bottom: 1px solid #eee; margin-bottom: 5px; white-space: nowrap; }
+    #rolls-table-container { flex-grow: 1; max-height: none !important; margin-bottom: 0 !important; overflow-y: auto; width: 100%; }
+    #schedule-container { flex-grow: 1; width: 100%; max-width: 100vw; }
+    .gacha-column { min-width: 85px; max-width: 100px; }
+    .col-no:first-child { box-shadow: 1px 0 1px rgba(0,0,0,0.1); }
 }
 
 ====================
@@ -2501,8 +1772,8 @@ let showSeedColumns = false;
 let showResultDisplay = false;
 let showFindInfo = false; // Findエリア（予報＋マスター情報）の表示フラグ
 let finalSeedForUpdate = null;
-
 let isSimulationMode = false;
+let isTxtMode = false; // Txtボタンの状態
 let isScheduleMode = false;
 let isDescriptionMode = false; // 追加: 概要表示モードフラグ
 let activeGuaranteedIds = new Set();
@@ -2510,7 +1781,7 @@ let isScheduleAnalyzed = false;
 
 // Find機能の状態管理
 let hiddenFindIds = new Set(); // 自動ターゲットのうち、非表示にするID
-let userTargetIds = new Set(); // 自動ターゲット以外で、表示するID (手動ターゲット)
+let userTargetIds = new Set();
 let isFindListCleared = false;
 
 // 超激レア追加シミュレーション用
@@ -2519,7 +1790,7 @@ let uberAdditionCounts = [];
 ====================
 FILE: ui_mode_logic.js
 ====================
-/** @file ui_mode_logic.js @description アプリの初期化とモード切替（Sim/skd/概要）の管理 */
+/** @file ui_mode_logic.js @description アプリの初期化とモード切替（Sim/skd/概要/Txt）の管理 */
 
 function initializeDefaultGachas() {
     if (typeof prepareScheduleInfo === 'function') {
@@ -2593,11 +1864,28 @@ function toggleAppMode() {
     onModeChange();
 }
 
+function toggleTxtMode() {
+    isTxtMode = !isTxtMode;
+    onModeChange();
+}
+
 function updateModeButtonState() {
-    const btn = document.getElementById('mode-toggle-btn');
-    if (btn) {
-        if (isSimulationMode) btn.classList.add('active');
-        else btn.classList.remove('active');
+    const btnSim = document.getElementById('mode-toggle-btn');
+    if (btnSim) {
+        if (isSimulationMode) btnSim.classList.add('active');
+        else btnSim.classList.remove('active');
+    }
+    
+    const btnTxt = document.getElementById('toggle-txt-btn');
+    const btnCopy = document.getElementById('copy-txt-btn');
+    if (btnTxt) {
+        if (isTxtMode) {
+            btnTxt.classList.add('active');
+            if (btnCopy) btnCopy.classList.remove('hidden');
+        } else {
+            btnTxt.classList.remove('active');
+            if (btnCopy) btnCopy.classList.add('hidden');
+        }
     }
 }
 
@@ -2954,6 +2242,31 @@ function copySeedToClipboard() {
     });
 }
 
+/** * ルート（Config）と表示テキストをクリップボードへコピー 
+ */
+function copyTxtToClipboard() {
+    const configInput = document.getElementById('sim-config');
+    const txtDisplay = document.getElementById('txt-route-display');
+    const notifEl = document.getElementById('sim-notif-msg');
+
+    if (!configInput || !txtDisplay) return;
+
+    // ルート入力値 + 改行 + テキストエリアの表示内容
+    const textToCopy = configInput.value + "\n\n" + txtDisplay.innerText;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        if (notifEl) {
+            notifEl.textContent = 'Copyed!';
+            notifEl.style.display = 'inline';
+            setTimeout(() => {
+                notifEl.style.display = 'none';
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+
 function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
@@ -2994,34 +2307,34 @@ function addGachaColumn() {
 
 // ガチャ列を削除
 function removeGachaColumn(index) {
-    tableGachaIds.splice(index, 1);
-    uberAdditionCounts.splice(index, 1);
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+    if (tableGachaIds.length > 1) {
+        tableGachaIds.splice(index, 1);
+        uberAdditionCounts.splice(index, 1);
+        if (typeof generateRollsTable === 'function') generateRollsTable();
+        if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+    }
 }
 
-// 最初の列以外をリセット
+// 最初の列以外をリセット (×ボタンから呼ばれる)
 function resetToFirstGacha() {
-    if (tableGachaIds.length <= 1) {
-        return;
+    if (tableGachaIds.length <= 1) return;
+    
+    if (confirm("一番左の列以外を削除しますか？")) {
+        tableGachaIds = [tableGachaIds[0]];
+        uberAdditionCounts = [uberAdditionCounts[0]];
+        if (typeof generateRollsTable === 'function') generateRollsTable();
+        if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+        if (typeof updateUrlParams === 'function') updateUrlParams();
     }
-    tableGachaIds = [tableGachaIds[0]];
-    uberAdditionCounts = [uberAdditionCounts[0]];
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
-    if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
 // 列のガチャを変更（プルダウン操作）
 function updateGachaSelection(selectElement, index) {
     const originalIdWithSuffix = tableGachaIds[index];
     const newBaseId = selectElement.value;
-    
-    // スケジュールで開催中かつ確定なら自動で 'g' を付与
     if (activeGuaranteedIds.has(parseInt(newBaseId))) {
         tableGachaIds[index] = newBaseId + 'g';
     } else {
-        // 元のsuffixを引き継ぐ
         let suffix = '';
         if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
         else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
@@ -3069,36 +2382,20 @@ function showAddInput(index) {
 
 // ID指定追加入力欄の表示
 function showIdInput() {
-    const trigger = document.getElementById('add-id-trigger');
-    const container = document.getElementById('add-id-container');
-    if(trigger) trigger.style.display = 'none';
-    if(container) {
-        container.style.display = 'inline-block';
-        const inp = document.getElementById('gacha-id-input');
-        if(inp) inp.focus();
+    const idStr = prompt("追加したいガチャIDを入力してください（例: 1006）\n確定枠付きにする場合はIDの末尾に g を付けてください（例: 1006g）");
+    if (idStr) {
+        const cleanId = idStr.trim();
+        const baseId = cleanId.replace(/[gfs]$/, '');
+        if (gachaMasterData.gachas[baseId]) {
+            tableGachaIds.push(cleanId);
+            uberAdditionCounts.push(0);
+            if (typeof generateRollsTable === 'function') generateRollsTable();
+            if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+            if (typeof updateUrlParams === 'function') updateUrlParams();
+        } else {
+            alert("無効なガチャIDです。");
+        }
     }
-}
-
-// ID指定でガチャを追加
-function addGachaById() {
-    const inp = document.getElementById('gacha-id-input');
-    if(!inp) return;
-    const val = inp.value.trim();
-    if(!val) return;
-
-    const id = parseInt(val, 10);
-    if(isNaN(id)) { alert("数値を入力してください"); return; }
-
-    if(!gachaMasterData.gachas[id]) {
-        alert(`ガチャID: ${id} のデータが見つかりません。`);
-        return;
-    }
-
-    tableGachaIds.push(id.toString());
-    uberAdditionCounts.push(0);
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
-    if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
 ====================
@@ -3643,7 +2940,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
     let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 0; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0;">`;
-
     const legendSlots = [];
     const promotedSlots = []; 
     for (let n = 0; n < scanRows * 2; n++) {
@@ -3660,7 +2956,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const legendStr = legendSlots.length > 0 ? legendSlots.join(", ") : "なし";
     const promotedStr = promotedSlots.length > 0 ? promotedSlots.join(", ") : "なし";
-
     summaryHtml += `
         <div style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #eee; font-size: 0.85em;">
             <div style="margin-bottom: 4px;">
@@ -3673,12 +2968,10 @@ function generateFastForecast(initialSeed, columnConfigs) {
             </div>
         </div>
     `;
-
     // --- ボタンの状態判定 ---
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
-    
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
         limitedCats.forEach(id => {
@@ -3706,7 +2999,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         });
     });
-
     const isLegendActive = (availableLegendIds.length > 0) && availableLegendIds.every(cid => userTargetIds.has(cid));
     const isLimitedActive = (availableLimitedIds.length > 0) && availableLimitedIds.every(cid => userTargetIds.has(cid));
     const isMasterActive = (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true;
@@ -3714,12 +3006,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const legendBtnClass = isLegendActive ? 'text-btn active' : 'text-btn';
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
-
-    const masterDescStyle = isMasterActive ? '' : 'display: none;';
-
-    const specialStatusText = (typeof useSpecialInRoute !== 'undefined' && useSpecialInRoute)
-        ? `<span style="color: #d9534f; font-weight: bold;">[特殊ガチャ許可ON]</span> 現在、プラチナ・レジェンドを経路に使用します。`
-        : `超激確定・プラチナ・レジェンドは消費を避けるため使用しません。`;
 
     summaryHtml += `
         <div style="margin-bottom: 10px; text-align: left;">
@@ -3733,11 +3019,8 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
                 <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
             </div>
-            <div style="font-size: 0.75em; color: #d9534f; font-weight: bold; padding-left: 2px; ${masterDescStyle}">
-                ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。<br>
-                <span style="color: #666; font-weight: normal;">
-                    ※Simモードの自動計算：${specialStatusText}
-                </span>
+            <div style="font-size: 0.75em; color: #666; padding-left: 2px;">
+                ※マスターリスト内のキャラ名をタップ（クリック）すると、そのキャラを「Find」ターゲットとして登録/解除できます。
             </div>
         </div>
     `;
@@ -3772,7 +3055,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
                     const isNew = cStr.startsWith('sim-new-');
                     const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
-                    
                     if (isNew || isLimited || isManual) {
                         targetIds.add(cid);
                         poolsToCheck[r] = true;
@@ -3782,7 +3064,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
 
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
-
         const resultMap = new Map();
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
@@ -3842,13 +3123,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
         }
 
         if (resultMap.size === 0) return;
-
         let listItems = [];
         resultMap.forEach((data, id) => {
             data.id = id;
             listItems.push(data);
         });
-
         listItems.sort((a, b) => {
             const getPriority = (item) => {
                 if (item.isNew) return 1;
@@ -3861,6 +3140,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const pA = getPriority(a);
             const pB = getPriority(b);
             if (pA !== pB) return pA - pB;
+    
             if (pA === 1) {
                 const nA = parseInt(String(a.id).replace('sim-new-', ''), 10);
                 const nB = parseInt(String(b.id).replace('sim-new-', ''), 10);
@@ -3871,7 +3151,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const firstHitB = parseInt(b.hits[0]);
             return firstHitA - firstHitB;
         });
-
         const itemHtmls = listItems.map(data => {
             let nameStyle = 'font-weight:bold; font-size: 0.9em;'; 
             if (data.isNew) nameStyle += ' color:#007bff;'; 
@@ -3885,16 +3164,13 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
                 
-                // 第6引数に data.id (targetCharId) を渡して重みづけを強化
                 return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
                              onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
             }).join("");
 
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
-            
             return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${hitLinks}</span></div>`;
         });
-
         summaryHtml += `<div style="margin-bottom: 8px;">
             <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 3px; font-size: 0.85em;">
                 ${config.name} (ID:${config.id})
@@ -4317,7 +3593,6 @@ FILE: view_schedule_table.js
 function renderScheduleTable(tsvContent, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
     const data = parseGachaTSV(tsvContent);
     const now = new Date();
     const yesterday = new Date();
@@ -4325,7 +3600,6 @@ function renderScheduleTable(tsvContent, containerId) {
     const yesterdayInt = getDateInt(yesterday);
     
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-    
     // フィルタ: 終了分の非表示設定
     if (hideEndedSchedules) {
         filteredData = filteredData.filter(item => {
@@ -4344,15 +3618,14 @@ function renderScheduleTable(tsvContent, containerId) {
         if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
 
         const isSpecialA = isPlatinumOrLegend(a);
+      
         const isSpecialB = isPlatinumOrLegend(b);
         if (isSpecialA !== isSpecialB) return isSpecialA ? 1 : -1; 
 
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     const ganttHtml = renderGanttChart(data);
     const hideBtnClass = hideEndedSchedules ? 'text-btn active' : 'text-btn';
-
     let html = `
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
             <h3 style="margin:0;">開催スケジュール</h3>
@@ -4362,6 +3635,7 @@ function renderScheduleTable(tsvContent, containerId) {
         <div style="margin-top: 20px;"></div>
         <div class="schedule-scroll-wrapper">
         <table class="schedule-table">
+        
         <thead>
             <tr>
                 <th style="min-width:50px;">自</th>
@@ -4369,6 +3643,7 @@ function renderScheduleTable(tsvContent, containerId) {
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
                 <th>激レア</th>
+    
                 <th>超激</th>
                 <th>伝説</th>
                 <th>確定</th>
@@ -4376,7 +3651,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
-
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
         if (item.guaranteed) seriesDisplay += " [確定]";
@@ -4395,7 +3669,14 @@ function renderScheduleTable(tsvContent, containerId) {
                 if (isLeg) return nextItem.seriesName.includes("レジェンド");
                 return false;
             });
+    
             if (nextSameType) {
+                // --- 転記される開始日が前日より前の場合は表示しない ---
+                if (parseInt(nextSameType.rawStart) < yesterdayInt) {
+                    return;
+                }
+                // ----------------------------------------------------
+
                 endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
                 isAppliedNextStart = true;
             }
@@ -4408,27 +3689,27 @@ function renderScheduleTable(tsvContent, containerId) {
         const isPlatLeg = isPlatinumOrLegend(item);
         const uberRateVal = parseInt(item.uber);
         let uberStyle = ( !isPlatLeg && uberRateVal !== 500 ) ? 'color:red; font-weight:bold;' : '';
-
         const legendRateVal = parseInt(item.legend);
         let legendStyle = ( !isPlatLeg && legendRateVal > 30 ) ? 'color:red; font-weight:bold;' : '';
-
         const endDateTime = parseDateTime(item.rawEnd, item.endTime);
         let rowClass = (now > endDateTime) ? "row-ended" : (item.guaranteed ? "row-guaranteed" : "");
-
         html += `
             <tr class="${rowClass}">
                 <td>${startStr}</td>
                 <td>${endStr}</td>
                 <td style="text-align:left; vertical-align: middle;">
                     <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
-                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+     
+                <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
                 </td>
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
                 <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
+                <td 
+                style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
-                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
+                    ${item.guaranteed ?
+                '<span style="color:red;">●</span>' : '-'}
                 </td>
             </tr>
         `;
@@ -4534,21 +3815,17 @@ function generateRollsTable() {
         if (isNaN(initialSeed)) { initialSeed = 12345; seedEl.value = "12345"; }
         
         const numRolls = currentRolls;
-
-        // 1. SEED配列生成
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-
-        // 2. カラム設定とシミュレーション実行
+        
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
-
-        // 3. ハイライト判定
+        
+        // 3. ハイライト判定 (この関数は view_table_highlight.js に定義されています)
         const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
-        // 4. HTML構築
         let findAreaHtml = '';
         if (typeof generateFastForecast === 'function') findAreaHtml += generateFastForecast(initialSeed, columnConfigs);
         if (typeof generateMasterInfoHtml === 'function' && showFindInfo && isMasterInfoVisible) {
@@ -4558,15 +3835,28 @@ function generateRollsTable() {
             findAreaHtml += `</div>`;
         }
 
-        const tableHtml = buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap);
-        
         const container = document.getElementById('rolls-table-container');
-        if (container) container.innerHTML = findAreaHtml + tableHtml;
+        if (!container) return;
+
+        if (isTxtMode && isSimulationMode) {
+            // テキスト表示モード
+            const txtViewHtml = generateTxtRouteView(seeds, initialSeed);
+            container.innerHTML = findAreaHtml + txtViewHtml;
+        } else {
+            // 通常テーブル表示モード
+            let simNoticeHtml = '';
+            if (isSimulationMode) {
+                simNoticeHtml = `<div id="sim-auto-calc-notice" style="font-size: 0.75em; color: #666; padding: 5px 10px; background: #fff;">
+                    ※下の表のキャラ名をタップ（クリック）するとそのセルまでのルートを自動計算します。自動計算では、超激確定・プラチナ・レジェンドは消費を避けるため使用しません。
+                </div>`;
+            }
+            const tableHtml = buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap);
+            container.innerHTML = findAreaHtml + simNoticeHtml + tableHtml;
+        }
 
         const resultDiv = document.getElementById('result');
         if (resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
         updateUrlParams();
-
     } catch (e) {
         const container = document.getElementById('rolls-table-container');
         if (container) container.innerHTML = `<p class="error">エラー: ${e.message}</p>`;
@@ -4576,21 +3866,32 @@ function generateRollsTable() {
 
 /** 内部関数: テーブルDOMの組み立て */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
-    let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
-    buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
+    // ボタンエリアを中央揃え・改行可能なフレックスボックスに設定
+    const buttonHtml = `
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; font-weight: normal; white-space: normal;">
+            <span style="font-weight: bold; margin-right: 2px;">A</span>
+            <button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>
+            <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>
+            <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
+            <span class="text-btn" style="color: #666; font-size: 1.1em; margin-left: 5px; cursor: pointer; text-decoration: none;" onclick="resetToFirstGacha()" title="一番左の列以外を解除">×</span>
+        </div>`;
     
     let totalGachaCols = 0;
     tableGachaIds.forEach(idWithSuffix => {
         let id = idWithSuffix.replace(/[gfs]$/, '');
         if (gachaMasterData.gachas[id]) totalGachaCols += /[gfs]$/.test(idWithSuffix) ? 2 : 1;
     });
-
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
     const calcColSpan = showSeedColumns ? 5 : 0;
     const totalTrackSpan = calcColSpan + totalGachaCols;
 
     let html = `<table><thead>
-        <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th><th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr>
+        <tr>
+            <th class="col-no"></th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px;">${buttonHtml}</th>
+            <th class="col-no"></th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; font-weight: bold;">B</th>
+        </tr>
         <tr class="sticky-row">
             <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
             ${generateNameHeaderHTML()}
@@ -4604,19 +3905,17 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
             ${generateControlHeaderHTML(false)}
         </tr>
     </thead><tbody>`;
-
     for (let i = 0; i < numRolls; i++) {
         const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
         html += `<tr>${renderTableRowSide(i, seedIndexA, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}`;
         html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}</tr>`;
     }
-
     const fullColSpan = 2 + (totalTrackSpan * 2);
     html += `<tr><td colspan="${fullColSpan}" style="padding: 10px; text-align: center;">
         <button onclick="addMoreRolls()">+100行</button>
-        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
+        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ?
+        'SEED非表示' : 'SEED表示'}</button>
     </td></tr></tbody></table>`;
-    
     return html;
 }
 
@@ -4650,11 +3949,10 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
             let gContent = '---';
             let cellStyle = '';
             if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`;
-
             const config = columnConfigs[colIndex];
             const normalRolls = config._guaranteedNormalRolls || 10;
-            let lastDraw = (rowIndex > 0 && tableData[seedIndex - 2]?.[colIndex]?.roll) ? 
-                          { rarity: tableData[seedIndex - 2][colIndex].roll.rarity, charId: tableData[seedIndex - 2][colIndex].roll.charId } : null;
+            let lastDraw = (rowIndex > 0 && tableData[seedIndex - 2]?.[colIndex]?.roll) ?
+            { rarity: tableData[seedIndex - 2][colIndex].roll.rarity, charId: tableData[seedIndex - 2][colIndex].roll.charId } : null;
             
             const gRes = calculateGuaranteedLookahead(seedIndex, config, seeds, lastDraw, normalRolls);
             const addr = formatAddress(gRes.nextRollStartSeedIndex);
@@ -4662,18 +3960,17 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
             let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
             const escapedName = charName.replace(/'/g, "\\'");
 
-            let gClickAction = isSimulationMode ? 
-                `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
+            let gClickAction = isSimulationMode ?
+            `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
                 (gRes.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.nextRollStartSeedIndex - 1]})"` : "");
-
             let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span><span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
             let altHtml = '';
             if (gRes.alternative) {
                 const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
                 let altCharName = gRes.alternative.name;
                 const escAlt = altCharName.replace(/'/g, "\\'");
-                let altClickAction = isSimulationMode ? 
-                    `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escAlt}', '${gType}')"` :
+                let altClickAction = isSimulationMode ?
+                `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escAlt}', '${gType}')"` :
                     (gRes.alternative.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.alternative.nextRollStartSeedIndex - 1]})"` : "");
                 altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span><span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span><br>`;
             }
@@ -4682,6 +3979,105 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         }
     });
     return sideHtml;
+}
+
+/** ルートに従ったテキスト表示を生成 */
+function generateTxtRouteView(seeds, initialSeed) {
+    const configInput = document.getElementById('sim-config');
+    const configStr = configInput ? configInput.value.trim() : "";
+    if (!configStr) return "<div style='padding:20px; color:#666;'>ルートが入力されていません。</div>";
+
+    const configs = parseSimConfig(configStr);
+    let currentIdx = 0;
+    let lastDraw = null;
+    let outputArr = [];
+
+    let stats = { single: 0, plat: 0, leg: 0, guar: 0, legends: {}, limiteds: {}, ubers: {} };
+    const limitedSet = new Set();
+    if (typeof limitedCats !== 'undefined') {
+        limitedCats.forEach(id => { limitedSet.add(id); limitedSet.add(String(id)); });
+    }
+    const addStat = (map, name) => { map[name] = (map[name] || 0) + 1; };
+
+    configs.forEach(sim => {
+        const gacha = gachaMasterData.gachas[sim.id];
+        if (!gacha) return;
+
+        let suffixText = "";
+        let normalRolls = sim.rolls;
+        let isG = false;
+        const isPlat = gacha.name.includes("プラチナ");
+        const isLeg = gacha.name.includes("レジェンド");
+
+        if (sim.g) {
+            isG = true; stats.guar++;
+            if (sim.rolls === 11) { normalRolls = 10; suffixText = "（11連確定）"; }
+            else if (sim.rolls === 15) { normalRolls = 14; suffixText = "（15連確定）"; }
+            else if (sim.rolls === 7) { normalRolls = 6; suffixText = "（7連確定）"; }
+            else { normalRolls = sim.rolls; suffixText = `（${sim.rolls}連確定）`; }
+        } else {
+            suffixText = `（単発${sim.rolls}ロール）`;
+        }
+
+        if (isPlat) stats.plat += normalRolls;
+        else if (isLeg) stats.leg += normalRolls;
+        else stats.single += normalRolls;
+
+        let segmentTxt = `[${gacha.name}]${suffixText}<br>=> `;
+        let charNames = [];
+
+        for (let k = 0; k < normalRolls; k++) {
+            if (currentIdx + 1 >= seeds.length) break;
+            const rr = rollWithSeedConsumptionFixed(currentIdx, gacha, seeds, lastDraw);
+            const charObj = rr.finalChar;
+            charNames.push(charObj.name);
+            if (rr.rarity === 'legend') addStat(stats.legends, charObj.name);
+            else if (limitedSet.has(charObj.id)) addStat(stats.limiteds, charObj.name);
+            else if (rr.rarity === 'uber') addStat(stats.ubers, charObj.name);
+            currentIdx += rr.seedsConsumed;
+            lastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
+        }
+
+        if (isG && currentIdx < seeds.length) {
+            const gr = rollGuaranteedUber(currentIdx, gacha, seeds);
+            const charObj = gr.finalChar;
+            charNames.push(charObj.name);
+            if (limitedSet.has(charObj.id)) addStat(stats.limiteds, charObj.name);
+            else addStat(stats.ubers, charObj.name);
+            currentIdx += gr.seedsConsumed;
+            lastDraw = { rarity: gr.rarity, charId: gr.charId, isRerolled: false };
+        }
+        segmentTxt += charNames.join(", ");
+        outputArr.push(segmentTxt);
+    });
+
+    const formatStatMap = (map) => {
+        const entries = Object.entries(map);
+        if (entries.length === 0) return "";
+        return entries.map(([name, count]) => count >= 2 ? `${name}（${count}）` : name).join("、");
+    };
+
+    let countsHtml = "";
+    if (stats.single > 0) countsHtml += `レアチケ：${stats.single}回<br>`;
+    if (stats.plat > 0) countsHtml += `プラチケ：${stats.plat}回<br>`;
+    if (stats.leg > 0) countsHtml += `レジェチケ：${stats.leg}回<br>`;
+    if (stats.guar > 0) countsHtml += `確定：${stats.guar}回<br>`;
+
+    let acquisitionHtml = "";
+    const legendStr = formatStatMap(stats.legends), limitedStr = formatStatMap(stats.limiteds), uberStr = formatStatMap(stats.ubers);
+    if (legendStr) acquisitionHtml += `伝説：${legendStr}<br>`;
+    if (limitedStr) acquisitionHtml += `限定：${limitedStr}<br>`;
+    if (uberStr) acquisitionHtml += `超激：${uberStr}<br>`;
+
+    let summaryHtml = `
+<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; font-family: monospace;">
+【SEED】<br>実行前：${initialSeed}<br>最終：${finalSeedForUpdate || "---"}<br><br>
+【回数】<br>${countsHtml}<br>
+【取得】<br>${acquisitionHtml}
+</div>`;
+
+    return `<div id="txt-route-display" style="padding: 20px; background: #fff; line-height: 1.8; font-size: 14px; user-select: text; font-family: sans-serif;">
+        ${summaryHtml}${outputArr.join("<br>")}<br></div>`;
 }
 
 ====================
@@ -4769,7 +4165,6 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
     let lastSeedValue = null;
 
     if (!isSimulationMode) return { highlightMap, guarHighlightMap, lastSeedValue };
-
     const simConfigEl = document.getElementById('sim-config');
     if (!simConfigEl || !simConfigEl.value.trim()) return { highlightMap, guarHighlightMap, lastSeedValue };
 

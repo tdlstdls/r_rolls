@@ -6,7 +6,6 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
     let lastSeedValue = null;
 
     if (!isSimulationMode) return { highlightMap, guarHighlightMap, lastSeedValue };
-
     const simConfigEl = document.getElementById('sim-config');
     if (!simConfigEl || !simConfigEl.value.trim()) return { highlightMap, guarHighlightMap, lastSeedValue };
 

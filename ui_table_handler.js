@@ -15,34 +15,34 @@ function addGachaColumn() {
 
 // ガチャ列を削除
 function removeGachaColumn(index) {
-    tableGachaIds.splice(index, 1);
-    uberAdditionCounts.splice(index, 1);
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+    if (tableGachaIds.length > 1) {
+        tableGachaIds.splice(index, 1);
+        uberAdditionCounts.splice(index, 1);
+        if (typeof generateRollsTable === 'function') generateRollsTable();
+        if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+    }
 }
 
-// 最初の列以外をリセット
+// 最初の列以外をリセット (×ボタンから呼ばれる)
 function resetToFirstGacha() {
-    if (tableGachaIds.length <= 1) {
-        return;
+    if (tableGachaIds.length <= 1) return;
+    
+    if (confirm("一番左の列以外を削除しますか？")) {
+        tableGachaIds = [tableGachaIds[0]];
+        uberAdditionCounts = [uberAdditionCounts[0]];
+        if (typeof generateRollsTable === 'function') generateRollsTable();
+        if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+        if (typeof updateUrlParams === 'function') updateUrlParams();
     }
-    tableGachaIds = [tableGachaIds[0]];
-    uberAdditionCounts = [uberAdditionCounts[0]];
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
-    if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
 // 列のガチャを変更（プルダウン操作）
 function updateGachaSelection(selectElement, index) {
     const originalIdWithSuffix = tableGachaIds[index];
     const newBaseId = selectElement.value;
-    
-    // スケジュールで開催中かつ確定なら自動で 'g' を付与
     if (activeGuaranteedIds.has(parseInt(newBaseId))) {
         tableGachaIds[index] = newBaseId + 'g';
     } else {
-        // 元のsuffixを引き継ぐ
         let suffix = '';
         if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
         else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
@@ -90,34 +90,18 @@ function showAddInput(index) {
 
 // ID指定追加入力欄の表示
 function showIdInput() {
-    const trigger = document.getElementById('add-id-trigger');
-    const container = document.getElementById('add-id-container');
-    if(trigger) trigger.style.display = 'none';
-    if(container) {
-        container.style.display = 'inline-block';
-        const inp = document.getElementById('gacha-id-input');
-        if(inp) inp.focus();
+    const idStr = prompt("追加したいガチャIDを入力してください（例: 1006）\n確定枠付きにする場合はIDの末尾に g を付けてください（例: 1006g）");
+    if (idStr) {
+        const cleanId = idStr.trim();
+        const baseId = cleanId.replace(/[gfs]$/, '');
+        if (gachaMasterData.gachas[baseId]) {
+            tableGachaIds.push(cleanId);
+            uberAdditionCounts.push(0);
+            if (typeof generateRollsTable === 'function') generateRollsTable();
+            if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+            if (typeof updateUrlParams === 'function') updateUrlParams();
+        } else {
+            alert("無効なガチャIDです。");
+        }
     }
-}
-
-// ID指定でガチャを追加
-function addGachaById() {
-    const inp = document.getElementById('gacha-id-input');
-    if(!inp) return;
-    const val = inp.value.trim();
-    if(!val) return;
-
-    const id = parseInt(val, 10);
-    if(isNaN(id)) { alert("数値を入力してください"); return; }
-
-    if(!gachaMasterData.gachas[id]) {
-        alert(`ガチャID: ${id} のデータが見つかりません。`);
-        return;
-    }
-
-    tableGachaIds.push(id.toString());
-    uberAdditionCounts.push(0);
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
-    if (typeof updateUrlParams === 'function') updateUrlParams();
 }

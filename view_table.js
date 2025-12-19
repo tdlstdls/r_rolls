@@ -20,6 +20,7 @@ function generateRollsTable() {
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
         
+        // 3. ハイライト判定 (この関数は view_table_highlight.js に定義されています)
         const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
@@ -61,146 +62,17 @@ function generateRollsTable() {
     }
 }
 
-/** ルートに従ったテキスト表示を生成 */
-function generateTxtRouteView(seeds, initialSeed) {
-    const configInput = document.getElementById('sim-config');
-    const configStr = configInput ? configInput.value.trim() : "";
-    if (!configStr) return "<div style='padding:20px; color:#666;'>ルートが入力されていません。</div>";
-
-    const configs = parseSimConfig(configStr);
-    let currentIdx = 0;
-    let lastDraw = null;
-    let outputArr = [];
-
-    // サマリー用集計オブジェクト
-    let stats = {
-        single: 0,
-        plat: 0,
-        leg: 0,
-        guar: 0,
-        legends: {},  // Name -> count
-        limiteds: {}, // Name -> count
-        ubers: {}     // Name -> count
-    };
-
-    const limitedSet = new Set();
-    if (typeof limitedCats !== 'undefined') {
-        limitedCats.forEach(id => { limitedSet.add(id); limitedSet.add(String(id)); });
-    }
-
-    // 取得集計用ヘルパー
-    const addStat = (map, name) => {
-        map[name] = (map[name] || 0) + 1;
-    };
-
-    configs.forEach(sim => {
-        const gacha = gachaMasterData.gachas[sim.id];
-        if (!gacha) return;
-
-        let suffixText = "";
-        let normalRolls = sim.rolls;
-        let isG = false;
-
-        const isPlat = gacha.name.includes("プラチナ");
-        const isLeg = gacha.name.includes("レジェンド");
-
-        if (sim.g) {
-            isG = true;
-            stats.guar++;
-            if (sim.rolls === 11) { normalRolls = 10; suffixText = "（11連確定）"; }
-            else if (sim.rolls === 15) { normalRolls = 14; suffixText = "（15連確定）"; }
-            else if (sim.rolls === 7) { normalRolls = 6; suffixText = "（7連確定）"; }
-            else { normalRolls = sim.rolls; suffixText = `（${sim.rolls}連確定）`; }
-        } else {
-            suffixText = `（単発${sim.rolls}ロール）`;
-        }
-
-        if (isPlat) stats.plat += normalRolls;
-        else if (isLeg) stats.leg += normalRolls;
-        else stats.single += normalRolls;
-
-        let segmentTxt = `[${gacha.name}]${suffixText}<br>=> `;
-        let charNames = [];
-
-        for (let k = 0; k < normalRolls; k++) {
-            if (currentIdx + 1 >= seeds.length) break;
-            const rr = rollWithSeedConsumptionFixed(currentIdx, gacha, seeds, lastDraw);
-            const charObj = rr.finalChar;
-            charNames.push(charObj.name);
-
-            if (rr.rarity === 'legend') {
-                addStat(stats.legends, charObj.name);
-            } else if (limitedSet.has(charObj.id)) {
-                addStat(stats.limiteds, charObj.name);
-            } else if (rr.rarity === 'uber') {
-                addStat(stats.ubers, charObj.name);
-            }
-
-            currentIdx += rr.seedsConsumed;
-            lastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
-        }
-
-        if (isG && currentIdx < seeds.length) {
-            const gr = rollGuaranteedUber(currentIdx, gacha, seeds);
-            const charObj = gr.finalChar;
-            charNames.push(charObj.name);
-
-            if (limitedSet.has(charObj.id)) {
-                addStat(stats.limiteds, charObj.name);
-            } else {
-                addStat(stats.ubers, charObj.name);
-            }
-
-            currentIdx += gr.seedsConsumed;
-            lastDraw = { rarity: gr.rarity, charId: gr.charId, isRerolled: false };
-        }
-        
-        segmentTxt += charNames.join(", ");
-        outputArr.push(segmentTxt);
-    });
-
-    // 取得リストのフォーマット整形（2以上の時にカッコ書き）
-    const formatStatMap = (map) => {
-        const entries = Object.entries(map);
-        if (entries.length === 0) return "なし";
-        return entries.map(([name, count]) => {
-            return count >= 2 ? `${name}（${count}）` : name;
-        }).join("、");
-    };
-
-    // 回数セクションの構築（0回は非表示、名称変更反映）
-    let countsHtml = "";
-    if (stats.single > 0) countsHtml += `レアチケ：${stats.single}回<br>`;
-    if (stats.plat > 0) countsHtml += `プラチケ：${stats.plat}回<br>`;
-    if (stats.leg > 0) countsHtml += `レジェチケ：${stats.leg}回<br>`;
-    if (stats.guar > 0) countsHtml += `確定：${stats.guar}回<br>`;
-
-    let summaryHtml = `
-<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; font-family: monospace;">
-【SEED】<br>
-実行前：${initialSeed}<br>
-最終：${finalSeedForUpdate || "---"}<br>
-<br>
-【回数】<br>
-${countsHtml}
-<br>
-【取得】<br>
-伝説：${formatStatMap(stats.legends)}<br>
-限定：${formatStatMap(stats.limiteds)}<br>
-超激：${formatStatMap(stats.ubers)}
-</div>`;
-
-    return `<div id="txt-route-display" style="padding: 20px; background: #fff; line-height: 1.8; font-size: 14px; user-select: text; font-family: sans-serif;">
-        ${summaryHtml}
-        ${outputArr.join("<br>")}
-    <br></div>`;
-}
-
 /** 内部関数: テーブルDOMの組み立て */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
-    let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;"
-    onclick="addGachasFromSchedule()">skdで追加</button>`;
-    buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
+    // ボタンエリアを中央揃え・改行可能なフレックスボックスに設定
+    const buttonHtml = `
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; font-weight: normal; white-space: normal;">
+            <span style="font-weight: bold; margin-right: 2px;">A</span>
+            <button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>
+            <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>
+            <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
+            <span class="text-btn" style="color: #666; font-size: 1.1em; margin-left: 5px; cursor: pointer; text-decoration: none;" onclick="resetToFirstGacha()" title="一番左の列以外を解除">×</span>
+        </div>`;
     
     let totalGachaCols = 0;
     tableGachaIds.forEach(idWithSuffix => {
@@ -212,7 +84,12 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
     const totalTrackSpan = calcColSpan + totalGachaCols;
 
     let html = `<table><thead>
-        <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th><th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr>
+        <tr>
+            <th class="col-no"></th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px;">${buttonHtml}</th>
+            <th class="col-no"></th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; font-weight: bold;">B</th>
+        </tr>
         <tr class="sticky-row">
             <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
             ${generateNameHeaderHTML()}
@@ -300,4 +177,103 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         }
     });
     return sideHtml;
+}
+
+/** ルートに従ったテキスト表示を生成 */
+function generateTxtRouteView(seeds, initialSeed) {
+    const configInput = document.getElementById('sim-config');
+    const configStr = configInput ? configInput.value.trim() : "";
+    if (!configStr) return "<div style='padding:20px; color:#666;'>ルートが入力されていません。</div>";
+
+    const configs = parseSimConfig(configStr);
+    let currentIdx = 0;
+    let lastDraw = null;
+    let outputArr = [];
+
+    let stats = { single: 0, plat: 0, leg: 0, guar: 0, legends: {}, limiteds: {}, ubers: {} };
+    const limitedSet = new Set();
+    if (typeof limitedCats !== 'undefined') {
+        limitedCats.forEach(id => { limitedSet.add(id); limitedSet.add(String(id)); });
+    }
+    const addStat = (map, name) => { map[name] = (map[name] || 0) + 1; };
+
+    configs.forEach(sim => {
+        const gacha = gachaMasterData.gachas[sim.id];
+        if (!gacha) return;
+
+        let suffixText = "";
+        let normalRolls = sim.rolls;
+        let isG = false;
+        const isPlat = gacha.name.includes("プラチナ");
+        const isLeg = gacha.name.includes("レジェンド");
+
+        if (sim.g) {
+            isG = true; stats.guar++;
+            if (sim.rolls === 11) { normalRolls = 10; suffixText = "（11連確定）"; }
+            else if (sim.rolls === 15) { normalRolls = 14; suffixText = "（15連確定）"; }
+            else if (sim.rolls === 7) { normalRolls = 6; suffixText = "（7連確定）"; }
+            else { normalRolls = sim.rolls; suffixText = `（${sim.rolls}連確定）`; }
+        } else {
+            suffixText = `（単発${sim.rolls}ロール）`;
+        }
+
+        if (isPlat) stats.plat += normalRolls;
+        else if (isLeg) stats.leg += normalRolls;
+        else stats.single += normalRolls;
+
+        let segmentTxt = `[${gacha.name}]${suffixText}<br>=> `;
+        let charNames = [];
+
+        for (let k = 0; k < normalRolls; k++) {
+            if (currentIdx + 1 >= seeds.length) break;
+            const rr = rollWithSeedConsumptionFixed(currentIdx, gacha, seeds, lastDraw);
+            const charObj = rr.finalChar;
+            charNames.push(charObj.name);
+            if (rr.rarity === 'legend') addStat(stats.legends, charObj.name);
+            else if (limitedSet.has(charObj.id)) addStat(stats.limiteds, charObj.name);
+            else if (rr.rarity === 'uber') addStat(stats.ubers, charObj.name);
+            currentIdx += rr.seedsConsumed;
+            lastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
+        }
+
+        if (isG && currentIdx < seeds.length) {
+            const gr = rollGuaranteedUber(currentIdx, gacha, seeds);
+            const charObj = gr.finalChar;
+            charNames.push(charObj.name);
+            if (limitedSet.has(charObj.id)) addStat(stats.limiteds, charObj.name);
+            else addStat(stats.ubers, charObj.name);
+            currentIdx += gr.seedsConsumed;
+            lastDraw = { rarity: gr.rarity, charId: gr.charId, isRerolled: false };
+        }
+        segmentTxt += charNames.join(", ");
+        outputArr.push(segmentTxt);
+    });
+
+    const formatStatMap = (map) => {
+        const entries = Object.entries(map);
+        if (entries.length === 0) return "";
+        return entries.map(([name, count]) => count >= 2 ? `${name}（${count}）` : name).join("、");
+    };
+
+    let countsHtml = "";
+    if (stats.single > 0) countsHtml += `レアチケ：${stats.single}回<br>`;
+    if (stats.plat > 0) countsHtml += `プラチケ：${stats.plat}回<br>`;
+    if (stats.leg > 0) countsHtml += `レジェチケ：${stats.leg}回<br>`;
+    if (stats.guar > 0) countsHtml += `確定：${stats.guar}回<br>`;
+
+    let acquisitionHtml = "";
+    const legendStr = formatStatMap(stats.legends), limitedStr = formatStatMap(stats.limiteds), uberStr = formatStatMap(stats.ubers);
+    if (legendStr) acquisitionHtml += `伝説：${legendStr}<br>`;
+    if (limitedStr) acquisitionHtml += `限定：${limitedStr}<br>`;
+    if (uberStr) acquisitionHtml += `超激：${uberStr}<br>`;
+
+    let summaryHtml = `
+<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #eee; font-family: monospace;">
+【SEED】<br>実行前：${initialSeed}<br>最終：${finalSeedForUpdate || "---"}<br><br>
+【回数】<br>${countsHtml}<br>
+【取得】<br>${acquisitionHtml}
+</div>`;
+
+    return `<div id="txt-route-display" style="padding: 20px; background: #fff; line-height: 1.8; font-size: 14px; user-select: text; font-family: sans-serif;">
+        ${summaryHtml}${outputArr.join("<br>")}<br></div>`;
 }
