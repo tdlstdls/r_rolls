@@ -646,10 +646,15 @@ FILE: index.html
     <script src="gacha_series.js"></script>
     <script src="limited_cats.js"></script>
     <script src="logic.js"></script>
-    <script src="simulation.js"></script>
+    <script src="sim_config_helpers.js"></script>
+    <script src="sim_utils.js"></script>
+    <script src="sim_engine.js"></script>
+    <script src="sim_ui_logic.js"></script>
     <script src="schedule_logic.js"></script>
-    <script src="view_schedule.js"></script>
-    <script src="data_loader.js"></script> 
+    <script src="view_schedule_utils.js"></script>
+    <script src="view_schedule_gantt.js"></script>
+    <script src="view_schedule_table.js"></script>
+    <script src="data_loader.js"></script>
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
     <script src="view_forecast.js"></script>
@@ -657,12 +662,18 @@ FILE: index.html
     <script src="view_analysis.js"></script>
     <script src="view_header.js"></script>
     <script src="view_cell_renderer.js"></script>
+    <script src="view_table_data.js"></script>
+    <script src="view_table_highlight.js"></script>
     <script src="view_table.js"></script>
     <script src="ui_globals.js"></script>
     <script src="ui_schedule_handler.js"></script>
     <script src="ui_target_handler.js"></script>
     <script src="ui_table_handler.js"></script>
-    <script src="ui_controller.js"></script>
+    <script src="ui_mode_logic.js"></script>
+    <script src="ui_seed_logic.js"></script>
+    <script src="ui_refresh_logic.js"></script>
+    <script src="ui_display_logic.js"></script>
+    <script src="ui_cell_event.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
@@ -945,22 +956,38 @@ FILE: main.js
 
 /**
  * ==============================================================================
- * [R_Rolls] システム相関図 (System Dependency Map)
+ * [R_Rolls] システム相関図 (System Dependency Map) - Updated 2025
  * ==============================================================================
- * * 【1. Entry Point / Controller】
+ * 【1. Entry Point / Controller】
  * main.js --------------------> アプリ初期化フローの実行
  * |
- * +--> ui_controller.js ----> 表示切替(Sim/skd/概要)・描画指示の司令塔
+ * +--[ UI Management Modules ]--+
+ * | ui_mode_logic.js ----------> 初期化・Sim/skd/概要の切替
+ * | ui_seed_logic.js ----------> SEED値操作・同期
+ * | ui_refresh_logic.js --------> 再描画・Config操作
+ * | ui_display_logic.js --------> SEED列/マスター情報の表示管理
+ * | ui_cell_event.js -----------> セルクリック時のルート計算指令
+ * +-----------------------------+
  * +--> url_manager.js ------> URLとアプリ状態の同期
- * * 【2. Data & Logic Layer】
+ *
+ * 【2. Data & Logic Layer】
  * data_loader.js -------------> CSV/TSV取得・マスタデータ構築
- * |                             (cats.js, gacha_series.js を参照)
+ * | (cats.js, gacha_series.js を参照)
  * logic.js -------------------> ガチャ抽選・再抽選の核心計算ロジック
- * simulation.js --------------> 経路探索(ビームサーチ)・回避誘発判定
  * schedule_logic.js ----------> gatya.tsv解析・日付計算
- * * 【3. View / Rendering Layer】
- * view_table.js --------------> テーブル描画の主制御
  * |
+ * +--[ Simulation Modules ]--+
+ * | sim_config_helpers.js ----> Config文字列の解析・生成・操作
+ * | sim_engine.js ------------> 経路探索(ビームサーチ)・シミュレーション実行
+ * | sim_ui_logic.js ----------> 回避・誘発判定・UI表示判定ロジック
+ * | sim_utils.js -------------> 探索された経路の圧縮・整形
+ * +--------------------------+
+ *
+* 【3. View / Rendering Layer】
+ * view_table.js --------------> テーブル描画のメイン制御・DOM構築
+ * |
+ * +--> view_table_data.js ----> テーブル用データの生成
+ * +--> view_table_highlight.js -> ルートハイライトの計算
  * +--> view_header.js ------> ヘッダー(固定名/操作ボタン)生成
  * +--> view_cell_renderer.js -> 各セルのHTML生成
  * |      +--> view_analysis.js -> レア被りハイライト判定
@@ -968,14 +995,16 @@ FILE: main.js
  * +--> view_forecast.js ----> Findエリア・予報HTML生成
  * +--> view_master.js ------> マスタ詳細情報HTML生成
  * +--> view_schedule.js ----> スケジュール・ガントチャート描画
- * * 【4. Event Handlers / UI Parts】
+ *
+ * 【4. Event Handlers / UI Parts】
  * ui_table_handler.js --------> 列追加/削除/変更のイベント
  * ui_target_handler.js -------> Findターゲットの管理
  * ui_schedule_handler.js -----> skdモード切替・スケジュール列追加
  * gacha_selector.js ----------> プルダウンの選択肢生成
- * * 【5. Core State】
+ *
+ * 【5. Core State】
  * ui_globals.js --------------> 全ファイルで共有されるグローバル変数
- * * ==============================================================================
+ * ==============================================================================
  */
 
 window.onload = async function() {
@@ -986,13 +1015,13 @@ window.onload = async function() {
         return;
     }
 
-    // 2. URLパラメータの処理 (ui_controller.js)
+    // 2. URLパラメータの処理 (url_manager.js)
     processUrlParams();
 
     // 3. デフォルトガチャの初期化 (ui_controller.js)
     initializeDefaultGachas();
-
-    // 4. スケジュールUIの準備 (ui_controller.js)
+    
+    // 4. スケジュールUIの準備 (ui_schedule_handler.js)
     setupScheduleUI();
 
     // 5. 初回描画 (ui_controller.js)
@@ -1180,25 +1209,20 @@ function findDefaultGachaState(data) {
 }
 
 ====================
-FILE: simulation.js
+FILE: sim_config_helpers.js
 ====================
-/** @file simulation.js @description 自動経路探索（ビームサーチ）、回避・誘発の判定、Config解析を担当 @dependency logic.js, ui_globals.js */
+/** @file sim_config_helpers.js @description Config文字列の解析・生成ヘルパー */
 
-// --- sim-config ヘルパー関数 ---
-
+/** Config文字列をオブジェクト配列に変換 [cite: 230-233] */
 function parseSimConfig(configStr) {
     if (!configStr) return [];
-    // スペース、タブ、ハイフンで分割し、空の要素を除外
     const parts = configStr.split(/[\s\-]+/).filter(Boolean);
-    
     const configs = [];
     for (let i = 0; i < parts.length; i += 2) {
         const id = parts[i];
         const rollStr = parts[i+1];
         if (id && rollStr) {
-            // 'g' が末尾にあれば確定扱い (11g, 15g, 7g など)
             const isGuaranteed = rollStr.endsWith('g');
-            // 数値部分を取り出し
             const rolls = parseInt(rollStr.replace('g', ''), 10);
             configs.push({ id, rolls, g: isGuaranteed });
         }
@@ -1206,17 +1230,17 @@ function parseSimConfig(configStr) {
     return configs;
 }
 
+/** オブジェクト配列をConfig文字列に変換 [cite: 235] */
 function stringifySimConfig(configArr) {
-    // 表示用はスペース区切りで整形
     return configArr.map(c => `${c.id} ${c.rolls}${c.g ? 'g' : ''}`).join(' ');
 }
 
+/** 最後のロール回数を1増やす [cite: 236-239] */
 function incrementLastRoll(configStr) {
     if (!configStr) return null;
     const configs = parseSimConfig(configStr);
     if (configs.length > 0) {
         const last = configs[configs.length - 1];
-        // 確定でない場合のみ回数を増やす（確定指定の場合は単発1回を追加）
         if (!last.g) { 
             last.rolls += 1;
         } else {
@@ -1226,6 +1250,7 @@ function incrementLastRoll(configStr) {
     return stringifySimConfig(configs);
 }
 
+/** 最後のロールを1減らす、またはセグメントを削除 [cite: 240-243] */
 function decrementLastRollOrRemoveSegment(configStr) {
     if (!configStr) return null;
     const configs = parseSimConfig(configStr);
@@ -1240,7 +1265,7 @@ function decrementLastRollOrRemoveSegment(configStr) {
     return stringifySimConfig(configs);
 }
 
-// 追加: 最後のセグメント（ID+回数）を丸ごと削除する
+/** 最後のConfigセグメントを削除 [cite: 244-245] */
 function removeLastConfigSegment(configStr) {
     if (!configStr) return "";
     const configs = parseSimConfig(configStr);
@@ -1250,6 +1275,7 @@ function removeLastConfigSegment(configStr) {
     return stringifySimConfig(configs);
 }
 
+/** 確定枠設定の生成 [cite: 246-250] */
 function generateGuaranteedConfig(configStr, gachaId) {
     if (!configStr) return null;
     const parsed = parseSimConfig(configStr);
@@ -1268,8 +1294,183 @@ function generateGuaranteedConfig(configStr, gachaId) {
     return null;
 }
 
-// --- 回避/誘発ロジック (View用) ---
+====================
+FILE: sim_engine.js
+====================
+/** @file sim_engine.js @description 経路探索・シミュレーションエンジン */
 
+/** 単一セグメントのシミュレーション [cite: 291-301] */
+function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
+    const conf = gachaMasterData.gachas[sim.id];
+    if (!conf) return { nextIndex: currentIdx, lastDraw: currentLastDraw };
+
+    let normalRolls = sim.rolls;
+    let isGuaranteedStep = false;
+    let tempIdx = currentIdx;
+    let tempLastDraw = currentLastDraw;
+
+    if (sim.g) {
+         if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
+         else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
+         else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
+         else { normalRolls = sim.rolls; }
+    }
+
+    for(let k=0; k < normalRolls; k++) {
+        if (tempIdx >= seeds.length - 5) break;
+        const rr = rollWithSeedConsumptionFixed(tempIdx, conf, seeds, tempLastDraw);
+        if (rr.seedsConsumed === 0) break;
+        tempLastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
+        tempIdx += rr.seedsConsumed;
+    }
+    
+    if (isGuaranteedStep && tempIdx < seeds.length) {
+        if (typeof rollGuaranteedUber !== 'undefined') {
+            const gr = rollGuaranteedUber(tempIdx, conf, seeds);
+            tempIdx += gr.seedsConsumed;
+        }
+    }
+    return { nextIndex: tempIdx, lastDraw: tempLastDraw };
+}
+
+/** 経路探索エントリポイント [cite: 302-320] */
+function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null, primaryTargetId = null) {
+    const getSeeds = () => {
+        const seedEl = document.getElementById('seed');
+        const initialSeed = parseInt(seedEl ? seedEl.value : 12345);
+        const rng = new Xorshift32(initialSeed);
+        const tempSeeds = [];
+        const limit = Math.max(targetSeedIndex, 1000) + 500;
+        for(let i=0; i < limit; i++) tempSeeds.push(rng.next());
+        return tempSeeds;
+    };
+    const simSeeds = getSeeds();
+    let startIdx = 0;
+    let initialLastDraw = null;
+    let validConfigParts = [];
+    if (currentConfigStr && currentConfigStr.trim() !== "") {
+        const existingConfigs = parseSimConfig(currentConfigStr);
+        let tempIdx = 0;
+        let tempLastDraw = null;
+        for (const segment of existingConfigs) {
+            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
+            if (res.nextIndex > targetSeedIndex) break;
+            validConfigParts.push(segment);
+            tempIdx = res.nextIndex;
+            tempLastDraw = res.lastDraw;
+            if (tempIdx === targetSeedIndex) break;
+        }
+        startIdx = tempIdx;
+        initialLastDraw = tempLastDraw;
+    }
+    
+    const baseConfigStr = stringifySimConfig(validConfigParts);
+    const usableConfigs = visibleGachaIds.map(idStr => {
+        const id = idStr.replace(/[gfs]$/, '');
+        const conf = gachaMasterData.gachas[id];
+        if (!conf) return null;
+        if (conf.name.includes('プラチナ') || conf.name.includes('レジェンド')) return null;
+        return conf;
+    }).filter(c => c !== null);
+
+    if (usableConfigs.length === 0) return null;
+
+    const route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId);
+    if (route) {
+        if (finalActionOverride) route.push(finalActionOverride);
+        else route.push({ id: targetGachaId, rolls: 1 });
+        const newRouteStr = compressRoute(route);
+        return baseConfigStr ? baseConfigStr + " " + newRouteStr : newRouteStr;
+    }
+    return null;
+}
+
+/** ビームサーチによる経路探索  */
+function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId = null) {
+    const BEAM_WIDTH = 20;
+    const MAX_STEPS = 2200;
+
+    const sortedConfigs = [...configs].sort((a, b) => {
+        if (a.id == targetGachaId) return -1;
+        if (b.id == targetGachaId) return 1;
+        return 0;
+    });
+    let candidates = [{ idx: startIdx, path: [], lastDraw: initialLastDraw, score: 0 }];
+    let loopCount = 0;
+
+    while (candidates.length > 0 && loopCount < MAX_STEPS) {
+        loopCount++;
+        let nextCandidates = [];
+        for (const current of candidates) {
+            if (current.idx === targetIdx) return current.path;
+            const dist = targetIdx - current.idx;
+            if (dist < 0) continue;
+
+            for (const conf of sortedConfigs) {
+                const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, current.lastDraw);
+                if (current.idx + res.seedsConsumed > targetIdx) continue;
+
+                let score = current.score;
+                const distIsOdd = (dist % 2 !== 0);
+                const moveIsOdd = (res.seedsConsumed % 2 !== 0);
+                if (distIsOdd === moveIsOdd) score += 500;
+                else score -= 50;
+
+                const cid = res.charId;
+                const cStr = String(cid);
+                if (primaryTargetId !== null && (cid == primaryTargetId || cStr == primaryTargetId)) score += 1000;
+
+                let rarityScore = 0;
+                const isLimited = (typeof limitedCats !== 'undefined' && (limitedCats.includes(cid) || limitedCats.includes(cStr)));
+                const isUserTarget = (typeof userTargetIds !== 'undefined' && (userTargetIds.has(cid) || userTargetIds.has(parseInt(cid))));
+                if (res.rarity === 'legend') rarityScore = isUserTarget ? 300 : 250;
+                else if (isLimited) rarityScore = isUserTarget ? 200 : 150;
+                else if (res.rarity === 'uber') rarityScore = isUserTarget ? 100 : 80;
+                else if (isUserTarget) rarityScore = 50;
+
+                score += rarityScore;
+                const prevId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
+                if (conf.id == prevId) score += 40;
+                score += res.seedsConsumed;
+
+                const newPath = [...current.path, { id: conf.id, rolls: 1 }];
+                const newLastDraw = { rarity: res.rarity, charId: res.charId, isRerolled: res.isRerolled };
+                if (current.idx + res.seedsConsumed === targetIdx) return newPath;
+
+                nextCandidates.push({ idx: current.idx + res.seedsConsumed, path: newPath, lastDraw: newLastDraw, score: score });
+            }
+        }
+        if (nextCandidates.length === 0) break;
+        nextCandidates.sort((a, b) => b.score - a.score);
+
+        const uniqueCandidates = [];
+        const seenState = new Set();
+        for (const cand of nextCandidates) {
+            const stateKey = `${cand.idx}-${cand.lastDraw.charId}`;
+            if (!seenState.has(stateKey)) {
+                seenState.add(stateKey);
+                uniqueCandidates.push(cand);
+            }
+        }
+        const bestA = uniqueCandidates.filter(c => c.idx % 2 === 0).slice(0, BEAM_WIDTH / 2);
+        const bestB = uniqueCandidates.filter(c => c.idx % 2 !== 0).slice(0, BEAM_WIDTH / 2);
+        let combined = [...bestA, ...bestB];
+        if (combined.length < BEAM_WIDTH) {
+            const combinedSet = new Set(combined);
+            const remaining = uniqueCandidates.filter(c => !combinedSet.has(c));
+            combined = combined.concat(remaining.slice(0, BEAM_WIDTH - combined.length));
+        }
+        candidates = combined.sort((a, b) => b.score - a.score);
+    }
+    return null;
+}
+
+====================
+FILE: sim_ui_logic.js
+====================
+/** @file sim_ui_logic.js @description UI表示用の回避・誘発判定ロジック */
+
+/** セルに対応するConfigを取得 [cite: 251-254] */
 function getBestLink(cellSimConfigs, seedIndex, gachaConfigs) {
     if (seedIndex < 0) return null;
     for (const config of gachaConfigs) {
@@ -1281,6 +1482,7 @@ function getBestLink(cellSimConfigs, seedIndex, gachaConfigs) {
     return null;
 }
 
+/** 再抽選後のキャラ名を取得 [cite: 255-257] */
 function getForcedRerollName(currentRoll, gachaConfig) {
     if (!currentRoll || !gachaConfig || currentRoll.rarity !== 'rare' || currentRoll.s2 === null) {
         return null;
@@ -1296,11 +1498,10 @@ function getForcedRerollName(currentRoll, gachaConfig) {
     return null;
 }
 
+/** 回避・誘発判定 [cite: 258-276] */
 function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaConfigs, cellSimConfigs, newRow1Index) {
     const i = Math.floor(seedIndex / 2);
-    if (i < newRow1Index) {
-        return { link: null, rerollCharName: null };
-    }
+    if (i < newRow1Index) return { link: null, rerollCharName: null };
 
     const gachaIndex = gachaConfigs.findIndex(c => c.id === currentGachaId);
     if (gachaIndex === -1 || !tableData[seedIndex] || !tableData[seedIndex][gachaIndex]) {
@@ -1311,9 +1512,7 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
     const isRerolled = currentRoll.isRerolled;
     const originalCharId = currentRoll.originalChar?.id;
     const originalRarity = currentRoll.rarity;
-    if (originalRarity !== 'rare' || !originalCharId) {
-        return { link: null, rerollCharName: null };
-    }
+    if (originalRarity !== 'rare' || !originalCharId) return { link: null, rerollCharName: null };
 
     const prevIndicesToCheck = [seedIndex - 2, seedIndex - 3];
     for (const otherConfig of gachaConfigs) {
@@ -1322,6 +1521,7 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
 
         const otherIndex = gachaConfigs.findIndex(c => c.id === otherGachaId);
         if (otherIndex === -1) continue;
+        
         const createAltConfig = (prevIndexUsed) => {
             const configStr = getBestLink(cellSimConfigs, prevIndexUsed, gachaConfigs);
             if (configStr === null) return null; 
@@ -1334,19 +1534,18 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
             }
             return stringifySimConfig(parts);
         };
+
         for (const prevIndex of prevIndicesToCheck) {
             if (prevIndex < 0) continue;
             const otherRoll_prev = tableData[prevIndex]?.[otherIndex]?.roll;
             if (!otherRoll_prev) continue;
 
             if (isRerolled) {
-                // 回避
                 if (otherRoll_prev.rarity !== 'rare' || otherRoll_prev.charId !== originalCharId) { 
                     const altConfig = createAltConfig(prevIndex);
                     if (altConfig) return { link: altConfig, rerollCharName: null };
                 }
             } else {
-                // 誘発
                 if (otherRoll_prev.rarity === 'rare' && otherRoll_prev.charId === originalCharId) {
                     const altConfig = createAltConfig(prevIndex);
                     if (altConfig) {
@@ -1360,10 +1559,10 @@ function checkAvoidanceAndForcing(seedIndex, currentGachaId, tableData, gachaCon
     return { link: null, rerollCharName: null };
 }
 
+/** 誘発可能判定 [cite: 277-283] */
 function canBeForced(seedIndex, currentGachaId, tableData, gachaConfigs) {
     const gachaIndex = gachaConfigs.findIndex(c => c.id === currentGachaId);
     if (gachaIndex === -1 || seedIndex < 1 || !tableData[seedIndex] || !tableData[seedIndex][gachaIndex]) return false;
-
     const currentRoll = tableData[seedIndex][gachaIndex].roll;
     const originalCharId = currentRoll.originalChar ? currentRoll.originalChar.id : null;
     if (!originalCharId) return false;
@@ -1382,10 +1581,10 @@ function canBeForced(seedIndex, currentGachaId, tableData, gachaConfigs) {
     return false;
 }
 
+/** 回避可能判定 [cite: 284-290] */
 function canBeAvoided(seedIndex, currentGachaId, tableData, gachaConfigs) {
     const gachaIndex = gachaConfigs.findIndex(c => c.id === currentGachaId);
     if (gachaIndex === -1 || seedIndex < 1 || !tableData[seedIndex] || !tableData[seedIndex][gachaIndex]) return false;
-
     const currentRoll = tableData[seedIndex][gachaIndex].roll;
     if (currentRoll.rarity !== 'rare' || !currentRoll.isRerolled || !currentRoll.originalChar) return false;
     const originalCharId = currentRoll.originalChar.id;
@@ -1404,299 +1603,12 @@ function canBeAvoided(seedIndex, currentGachaId, tableData, gachaConfigs) {
     return false;
 }
 
-// --- 自動経路探索ロジック ---
+====================
+FILE: sim_utils.js
+====================
+/** @file sim_utils.js @description シミュレーション結果の圧縮 */
 
-/**
- * 内部ヘルパー: 単一セグメントをシミュレートし、次のインデックスとLastDrawを返す
- */
-function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
-    const conf = gachaMasterData.gachas[sim.id];
-    if (!conf) return { nextIndex: currentIdx, lastDraw: currentLastDraw };
-
-    let normalRolls = sim.rolls;
-    let isGuaranteedStep = false;
-    let tempIdx = currentIdx;
-    let tempLastDraw = currentLastDraw;
-
-    if (sim.g) {
-         if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
-         else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
-         else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
-         else { normalRolls = sim.rolls; }
-    }
-
-    // Normal Rolls
-    for(let k=0; k < normalRolls; k++) {
-        if (tempIdx >= seeds.length - 5) break;
-        const rr = rollWithSeedConsumptionFixed(tempIdx, conf, seeds, tempLastDraw);
-        if (rr.seedsConsumed === 0) break;
-        tempLastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
-        tempIdx += rr.seedsConsumed;
-    }
-    
-    // Guaranteed Roll
-    if (isGuaranteedStep && tempIdx < seeds.length) {
-        if (typeof rollGuaranteedUber !== 'undefined') {
-            const gr = rollGuaranteedUber(tempIdx, conf, seeds);
-            tempIdx += gr.seedsConsumed;
-        }
-    }
-
-    return { nextIndex: tempIdx, lastDraw: tempLastDraw };
-}
-
-/**
- * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
- * ★修正: 途中セルがクリックされた場合、既存のConfigを遡って最大限維持し、そこからルートを再計算する
- */
-function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null) {
-    // シード配列の準備 (Start Seedから生成)
-    const getSeeds = () => {
-        const seedEl = document.getElementById('seed');
-        const initialSeed = parseInt(seedEl ? seedEl.value : 12345);
-        const rng = new Xorshift32(initialSeed);
-        const tempSeeds = [];
-        // 必要十分な数だけ回す（targetIdx + バッファ）
-        const limit = Math.max(targetSeedIndex, 1000) + 500;
-        for(let i=0; i < limit; i++) tempSeeds.push(rng.next());
-        return tempSeeds;
-    };
-    const simSeeds = getSeeds();
-
-    // 0. 開始地点の決定 
-    // 既存のConfigを解析し、ターゲットより手前の有効なルートまでを特定する
-    let startIdx = 0;
-    let initialLastDraw = null;
-    let validConfigParts = [];
-
-    if (currentConfigStr && currentConfigStr.trim() !== "") {
-        const existingConfigs = parseSimConfig(currentConfigStr);
-        let tempIdx = 0;
-        let tempLastDraw = null;
-
-        for (const segment of existingConfigs) {
-            // このセグメントを実行した場合の到達点を計算
-            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
-
-            // もしこのセグメントを実行すると、ターゲットを超えてしまう場合
-            // このセグメント以降は採用せず、ここから経路探索を行う
-            if (res.nextIndex > targetSeedIndex) {
-                break;
-            }
-
-            // ターゲットより手前（またはターゲット地点）で終わるセグメントなら維持する
-            validConfigParts.push(segment);
-            tempIdx = res.nextIndex;
-            tempLastDraw = res.lastDraw;
-            
-            // ターゲット地点ぴったりに到達した場合、そこまでのConfigは確定としループを抜ける
-            // (これ以上既存Configを読み込むとオーバーするため)
-            if (tempIdx === targetSeedIndex) {
-                break;
-            }
-        }
-
-        startIdx = tempIdx;
-        initialLastDraw = tempLastDraw;
-    }
-    
-    // 維持されたConfig文字列
-    const baseConfigStr = stringifySimConfig(validConfigParts);
-
-    // 1. 目標地点のガチャ設定を取得
-    const targetConfig = gachaMasterData.gachas[targetGachaId];
-    if (!targetConfig) return null;
-
-    // 2. 探索に使用可能なガチャConfigリスト
-    const usableConfigs = visibleGachaIds.map(idStr => {
-        const id = idStr.replace(/[gfs]$/, '');
-        const conf = gachaMasterData.gachas[id];
-        if (!conf) return null;
-        if (conf.name.includes('プラチナ') || conf.name.includes('レジェンド')) return null;
-        return conf;
-    }).filter(c => c !== null);
-
-    if (usableConfigs.length === 0) return null;
-
-    // 3. 経路探索実行 (startIdx から targetSeedIndex まで)
-    // findPathBeamSearch に名称変更
-    const route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw);
-    
-    if (route) {
-        // クリックしたセルの処理
-        if (finalActionOverride) {
-            // 確定枠などの指定がある場合はそのアクションを追加
-            route.push(finalActionOverride);
-        } else {
-            // 通常セルは単発1回
-            route.push({ id: targetGachaId, rolls: 1 });
-        }
-
-        const newRouteStr = compressRoute(route);
-
-        if (baseConfigStr) {
-            // 維持したConfig + 新しいルート
-            return baseConfigStr + " " + newRouteStr;
-        } else {
-            return newRouteStr;
-        }
-    } else {
-        // ルートが見つからない場合
-        return null;
-    }
-}
-
-/**
- * 経路探索: Start(0)からTarget(seedIndex)までの最適なガチャ操作手順を算出する
- * ビームサーチ(Beam Search)を使用し、最適なルートを探索する
- */
-function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw) {
-    // ビームサーチ設定
-    const BEAM_WIDTH = 20;
-    // 同時に探索するルート候補の数（増やしすぎると重くなるが精度が上がる）
-    const MAX_STEPS = 1000; // 無限ループ防止
-
-    // targetGachaId を優先的に試行するためにリストを並び替える
-    const sortedConfigs = [...configs].sort((a, b) => {
-        if (a.id == targetGachaId) return -1;
-        if (b.id == targetGachaId) return 1;
-        return 0;
-    });
-
-    // 候補リスト: { idx, path, lastDraw, score }
-    // scoreが大きいほど優先度が高い
-    let candidates = [{
-        idx: startIdx,
-        path: [],
-        lastDraw: initialLastDraw,
-        score: 0
-    }];
-
-    let loopCount = 0;
-
-    while (candidates.length > 0 && loopCount < MAX_STEPS) {
-        loopCount++;
-        let nextCandidates = [];
-        
-        // 現在の候補すべてについて、次の手を展開
-        for (const current of candidates) {
-            // すでにゴールしている場合は（念のため）リターン
-            if (current.idx === targetIdx) {
-                return current.path;
-            }
-
-            // 残りの距離
-            const dist = targetIdx - current.idx;
-            if (dist < 0) continue; // 行き過ぎたルートは破棄
-
-            for (const conf of sortedConfigs) {
-                // このガチャを引いた場合の結果を予測
-                const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, current.lastDraw);
-
-                // ターゲットを越える場合は除外
-                if (current.idx + res.seedsConsumed > targetIdx) continue;
-
-                // --- スコアリング (大きいほど良い) ---
-                let score = current.score;
-
-                // 1. パリティ（偶奇）チェック
-                // 「残り距離」と「移動距離」の偶奇が一致すれば、トラック移動として非常に高評価
-                const distIsOdd = (dist % 2 !== 0);
-                const moveIsOdd = (res.seedsConsumed % 2 !== 0);
-                
-                if (distIsOdd === moveIsOdd) {
-                    score += 500; // パリティ一致は最優先
-                } else {
-                    score -= 50; // パリティ不一致は減点
-                }
-
-                // 2. レアリティ・ターゲットに基づく加点（優先順位指定あり）
-                let rarityScore = 0;
-                const cid = res.charId;
-                const cStr = String(cid);
-
-                // 限定キャラ判定（limited_cats.js）
-                const isLimited = (typeof limitedCats !== 'undefined' && (limitedCats.includes(cid) || limitedCats.includes(cStr)));
-                
-                // ユーザー指定ターゲット判定（ui_globals.js, ui_target_handler.js）
-                // userTargetIds は Set
-                const isUserTarget = (typeof userTargetIds !== 'undefined' && (userTargetIds.has(cid) || userTargetIds.has(parseInt(cid))));
-                
-                if (res.rarity === 'legend') {
-                    if (isUserTarget) rarityScore = 300; // Findで選択された伝説レア
-                    else rarityScore = 250;              // その他の伝説レア
-                } else if (isLimited) {
-                    if (isUserTarget) rarityScore = 200; // Findで選択された限定キャラ
-                    else rarityScore = 150;              // その他の限定キャラ
-                } else if (res.rarity === 'uber') {
-                    if (isUserTarget) rarityScore = 100; // Findで選択された超激レア
-                    else rarityScore = 80;               // その他の超激レア
-                } else if (isUserTarget) {
-                    rarityScore = 50;                    // Findで選択されたその他のレアリティ
-                }
-
-                score += rarityScore;
-
-                // 3. Stickiness（同じガチャを連続して引く）
-                const prevId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
-                if (conf.id == prevId) score += 40; // 加点を強化
-
-                // 4. Target Gacha の条件削除
-                // if (conf.id == targetGachaId) score += 30; // 削除済み
-
-                // 5. 進むこと自体への加点（停滞防止）
-                score += res.seedsConsumed;
-
-                // 新しい候補を作成
-                const newPath = [...current.path, { id: conf.id, rolls: 1 }];
-                const newLastDraw = { 
-                    rarity: res.rarity, 
-                    charId: res.charId, 
-                    isRerolled: res.isRerolled 
-                };
-
-                // もしこれでゴールなら即終了
-                if (current.idx + res.seedsConsumed === targetIdx) {
-                    return newPath;
-                }
-
-                nextCandidates.push({
-                    idx: current.idx + res.seedsConsumed,
-                    path: newPath,
-                    lastDraw: newLastDraw,
-                    score: score
-                });
-            }
-        }
-
-        if (nextCandidates.length === 0) break; // 手詰まり
-
-        // スコア順にソート (降順)
-        nextCandidates.sort((a, b) => b.score - a.score);
-
-        // 重複除去（同じ到達点・同じLastDrawなら、スコアが高い方だけ残す）
-        const uniqueCandidates = [];
-        const seenState = new Set();
-
-        for (const cand of nextCandidates) {
-            const stateKey = `${cand.idx}-${cand.lastDraw.charId}`;
-            if (!seenState.has(stateKey)) {
-                seenState.add(stateKey);
-                uniqueCandidates.push(cand);
-            }
-            if (uniqueCandidates.length >= BEAM_WIDTH) break;
-        }
-
-        candidates = uniqueCandidates;
-    }
-
-    return null; // ルートが見つからなかった
-}
-
-/**
- * ルート配列をConfig文字列に圧縮する
- * [{id:A}, {id:A}, {id:B}] -> "A 2 B 1"
- */
+/** 経路をConfig形式に圧縮 [cite: 356-361] */
 function compressRoute(path) {
     if (!path || path.length === 0) return "";
     let compressed = [];
@@ -1706,19 +1618,15 @@ function compressRoute(path) {
     for (let i = 1; i < path.length; i++) {
         const step = path[i];
         const stepG = step.g || false;
-        
         if (step.id === currentId && stepG === isG && !isG) {
-            // 通常ロール同士は結合
             count += (step.rolls || 1);
         } else {
-            // 切り替わりまたは確定枠
             compressed.push(`${currentId} ${count}${isG ? 'g' : ''}`);
             currentId = step.id;
             isG = stepG;
             count = step.rolls || 1;
         }
     }
-    // 最後の一つ
     compressed.push(`${currentId} ${count}${isG ? 'g' : ''}`);
     return compressed.join(" ");
 }
@@ -2474,17 +2382,139 @@ th {
 }
 
 ====================
-FILE: ui_controller.js
+FILE: ui_cell_event.js
 ====================
-/** @file ui_controller.js @description UIのメイン制御（初期化、モード切替、描画指示）を担当 @dependency ui_globals.js, view_table.js */
+/** @file ui_cell_event.js @description ガチャセルクリック時のイベントハンドラ */
 
-// マスター情報の表示状態管理フラグ
-let isMasterInfoVisible = true;
+function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null, fromFind = false, targetCharId = null) {
+    if (isSimulationMode) {
+        const errorEl = document.getElementById('sim-error-msg');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
 
-// --- 初期化ロジック ---
+        const visibleIds = tableGachaIds.map(id => id);
+        const configInput = document.getElementById('sim-config');
+        const currentConfig = configInput ? configInput.value : "";
+
+        if (typeof calculateRouteToCell === 'function') {
+            let routeConfig;
+            if (guaranteedType) {
+                const finalAction = { 
+                    id: gachaId, 
+                    rolls: parseInt(guaranteedType.replace('g', ''), 10), 
+                    g: true 
+                };
+                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction, targetCharId);
+            } else {
+                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, null, targetCharId);
+            }
+
+            if (routeConfig) {
+                if (configInput) {
+                    configInput.value = routeConfig;
+                    if (typeof updateUrlParams === 'function') updateUrlParams();
+                    resetAndGenerateTable();
+                }
+            } else {
+                if (errorEl) {
+                    const row = Math.floor(targetSeedIndex / 2) + 1;
+                    const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
+                    const cellLabel = `${side}${row}`;
+                    errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
+                    errorEl.style.display = 'block'; 
+                }
+                console.warn("Route not found.");
+            }
+        }
+    } else {
+        toggleAppMode();
+        if (fromFind) {
+            const notifEl = document.getElementById('sim-notif-msg');
+            if (notifEl) {
+                notifEl.textContent = 'Findのセル番地クリックによりSIMモードに切り替えました';
+                notifEl.style.display = 'inline';
+            }
+        }
+        setTimeout(() => {
+            onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType, fromFind, targetCharId);
+        }, 100);
+    }
+}
+
+====================
+FILE: ui_display_logic.js
+====================
+/** @file ui_display_logic.js @description 表示要素（SEED列/マスター情報/Find）のトグル管理 */
+
+// グローバル変数の定義を ui_globals.js に移行することを推奨
+let isMasterInfoVisible = false; 
+
+function toggleSeedColumns() {
+    showSeedColumns = !showSeedColumns;
+    if (typeof generateRollsTable === 'function') generateRollsTable(); 
+    updateToggleButtons();
+}
+
+function updateToggleButtons() {
+    const btnSeed = document.getElementById('toggle-seed-btn');
+    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
+}
+
+function toggleMasterInfo() {
+    isMasterInfoVisible = !isMasterInfoVisible;
+    const content = document.getElementById('master-info-content');
+    if (content) {
+        content.style.display = isMasterInfoVisible ? 'block' : 'none';
+    }
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
+}
+
+function toggleFindInfo() {
+    showFindInfo = !showFindInfo;
+    const btn = document.getElementById('toggle-find-info-btn');
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    if (btn) {
+        if (showFindInfo) btn.classList.add('active');
+        else btn.classList.remove('active');
+    }
+}
+
+====================
+FILE: ui_globals.js
+====================
+/** @file ui_globals.js @description アプリケーション全体で共有されるグローバルな状態変数の定義 @dependency なし */
+
+// UI状態変数 (Global)
+let tableGachaIds = [];
+let currentRolls = 300;
+let showSeedColumns = false;
+let showResultDisplay = false;
+let showFindInfo = false; // Findエリア（予報＋マスター情報）の表示フラグ
+let finalSeedForUpdate = null;
+
+let isSimulationMode = false;
+let isScheduleMode = false;
+let isDescriptionMode = false; // 追加: 概要表示モードフラグ
+let activeGuaranteedIds = new Set();
+let isScheduleAnalyzed = false;
+
+// Find機能の状態管理
+let hiddenFindIds = new Set(); // 自動ターゲットのうち、非表示にするID
+let userTargetIds = new Set(); // 自動ターゲット以外で、表示するID (手動ターゲット)
+let isFindListCleared = false;
+
+// 超激レア追加シミュレーション用
+let uberAdditionCounts = [];
+
+====================
+FILE: ui_mode_logic.js
+====================
+/** @file ui_mode_logic.js @description アプリの初期化とモード切替（Sim/skd/概要）の管理 */
 
 function initializeDefaultGachas() {
-    // スケジュール情報を解析 (ui_schedule_handler.js)
     if (typeof prepareScheduleInfo === 'function') {
         prepareScheduleInfo();
     }
@@ -2501,7 +2531,6 @@ function initializeDefaultGachas() {
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
                     return now >= startDt && now <= endDt;
                 });
-
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
@@ -2516,7 +2545,6 @@ function initializeDefaultGachas() {
             }
         }
         
-        // スケジュールから見つからなければデフォルトロジック
         if (!scheduleFound || tableGachaIds.length === 0) {
             const options = getGachaSelectorOptions(null);
             if (options.length > 0) {
@@ -2548,8 +2576,6 @@ function initializeDefaultGachas() {
     }
 }
 
-// --- モード切替 ---
-
 function onModeChange() {
     updateModeButtonState();
     refreshModeView();
@@ -2563,11 +2589,8 @@ function toggleAppMode() {
 function updateModeButtonState() {
     const btn = document.getElementById('mode-toggle-btn');
     if (btn) {
-        if (isSimulationMode) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        if (isSimulationMode) btn.classList.add('active');
+        else btn.classList.remove('active');
     }
 }
 
@@ -2581,159 +2604,6 @@ function refreshModeView() {
         }
     }
     resetAndGenerateTable();
-}
-
-// --- テーブル更新・リセット ---
-
-function resetAndGenerateTable() {
-    if (isScheduleMode || isDescriptionMode) return;
-    finalSeedForUpdate = null;
-    const simConf = document.getElementById('sim-config');
-    if (simConf && simConf.value.trim() === '') {
-         currentRolls = 300;
-    }
-    
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-    updateMasterInfoView();
-    if (typeof updateUrlParams === 'function') updateUrlParams();
-}
-
-function addMoreRolls() {
-    currentRolls += 100;
-    if (typeof generateRollsTable === 'function') generateRollsTable();
-}
-
-function updateSeedAndRefresh(newSeed) {
-    const seedInput = document.getElementById('seed');
-    if(seedInput && newSeed) {
-        seedInput.value = newSeed;
-        currentRolls = 300;
-        if (typeof generateRollsTable === 'function') generateRollsTable();
-        updateMasterInfoView();
-        if (typeof updateUrlParams === 'function') updateUrlParams();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}
-
-function clearSimConfig() {
-    const el = document.getElementById('sim-config');
-    if(el) el.value = '';
-    
-    // エラーメッセージと通知メッセージの両方をクリア
-    const errorEl = document.getElementById('sim-error-msg');
-    if (errorEl) {
-        errorEl.textContent = '';
-        errorEl.style.display = 'none';
-    }
-    const notifEl = document.getElementById('sim-notif-msg');
-    if (notifEl) {
-        notifEl.textContent = '';
-        notifEl.style.display = 'none';
-    }
-
-    resetAndGenerateTable();
-}
-
-function backSimConfig() {
-    const el = document.getElementById('sim-config');
-    if (el && typeof removeLastConfigSegment === 'function') {
-        el.value = removeLastConfigSegment(el.value);
-        resetAndGenerateTable();
-    }
-}
-
-function updateSeedFromSim() {
-    if (finalSeedForUpdate) {
-        document.getElementById('seed').value = finalSeedForUpdate;
-        document.getElementById('sim-config').value = '';
-        resetAndGenerateTable(); 
-    }
-}
-
-// --- SEED入力欄の制御 ---
-
-function toggleSeedInput() {
-    const container = document.getElementById('seed-input-container');
-    const trigger = document.getElementById('seed-input-trigger');
-    
-    if (!container) return;
-
-    if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        if (trigger) {
-            trigger.classList.remove('hidden');
-            trigger.classList.add('active');
-        }
-        const input = document.getElementById('seed');
-        if (input) input.focus();
-    } else {
-        cancelSeedInput();
-    }
-}
-
-function applySeedInput() {
-    if (typeof updateUrlParams === 'function') updateUrlParams();
-    resetAndGenerateTable();
-    
-    const container = document.getElementById('seed-input-container');
-    const trigger = document.getElementById('seed-input-trigger');
-    
-    if (container) container.classList.add('hidden');
-    if (trigger) {
-        trigger.classList.remove('hidden');
-        trigger.classList.remove('active');
-    }
-}
-
-function cancelSeedInput() {
-    const container = document.getElementById('seed-input-container');
-    const trigger = document.getElementById('seed-input-trigger');
-    const input = document.getElementById('seed');
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentSeed = urlParams.get('seed') || "12345";
-    if (input) input.value = currentSeed;
-
-    if (container) container.classList.add('hidden');
-    if (trigger) {
-        trigger.classList.remove('hidden');
-        trigger.classList.remove('active');
-    }
-}
-
-function copySeedToClipboard() {
-    const seedInput = document.getElementById('seed');
-    if (!seedInput) return;
-    navigator.clipboard.writeText(seedInput.value).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
-}
-
-// --- 表示切替 ---
-
-function toggleSeedColumns() {
-    showSeedColumns = !showSeedColumns;
-    if (typeof generateRollsTable === 'function') generateRollsTable(); 
-    updateToggleButtons();
-}
-
-function updateToggleButtons() {
-    const btnSeed = document.getElementById('toggle-seed-btn');
-    if(btnSeed) btnSeed.textContent = showSeedColumns ? 'SEED非表示' : 'SEED表示';
-}
-
-function toggleMasterInfo() {
-    isMasterInfoVisible = !isMasterInfoVisible;
-    const content = document.getElementById('master-info-content');
-    if (content) {
-        content.style.display = isMasterInfoVisible ? 'block' : 'none';
-    }
-    
-    if (typeof generateRollsTable === 'function') {
-        generateRollsTable();
-    }
-    if (typeof updateMasterInfoView === 'function') {
-        updateMasterInfoView();
-    }
 }
 
 function toggleDescription() {
@@ -2750,9 +2620,7 @@ function toggleDescription() {
         if (typeof isScheduleMode !== 'undefined' && isScheduleMode && typeof toggleSchedule === 'function') {
             toggleSchedule();
         }
-        if (toggle) {
-            toggle.classList.add('active');
-        }
+        if (toggle) toggle.classList.add('active');
         if (tableContainer) tableContainer.classList.add('hidden');
         if (simWrapper) simWrapper.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
@@ -2768,9 +2636,7 @@ function toggleDescription() {
             content.style.maxHeight = 'none';
         }
     } else {
-        if (toggle) {
-            toggle.classList.remove('active');
-        }
+        if (toggle) toggle.classList.remove('active');
         if (content) {
             content.classList.add('hidden');
             content.style.flexGrow = '';
@@ -2787,129 +2653,64 @@ function toggleDescription() {
     }
 }
 
-function toggleFindInfo() {
-    showFindInfo = !showFindInfo;
-    const btn = document.getElementById('toggle-find-info-btn');
-    if (typeof generateRollsTable === 'function') {
-        generateRollsTable();
+====================
+FILE: ui_refresh_logic.js
+====================
+/** @file ui_refresh_logic.js @description テーブル再描画とConfig操作の管理 */
+
+function resetAndGenerateTable() {
+    if (isScheduleMode || isDescriptionMode) return;
+    finalSeedForUpdate = null;
+    const simConf = document.getElementById('sim-config');
+    if (simConf && simConf.value.trim() === '') {
+         currentRolls = 300;
     }
-    if (btn) {
-        if (showFindInfo) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    }
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+    updateMasterInfoView();
+    if (typeof updateUrlParams === 'function') updateUrlParams();
 }
 
-// --- 共通View更新 ---
+function addMoreRolls() {
+    currentRolls += 100;
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
+function clearSimConfig() {
+    const el = document.getElementById('sim-config');
+    if(el) el.value = '';
+    const errorEl = document.getElementById('sim-error-msg');
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+    }
+    const notifEl = document.getElementById('sim-notif-msg');
+    if (notifEl) {
+        notifEl.textContent = '';
+        notifEl.style.display = 'none';
+    }
+    resetAndGenerateTable();
+}
+
+function backSimConfig() {
+    const el = document.getElementById('sim-config');
+    if (el && typeof removeLastConfigSegment === 'function') {
+        el.value = removeLastConfigSegment(el.value);
+        resetAndGenerateTable();
+    }
+}
 
 function updateMasterInfoView() {
     const el = document.getElementById('master-info-area');
     if (!el || typeof generateMasterInfoHTML !== 'function') return;
-
     const configs = [];
     tableGachaIds.forEach(idStr => {
-        let gachaId = idStr;
-        if (gachaId.endsWith('g') || gachaId.endsWith('s') || gachaId.endsWith('f')) {
-            gachaId = gachaId.slice(0, -1);
-        }
+        let gachaId = idStr.replace(/[gfs]$/, '');
         if (gachaMasterData.gachas[gachaId]) {
             configs.push(gachaMasterData.gachas[gachaId]);
         }
     });
     el.innerHTML = generateMasterInfoHTML(configs);
 }
-
-/**
- * セルクリック時のハンドラ
- */
-function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null, fromFind = false) {
-    if (isSimulationMode) {
-        const errorEl = document.getElementById('sim-error-msg');
-        if (errorEl) {
-            errorEl.textContent = '';
-            errorEl.style.display = 'none';
-        }
-
-        const visibleIds = tableGachaIds.map(id => id);
-        const configInput = document.getElementById('sim-config');
-        const currentConfig = configInput ? configInput.value : "";
-
-        if (typeof calculateRouteToCell === 'function') {
-            let routeConfig;
-            if (guaranteedType) {
-                const finalAction = { 
-                    id: gachaId, 
-                    rolls: parseInt(guaranteedType.replace('g', ''), 10), 
-                    g: true 
-                };
-                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction);
-            } else {
-                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
-            }
-
-            if (routeConfig) {
-                if (configInput) {
-                    configInput.value = routeConfig;
-                    if (typeof updateUrlParams === 'function') updateUrlParams();
-                    resetAndGenerateTable();
-                }
-            } else {
-                if (errorEl) {
-                    const row = Math.floor(targetSeedIndex / 2) + 1;
-                    const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
-                    const cellLabel = `${side}${row}`;
-                    errorEl.textContent = `${cellLabel}セルへのルートは見つかりませんでした`;
-                    errorEl.style.display = 'block'; 
-                }
-                console.warn("Route not found.");
-            }
-        }
-    } else {
-        // 自動でSimモードへ切り替え
-        toggleAppMode();
-        
-        if (fromFind) {
-            const notifEl = document.getElementById('sim-notif-msg');
-            if (notifEl) {
-                notifEl.textContent = 'Findのセル番地クリックによりSIMモードに切り替えました';
-                notifEl.style.display = 'inline';
-            }
-        }
-        
-        setTimeout(() => {
-            onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType, fromFind);
-        }, 100);
-    }
-}
-
-====================
-FILE: ui_globals.js
-====================
-/** @file ui_globals.js @description アプリケーション全体で共有されるグローバルな状態変数の定義 @dependency なし */
-
-// UI状態変数 (Global)
-let tableGachaIds = [];
-let currentRolls = 300;
-let showSeedColumns = false;
-let showResultDisplay = false;
-let showFindInfo = false; // Findエリア（予報＋マスター情報）の表示フラグ
-let finalSeedForUpdate = null;
-
-let isSimulationMode = false;
-let isScheduleMode = false;
-let isDescriptionMode = false; // 追加: 概要表示モードフラグ
-let activeGuaranteedIds = new Set();
-let isScheduleAnalyzed = false;
-
-// Find機能の状態管理
-let hiddenFindIds = new Set(); // 自動ターゲットのうち、非表示にするID
-let userTargetIds = new Set(); // 自動ターゲット以外で、表示するID (手動ターゲット)
-let isFindListCleared = false;
-
-// 超激レア追加シミュレーション用
-let uberAdditionCounts = [];
 
 ====================
 FILE: ui_schedule_handler.js
@@ -3087,6 +2888,83 @@ function addGachasFromSchedule() {
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
+}
+
+====================
+FILE: ui_seed_logic.js
+====================
+/** @file ui_seed_logic.js @description SEED値の操作・同期ロジック */
+
+function toggleSeedInput() {
+    const container = document.getElementById('seed-input-container');
+    const trigger = document.getElementById('seed-input-trigger');
+    if (!container) return;
+
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        if (trigger) {
+            trigger.classList.remove('hidden');
+            trigger.classList.add('active');
+        }
+        const input = document.getElementById('seed');
+        if (input) input.focus();
+    } else {
+        cancelSeedInput();
+    }
+}
+
+function applySeedInput() {
+    if (typeof updateUrlParams === 'function') updateUrlParams();
+    resetAndGenerateTable();
+    const container = document.getElementById('seed-input-container');
+    const trigger = document.getElementById('seed-input-trigger');
+    if (container) container.classList.add('hidden');
+    if (trigger) {
+        trigger.classList.remove('hidden');
+        trigger.classList.remove('active');
+    }
+}
+
+function cancelSeedInput() {
+    const container = document.getElementById('seed-input-container');
+    const trigger = document.getElementById('seed-input-trigger');
+    const input = document.getElementById('seed');
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSeed = urlParams.get('seed') || "12345";
+    if (input) input.value = currentSeed;
+    if (container) container.classList.add('hidden');
+    if (trigger) {
+        trigger.classList.remove('hidden');
+        trigger.classList.remove('active');
+    }
+}
+
+function copySeedToClipboard() {
+    const seedInput = document.getElementById('seed');
+    if (!seedInput) return;
+    navigator.clipboard.writeText(seedInput.value).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+
+function updateSeedAndRefresh(newSeed) {
+    const seedInput = document.getElementById('seed');
+    if(seedInput && newSeed) {
+        seedInput.value = newSeed;
+        currentRolls = 300;
+        if (typeof generateRollsTable === 'function') generateRollsTable();
+        updateMasterInfoView();
+        if (typeof updateUrlParams === 'function') updateUrlParams();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function updateSeedFromSim() {
+    if (finalSeedForUpdate) {
+        document.getElementById('seed').value = finalSeedForUpdate;
+        document.getElementById('sim-config').value = '';
+        resetAndGenerateTable(); 
+    }
 }
 
 ====================
@@ -3830,15 +3708,12 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
 
-    // マスターボタンON時の説明文スタイル
     const masterDescStyle = isMasterActive ? '' : 'display: none;';
 
-    // 特殊ガチャ設定に応じたメッセージ
     const specialStatusText = (typeof useSpecialInRoute !== 'undefined' && useSpecialInRoute)
         ? `<span style="color: #d9534f; font-weight: bold;">[特殊ガチャ許可ON]</span> 現在、プラチナ・レジェンドを経路に使用します。`
         : `超激確定・プラチナ・レジェンドは消費を避けるため使用しません。`;
 
-    // ボタンエリア HTML生成
     summaryHtml += `
         <div style="margin-bottom: 10px; text-align: left;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -3997,15 +3872,15 @@ function generateFastForecast(initialSeed, columnConfigs) {
             else if (data.isLimited) nameStyle += ' color:#d35400;'; 
             else nameStyle += ' color:#333;'; 
 
-            // セル番地をクリック可能なリンク（自動Simモード切り替え対応）に変更
             const hitLinks = data.hits.map(addr => {
                 const row = parseInt(addr);
                 const side = addr.endsWith('B') ? 1 : 0;
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
                 
+                // 第6引数に data.id (targetCharId) を渡して重みづけを強化
                 return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
-                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true)">${addr}</span>`;
+                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
             }).join("");
 
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
@@ -4261,9 +4136,704 @@ function generateMasterInfoHtml() {
 }
 
 ====================
-FILE: view_schedule.js
+FILE: view_schedule_gantt.js
+====================
+/** @file view_schedule_gantt.js @description ガントチャートの描画処理 */
+
+function renderGanttChart(data) {
+    const filteredData = data.filter(item => !isPlatinumOrLegend(item));
+    if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0); 
+    const yesterdayInt = getDateInt(yesterday);
+    
+    let activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+    const now = new Date();
+
+    // フィルタ: 終了分の非表示設定
+    if (hideEndedSchedules) {
+        activeData = activeData.filter(item => {
+            const endDt = parseDateTime(item.rawEnd, item.endTime);
+            return now <= endDt;
+        });
+    }
+
+    // ソート: 開催終了分を最優先
+    activeData.sort((a, b) => {
+        const endA = parseDateTime(a.rawEnd, a.endTime);
+        const endB = parseDateTime(b.rawEnd, b.endTime);
+        const isEndedA = now > endA;
+        const isEndedB = now > endB;
+        if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
+        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    });
+
+    if (activeData.length === 0) return '<p>表示可能な開催中のスケジュールはありません。</p>';
+
+    let minDateInt = parseInt(activeData[0].rawStart);
+    let maxEndDateTime = new Date(0);
+    let maxLabelTextWidth = 0;
+
+    activeData.forEach(item => {
+        const s = parseInt(item.rawStart);
+        if (s < minDateInt) minDateInt = s;
+        const eDt = parseDateTime(item.rawEnd, item.endTime);
+        if (eDt > maxEndDateTime) maxEndDateTime = eDt;
+
+        let displayName = item.seriesName;
+        if (item.guaranteed) displayName += " [確定]";
+        const textW = calcTextWidth(displayName);
+        if (textW > maxLabelTextWidth) maxLabelTextWidth = textW;
+    });
+
+    let labelWidth = Math.max(160, maxLabelTextWidth + 20);
+    if (labelWidth > 320) labelWidth = 320; 
+
+    let minDate = parseDateStr(String(minDateInt));
+    const viewStartDate = new Date(yesterday);
+    viewStartDate.setDate(viewStartDate.getDate() - 2);
+    if (minDate < viewStartDate) minDate = viewStartDate;
+
+    let limitDate = new Date(minDate);
+    limitDate.setDate(limitDate.getDate() + 35);
+    let chartEnd = new Date(maxEndDateTime);
+    if (chartEnd > limitDate) chartEnd = limitDate;
+
+    chartEnd.setHours(0, 0, 0, 0);
+    chartEnd.setDate(chartEnd.getDate() + 1);
+    const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
+    
+    if (totalDays <= 0) return '';
+    const dayWidth = 50; 
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
+    
+    let currentLineHtml = '';
+    if (now >= minDate && now < chartEnd) {
+        const diffNowMs = now - minDate;
+        const currentLineLeftPx = (diffNowMs / msPerDay) * dayWidth;
+        currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
+    }
+
+    let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
+    for (let i = 0; i < totalDays; i++) {
+        const d = new Date(minDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = getShortDateStr(d);
+        const isToday = getDateInt(d) === getDateInt(new Date());
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
+        headerHtml += `<div class="${cls}" style="width:${dayWidth}px;">${dateStr}</div>`;
+    }
+    headerHtml += `<div class="gantt-date-cell" style="width:${dayWidth/2}px; border-right:none;"></div></div>`;
+
+    let bodyHtml = '';
+    activeData.forEach(item => {
+        const startDateTime = parseDateTime(item.rawStart, item.startTime);
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+        const diffStartMs = startDateTime - minDate;
+        const durationMs = endDateTime - startDateTime;
+
+        let offsetPx = (diffStartMs / msPerDay) * dayWidth;
+        let widthPx = (durationMs / msPerDay) * dayWidth;
+
+        if (offsetPx < 0) { widthPx += offsetPx; offsetPx = 0; }
+        const maxPx = totalDays * dayWidth;
+        if (offsetPx >= maxPx) return;
+        if (offsetPx + widthPx > maxPx) widthPx = maxPx - offsetPx; 
+        if (widthPx <= 0) return;
+
+        let displayName = item.seriesName;
+        if (item.guaranteed) displayName += " [確定]";
+
+        let barClass = 'gantt-bar';
+        if (displayName.includes("極選抜")) barClass += ' g-kyoku';
+        else if (displayName.includes("超選抜")) barClass += ' g-cho';
+        else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
+        else if (displayName.includes("コラボ")) barClass += ' g-collab';
+
+        const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
+        let rowClass = 'gantt-row';
+        if (now > endDateTime) rowClass += ' row-ended';
+        else if (item.guaranteed) rowClass += ' row-guaranteed';
+
+        bodyHtml += `
+            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
+                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;" title="${displayName} (ID:${item.id})">${displayName}</div>
+                <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
+                    ${generateGridLines(totalDays, dayWidth, minDate)}
+                    <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
+                        <span class="gantt-bar-text">${durationDays}日間</span>
+                    </div>
+                    ${currentLineHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    return `
+        <div class="gantt-outer-wrapper">
+            <div style="margin-bottom: 5px; text-align: right;">
+                <button onclick="saveGanttImage()" class="secondary" style="font-size: 11px; padding: 4px 8px;">画像として保存</button>
+            </div>
+            <div class="gantt-chart-container">
+                <div class="gantt-scroll-wrapper">
+                    ${headerHtml}
+                    <div class="gantt-body">${bodyHtml}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateGridLines(days, width, startDate) {
+    let html = '';
+    for (let i = 0; i < days; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const style = `left:${i * width}px; width:${width}px;`;
+        const cls = isWeekend ? 'gantt-grid-line weekend' : 'gantt-grid-line';
+        html += `<div class="${cls}" style="${style}"></div>`;
+    }
+    return html;
+}
+
+====================
+FILE: view_schedule_table.js
+====================
+/** @file view_schedule_table.js @description リスト形式のスケジュール表描画 */
+
+function renderScheduleTable(tsvContent, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const data = parseGachaTSV(tsvContent);
+    const now = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayInt = getDateInt(yesterday);
+    
+    let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+    
+    // フィルタ: 終了分の非表示設定
+    if (hideEndedSchedules) {
+        filteredData = filteredData.filter(item => {
+            const endDt = parseDateTime(item.rawEnd, item.endTime);
+            return now <= endDt;
+        });
+    }
+
+    // ソート順：開催終了分を最優先 -> 通常ガチャ（日付順） -> 特別枠（日付順）
+    filteredData.sort((a, b) => {
+        const endA = parseDateTime(a.rawEnd, a.endTime);
+        const endB = parseDateTime(b.rawEnd, b.endTime);
+        const isEndedA = now > endA;
+        const isEndedB = now > endB;
+
+        if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
+
+        const isSpecialA = isPlatinumOrLegend(a);
+        const isSpecialB = isPlatinumOrLegend(b);
+        if (isSpecialA !== isSpecialB) return isSpecialA ? 1 : -1; 
+
+        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    });
+
+    const ganttHtml = renderGanttChart(data);
+    const hideBtnClass = hideEndedSchedules ? 'text-btn active' : 'text-btn';
+
+    let html = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="margin:0;">開催スケジュール</h3>
+            <span onclick="toggleHideEnded()" class="${hideBtnClass}" style="font-size: 0.8em;">終了分を非表示</span>
+        </div>
+        ${ganttHtml}
+        <div style="margin-top: 20px;"></div>
+        <div class="schedule-scroll-wrapper">
+        <table class="schedule-table">
+        <thead>
+            <tr>
+                <th style="min-width:50px;">自</th>
+                <th style="min-width:50px;">至</th>
+                <th>ガチャ名 / 詳細</th>
+                <th>レア</th>
+                <th>激レア</th>
+                <th>超激</th>
+                <th>伝説</th>
+                <th>確定</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    filteredData.forEach((item, index) => {
+        let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
+        if (item.guaranteed) seriesDisplay += " [確定]";
+
+        const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
+        const endDateFormatted = formatDateJP(item.rawEnd);
+        let endStr = endDateFormatted;
+
+        const isPlat = item.seriesName.includes("プラチナ");
+        const isLeg = item.seriesName.includes("レジェンド");
+        let isAppliedNextStart = false;
+
+        if (isPlat || isLeg) {
+            const nextSameType = filteredData.slice(index + 1).find(nextItem => {
+                if (isPlat) return nextItem.seriesName.includes("プラチナ");
+                if (isLeg) return nextItem.seriesName.includes("レジェンド");
+                return false;
+            });
+            if (nextSameType) {
+                endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
+                isAppliedNextStart = true;
+            }
+        }
+
+        if (!isAppliedNextStart && endDateFormatted !== '永続') {
+            endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
+        }
+        
+        const isPlatLeg = isPlatinumOrLegend(item);
+        const uberRateVal = parseInt(item.uber);
+        let uberStyle = ( !isPlatLeg && uberRateVal !== 500 ) ? 'color:red; font-weight:bold;' : '';
+
+        const legendRateVal = parseInt(item.legend);
+        let legendStyle = ( !isPlatLeg && legendRateVal > 30 ) ? 'color:red; font-weight:bold;' : '';
+
+        const endDateTime = parseDateTime(item.rawEnd, item.endTime);
+        let rowClass = (now > endDateTime) ? "row-ended" : (item.guaranteed ? "row-guaranteed" : "");
+
+        html += `
+            <tr class="${rowClass}">
+                <td>${startStr}</td>
+                <td>${endStr}</td>
+                <td style="text-align:left; vertical-align: middle;">
+                    <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
+                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+                </td>
+                <td>${fmtRate(item.rare)}</td>
+                <td>${fmtRate(item.supa)}</td>
+                <td style="${uberStyle}">${fmtRate(item.uber)}</td>
+                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
+                <td style="text-align:center; font-size:1.2em;">
+                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+}
+
+====================
+FILE: view_schedule_utils.js
+====================
+/** @file view_schedule_utils.js @description スケジュール表示の共通設定とユーティリティ */
+
+// 表示状態管理用の変数
+if (typeof hideEndedSchedules === 'undefined') {
+    window.hideEndedSchedules = false;
+}
+
+/** 終了分の表示/非表示を切り替えて再描画 */
+function toggleHideEnded() {
+    hideEndedSchedules = !hideEndedSchedules;
+    if (typeof loadedTsvContent !== 'undefined' && loadedTsvContent) {
+        // 再描画を実行
+        renderScheduleTable(loadedTsvContent, 'schedule-container');
+    }
+}
+
+/** 文字列の表示幅を概算する関数 (動的幅調整用) */
+function calcTextWidth(text) {
+    let width = 0;
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        // 半角文字(ASCII範囲)は約8px、それ以外(全角)は約13pxと仮定
+        if ((code >= 0x00 && code < 0x81) || (code === 0xf8f0) || (code >= 0xff61 && code < 0xffa0) || (code >= 0xf8f1 && code < 0xf8f4)) {
+            width += 8;
+        } else {
+            width += 13;
+        }
+    }
+    return width;
+}
+
+/** 確率のフォーマット (30 -> 0.3%) */
+function fmtRate(val) {
+    if (!val) return "0%";
+    return (parseInt(val) / 100) + "%";
+}
+
+/** ガントチャートを画像として保存 */
+function saveGanttImage() {
+    const element = document.querySelector('.gantt-chart-container');
+    if (!element) return;
+    
+    const header = element.querySelector('.gantt-header');
+    if (!header) return;
+    const contentWidth = header.style.width;
+
+    const originalOverflow = element.style.overflow;
+    const originalWidth = element.style.width; 
+    const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
+    const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
+    
+    element.style.overflow = 'visible';
+    element.style.width = contentWidth; 
+    
+    if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
+    
+    html2canvas(element).then(canvas => {
+        element.style.overflow = originalOverflow;
+        element.style.width = originalWidth;
+        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+
+        const link = document.createElement('a');
+        link.download = 'gacha_schedule.png';
+        link.href = canvas.toToDataURL('image/png');
+        link.click();
+    }).catch(err => {
+        console.error("Image capture failed:", err);
+        alert("画像の保存に失敗しました。");
+        element.style.overflow = originalOverflow;
+        element.style.width = originalWidth;
+        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+    });
+}
+
+====================
+FILE: view_table.js
+====================
+/** @file view_table.js @description ガチャ結果テーブル全体の描画制御 */
+
+const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
+const COLOR_ROUTE_UBER = '#66b2ff';
+
+function generateRollsTable() {
+    try {
+        if (Object.keys(gachaMasterData.gachas).length === 0) return;
+        const seedEl = document.getElementById('seed');
+        if (!seedEl) return;
+        
+        let initialSeed = parseInt(seedEl.value, 10);
+        if (isNaN(initialSeed)) { initialSeed = 12345; seedEl.value = "12345"; }
+        
+        const numRolls = currentRolls;
+
+        // 1. SEED配列生成
+        const seeds = [];
+        const rngForSeeds = new Xorshift32(initialSeed);
+        for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
+
+        // 2. カラム設定とシミュレーション実行
+        const columnConfigs = prepareColumnConfigs();
+        const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
+
+        // 3. ハイライト判定
+        const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
+        finalSeedForUpdate = lastSeedValue;
+
+        // 4. HTML構築
+        let findAreaHtml = '';
+        if (typeof generateFastForecast === 'function') findAreaHtml += generateFastForecast(initialSeed, columnConfigs);
+        if (typeof generateMasterInfoHtml === 'function' && showFindInfo && isMasterInfoVisible) {
+            findAreaHtml += `<div id="master-info-area" style="padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-top: none; margin-top: -16px; border-radius: 0 0 4px 4px; font-size: 0.85em;">`;
+            findAreaHtml += `<div style="border-top: 1px dashed #ccc; margin-bottom: 10px;"></div>`; 
+            findAreaHtml += generateMasterInfoHtml();
+            findAreaHtml += `</div>`;
+        }
+
+        const tableHtml = buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap);
+        
+        const container = document.getElementById('rolls-table-container');
+        if (container) container.innerHTML = findAreaHtml + tableHtml;
+
+        const resultDiv = document.getElementById('result');
+        if (resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
+        updateUrlParams();
+
+    } catch (e) {
+        const container = document.getElementById('rolls-table-container');
+        if (container) container.innerHTML = `<p class="error">エラー: ${e.message}</p>`;
+        console.error(e);
+    }
+}
+
+/** 内部関数: テーブルDOMの組み立て */
+function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
+    let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
+    buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
+    
+    let totalGachaCols = 0;
+    tableGachaIds.forEach(idWithSuffix => {
+        let id = idWithSuffix.replace(/[gfs]$/, '');
+        if (gachaMasterData.gachas[id]) totalGachaCols += /[gfs]$/.test(idWithSuffix) ? 2 : 1;
+    });
+
+    const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
+    const calcColSpan = showSeedColumns ? 5 : 0;
+    const totalTrackSpan = calcColSpan + totalGachaCols;
+
+    let html = `<table><thead>
+        <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th><th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr>
+        <tr class="sticky-row">
+            <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
+            ${generateNameHeaderHTML()}
+            <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
+            ${generateNameHeaderHTML()}
+        </tr>
+        <tr class="control-row">
+            <th class="col-no"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th>
+            ${generateControlHeaderHTML(true)}
+            <th class="col-no"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th>
+            ${generateControlHeaderHTML(false)}
+        </tr>
+    </thead><tbody>`;
+
+    for (let i = 0; i < numRolls; i++) {
+        const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
+        html += `<tr>${renderTableRowSide(i, seedIndexA, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}`;
+        html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}</tr>`;
+    }
+
+    const fullColSpan = 2 + (totalTrackSpan * 2);
+    html += `<tr><td colspan="${fullColSpan}" style="padding: 10px; text-align: center;">
+        <button onclick="addMoreRolls()">+100行</button>
+        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
+    </td></tr></tbody></table>`;
+    
+    return html;
+}
+
+/** 内部関数: A側/B側それぞれの行レンダリング */
+function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
+    let styleNo = '';
+    if (RowAnalysis.isSimpleYellow(seedIndex, seeds) || RowAnalysis.isConsecutiveYellow(seedIndex, seeds)) styleNo = 'style="background-color: #ffeb3b;"';
+    else if (RowAnalysis.isSimpleOrange(seedIndex, seeds) || RowAnalysis.isConsecutiveOrange(seedIndex, seeds)) styleNo = 'style="background-color: #ff9800;"';
+
+    let sideHtml = `<td class="col-no" ${styleNo}>${rowIndex + 1}</td>`;
+    sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
+
+    tableGachaIds.forEach((idWithSuffix, colIndex) => {
+        let id = idWithSuffix.replace(/[gfs]$/, '');
+        let suffix = '';
+        if (idWithSuffix.endsWith('f')) suffix = 'f';
+        else if (idWithSuffix.endsWith('s')) suffix = 's';
+        else if (idWithSuffix.endsWith('g')) suffix = 'g';
+        const isG = (suffix !== '');
+
+        if (!gachaMasterData.gachas[id]) return;
+
+        let cellHtml = generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
+        if (isSimulationMode) {
+            cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
+            cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
+        }
+        sideHtml += cellHtml;
+
+        if (isG) {
+            let gContent = '---';
+            let cellStyle = '';
+            if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`;
+
+            const config = columnConfigs[colIndex];
+            const normalRolls = config._guaranteedNormalRolls || 10;
+            let lastDraw = (rowIndex > 0 && tableData[seedIndex - 2]?.[colIndex]?.roll) ? 
+                          { rarity: tableData[seedIndex - 2][colIndex].roll.rarity, charId: tableData[seedIndex - 2][colIndex].roll.charId } : null;
+            
+            const gRes = calculateGuaranteedLookahead(seedIndex, config, seeds, lastDraw, normalRolls);
+            const addr = formatAddress(gRes.nextRollStartSeedIndex);
+            let charName = gRes.name;
+            let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
+            const escapedName = charName.replace(/'/g, "\\'");
+
+            let gClickAction = isSimulationMode ? 
+                `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
+                (gRes.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.nextRollStartSeedIndex - 1]})"` : "");
+
+            let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span><span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
+            let altHtml = '';
+            if (gRes.alternative) {
+                const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
+                let altCharName = gRes.alternative.name;
+                const escAlt = altCharName.replace(/'/g, "\\'");
+                let altClickAction = isSimulationMode ? 
+                    `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escAlt}', '${gType}')"` :
+                    (gRes.alternative.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.alternative.nextRollStartSeedIndex - 1]})"` : "");
+                altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span><span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span><br>`;
+            }
+            gContent = altHtml + mainHtml;
+            sideHtml += `<td style="${cellStyle}">${gContent}</td>`;
+        }
+    });
+    return sideHtml;
+}
+
+====================
+FILE: view_table_data.js
+====================
+/** @file view_table_data.js @description テーブル用データ（ColumnConfigおよび抽選結果）の生成 */
+
+/** 各列のガチャ設定を構築 */
+function prepareColumnConfigs() {
+    return tableGachaIds.map((idWithSuffix, colIndex) => {
+        let id = idWithSuffix;
+        let suffix = '';
+        if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
+        else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
+        else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+
+        let guaranteedNormalRolls = 0;
+        if (suffix === 'g') guaranteedNormalRolls = 10;
+        else if (suffix === 'f') guaranteedNormalRolls = 14;
+        else if (suffix === 's') guaranteedNormalRolls = 6;
+
+        const originalConfig = gachaMasterData.gachas[id];
+        if (!originalConfig) return null;
+
+        const config = JSON.parse(JSON.stringify(originalConfig)); // 深いコピー
+        config._guaranteedNormalRolls = guaranteedNormalRolls;
+        config._suffix = suffix;
+
+        const addCount = uberAdditionCounts[colIndex] || 0;
+        if (addCount > 0 && config.pool.uber) {
+            for (let k = 1; k <= addCount; k++) {
+                config.pool.uber.unshift({ id: `sim-new-${k}`, name: `新規超激${k}`, rarity: 'uber' });
+            }
+        }
+        return config;
+    });
+}
+
+/** 全ガチャ列のシミュレーションを実行 */
+function executeTableSimulation(numRolls, columnConfigs, seeds) {
+    const tableData = Array(numRolls * 2).fill(null).map(() => []);
+
+    columnConfigs.forEach((config, colIndex) => {
+        if (!config) return;
+        let prevDrawA = null, prevDrawB = null;
+
+        for (let i = 0; i < numRolls; i++) {
+            const seedIndexA = i * 2;
+            const seedIndexB = i * 2 + 1;
+
+            // A側
+            const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
+            const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
+            tableData[seedIndexA][colIndex] = { 
+                gachaId: config.id, 
+                roll: rollResultA, 
+                isConsecutive: isConsecutiveA 
+            };
+            prevDrawA = { rarity: rollResultA.rarity, charId: rollResultA.charId, isRerolled: rollResultA.isRerolled };
+
+            // B側
+            if (seedIndexB < seeds.length - 2) {
+                const rollResultB = rollWithSeedConsumptionFixed(seedIndexB, config, seeds, prevDrawB);
+                const isConsecutiveB = prevDrawB && prevDrawB.isRerolled && rollResultB.isRerolled;
+                tableData[seedIndexB][colIndex] = { 
+                    gachaId: config.id, 
+                    roll: rollResultB, 
+                    isConsecutive: isConsecutiveB 
+                };
+                prevDrawB = { rarity: rollResultB.rarity, charId: rollResultB.charId, isRerolled: rollResultB.isRerolled };
+            }
+        }
+    });
+    return tableData;
+}
+
+====================
+FILE: view_table_highlight.js
+====================
+/** @file view_table_highlight.js @description シミュレーションモードのルートハイライト計算 */
+
+function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
+    const highlightMap = new Map();
+    const guarHighlightMap = new Map();
+    let lastSeedValue = null;
+
+    if (!isSimulationMode) return { highlightMap, guarHighlightMap, lastSeedValue };
+
+    const simConfigEl = document.getElementById('sim-config');
+    if (!simConfigEl || !simConfigEl.value.trim()) return { highlightMap, guarHighlightMap, lastSeedValue };
+
+    const simConfigs = parseSimConfig(simConfigEl.value.trim());
+    let rngForText = new Xorshift32(initialSeed);
+    let currentSeedIndex = 0;
+    let lastDrawForHighlight = { rarity: null, charId: null };
+
+    for (const sim of simConfigs) {
+        const config = gachaMasterData.gachas[sim.id];
+        if (!config) continue;
+
+        let normalRolls = sim.rolls;
+        let isGuaranteedStep = false;
+        if (sim.g) {
+            if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
+            else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
+            else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
+            else { normalRolls = sim.rolls; }
+        }
+
+        if (isGuaranteedStep) {
+            const startSeedIndex = currentSeedIndex;
+            guarHighlightMap.set(startSeedIndex, sim.id);
+            for (let k = 0; k < normalRolls; k++) {
+                if (currentSeedIndex >= numRolls * 2) break;
+                highlightMap.set(currentSeedIndex, sim.id);
+                const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, lastDrawForHighlight);
+                if (rr.seedsConsumed === 0) break;
+                lastDrawForHighlight = { rarity: rr.rarity, charId: rr.charId };
+                currentSeedIndex += rr.seedsConsumed;
+                for (let x = 0; x < rr.seedsConsumed; x++) rngForText.next();
+            }
+            if (startSeedIndex < numRolls * 2) highlightMap.set(`${startSeedIndex}G`, sim.id);
+            if (currentSeedIndex < seeds.length) {
+                const gr = rollGuaranteedUber(currentSeedIndex, config, seeds);
+                currentSeedIndex += gr.seedsConsumed;
+                for (let x = 0; x < gr.seedsConsumed; x++) rngForText.next();
+            }
+        } else {
+            for (let k = 0; k < normalRolls; k++) {
+                if (currentSeedIndex >= numRolls * 2) break;
+                highlightMap.set(currentSeedIndex, sim.id);
+                const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, lastDrawForHighlight);
+                if (rr.seedsConsumed === 0) break;
+                lastDrawForHighlight = { rarity: rr.rarity, charId: rr.charId };
+                currentSeedIndex += rr.seedsConsumed;
+                for (let x = 0; x < rr.seedsConsumed; x++) rngForText.next();
+            }
+        }
+    }
+    lastSeedValue = rngForText.seed;
+    return { highlightMap, guarHighlightMap, lastSeedValue };
+}
+
+====================
+FILE: _view_schedule.js
 ====================
 /** @file view_schedule.js @description スケジュール表およびガントチャートのレンダリングを担当 @dependency schedule_logic.js */
+
+// 表示状態管理用の変数（未定義の場合のみ初期化）
+if (typeof hideEndedSchedules === 'undefined') {
+    window.hideEndedSchedules = false;
+}
+
+/** 終了分の表示/非表示を切り替えて再描画 */
+function toggleHideEnded() {
+    hideEndedSchedules = !hideEndedSchedules;
+    if (typeof loadedTsvContent !== 'undefined' && loadedTsvContent) {
+        renderScheduleTable(loadedTsvContent, 'schedule-container');
+    }
+}
 
 // 文字列の表示幅を概算する関数 (動的幅調整用)
 function calcTextWidth(text) {
@@ -4299,7 +4869,6 @@ function saveGanttImage() {
     element.style.width = contentWidth; 
     
     if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
-    
     html2canvas(element).then(canvas => {
         element.style.overflow = originalOverflow;
         element.style.width = originalWidth;
@@ -4312,6 +4881,7 @@ function saveGanttImage() {
     }).catch(err => {
         console.error("Image capture failed:", err);
         alert("画像の保存に失敗しました。");
+   
         element.style.overflow = originalOverflow;
         element.style.width = originalWidth;
         if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
@@ -4323,21 +4893,43 @@ function renderGanttChart(data) {
     const filteredData = data.filter(item => !isPlatinumOrLegend(item));
 
     if (filteredData.length === 0) return '<p>表示可能なスケジュールがありません。</p>';
-    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0); 
     const yesterdayInt = getDateInt(yesterday);
-    const activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
+    
+    let activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
     
     if (activeData.length === 0) {
         return '<p>現在開催中または予定されているガチャはありません。</p>';
     }
 
+    const now = new Date();
+
+    // --- フィルタ: 終了分の非表示設定 ---
+    if (hideEndedSchedules) {
+        activeData = activeData.filter(item => {
+            const endDt = parseDateTime(item.rawEnd, item.endTime);
+            return now <= endDt;
+        });
+    }
+
+    // --- ソート: 開催終了分を最優先 ---
+    activeData.sort((a, b) => {
+        const endA = parseDateTime(a.rawEnd, a.endTime);
+        const endB = parseDateTime(b.rawEnd, b.endTime);
+        const isEndedA = now > endA;
+        const isEndedB = now > endB;
+
+        if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
+        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    });
+
+    if (activeData.length === 0) return '<p>表示可能な開催中のスケジュールはありません。</p>';
+
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
     let maxLabelTextWidth = 0;
-
     activeData.forEach(item => {
         const s = parseInt(item.rawStart);
         if (s < minDateInt) minDateInt = s;
@@ -4353,7 +4945,6 @@ function renderGanttChart(data) {
             maxLabelTextWidth = textW;
         }
     });
-    
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
     if (labelWidth > 320) labelWidth = 320; 
 
@@ -4380,7 +4971,6 @@ function renderGanttChart(data) {
     const msPerDay = 1000 * 60 * 60 * 24;
     const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
     
-    const now = new Date();
     let currentLineHtml = '';
     if (now >= minDate && now < chartEnd) {
         const diffNowMs = now - minDate;
@@ -4434,7 +5024,6 @@ function renderGanttChart(data) {
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
-        
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
 
         let rowClass = 'gantt-row';
@@ -4499,25 +5088,45 @@ function renderScheduleTable(tsvContent, containerId) {
     if (!container) return;
     
     const data = parseGachaTSV(tsvContent);
-    const ganttHtml = renderGanttChart(data);
-
+    const now = new Date();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayInt = getDateInt(yesterday);
     
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
     
-    // ソート順：通常ガチャ（日付順） -> 特別枠（プラチナ・レジェンド、日付順）
+    // --- フィルタ: 終了分の非表示設定 ---
+    if (hideEndedSchedules) {
+        filteredData = filteredData.filter(item => {
+            const endDt = parseDateTime(item.rawEnd, item.endTime);
+            return now <= endDt;
+        });
+    }
+
+    // ソート順：開催終了分を最優先 -> 通常ガチャ（日付順） -> 特別枠（日付順）
     filteredData.sort((a, b) => {
+        const endA = parseDateTime(a.rawEnd, a.endTime);
+        const endB = parseDateTime(b.rawEnd, b.endTime);
+        const isEndedA = now > endA;
+        const isEndedB = now > endB;
+
+        if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
+
         const isSpecialA = isPlatinumOrLegend(a);
         const isSpecialB = isPlatinumOrLegend(b);
-        if (isSpecialA && !isSpecialB) return 1; 
-        if (!isSpecialA && isSpecialB) return -1; 
+        if (isSpecialA !== isSpecialB) return isSpecialA ? 1 : -1; 
+
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
 
+    const ganttHtml = renderGanttChart(data);
+    const hideBtnClass = hideEndedSchedules ? 'text-btn active' : 'text-btn';
+
     let html = `
-        <h3 style="margin-top:0;">開催スケジュール</h3>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="margin:0;">開催スケジュール</h3>
+            <span onclick="toggleHideEnded()" class="${hideBtnClass}" style="font-size: 0.8em;">終了分を非表示</span>
+        </div>
         ${ganttHtml}
         <div style="margin-top: 20px;"></div>
         <div class="schedule-scroll-wrapper">
@@ -4536,8 +5145,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
-    
-    const now = new Date();
 
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
@@ -4550,13 +5157,11 @@ function renderScheduleTable(tsvContent, containerId) {
         const endDateFormatted = formatDateJP(item.rawEnd);
         let endStr = endDateFormatted;
 
-        // --- プラチナ/レジェンドガチャの「至」の調整ロジック ---
         const isPlat = item.seriesName.includes("プラチナ");
         const isLeg = item.seriesName.includes("レジェンド");
         let isAppliedNextStart = false;
 
         if (isPlat || isLeg) {
-            // 現在の行より後のデータから、同じ種類のガチャ（プラチナ同士 or レジェンド同士）を検索
             const nextSameType = filteredData.slice(index + 1).find(nextItem => {
                 if (isPlat) return nextItem.seriesName.includes("プラチナ");
                 if (isLeg) return nextItem.seriesName.includes("レジェンド");
@@ -4564,13 +5169,11 @@ function renderScheduleTable(tsvContent, containerId) {
             });
 
             if (nextSameType) {
-                // 次に見つかった同じ種類の「自（開始日時）」を、この行の「至（終了日時）」として表示
                 endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
                 isAppliedNextStart = true;
             }
         }
 
-        // 通常の終了時間表示（上記特殊処理が行われなかった場合）
         if (!isAppliedNextStart && endDateFormatted !== '永続') {
             endStr += `<br><span style="font-size:0.85em">${formatTime(item.endTime)}</span>`;
         }
@@ -4622,462 +5225,5 @@ function renderScheduleTable(tsvContent, containerId) {
         </div>
     `;
     container.innerHTML = html;
-}
-
-====================
-FILE: view_table.js
-====================
-/** @file view_table.js @description ガチャ結果テーブル全体のHTML構築と描画の主制御を担当 @dependency logic.js, view_cell_renderer.js, view_header.js */
-
-// Simルートのハイライト色 (通常: 鮮やかな水色)
-const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
-// Simルートのハイライト色 (超激・伝説・限定: 鮮やかな青色)
-const COLOR_ROUTE_UBER = '#66b2ff';
-
-function generateRollsTable() {
-    try {
-        if (Object.keys(gachaMasterData.gachas).length === 0) return;
-        const seedEl = document.getElementById('seed');
-        if(!seedEl) return;
-        
-        let initialSeed = parseInt(seedEl.value, 10);
-        if (isNaN(initialSeed)) {
-             initialSeed = 12345;
-             seedEl.value = "12345";
-        }
-        
-        const numRolls = currentRolls;
-        if (typeof Xorshift32 === 'undefined' || typeof rollWithSeedConsumptionFixed === 'undefined') {
-            document.getElementById('rolls-table-container').innerHTML = '<p class="error">logic.js が読み込まれていません。</p>';
-            return;
-        }
-
-        // 1. SEED配列の生成
-        const seeds = [];
-        const rngForSeeds = new Xorshift32(initialSeed);
-        for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-
-        // 2. テーブルデータ（シミュレーション結果）の生成
-        const tableData = Array(numRolls * 2).fill(null).map(() => []);
-        const columnConfigs = tableGachaIds.map((idWithSuffix, colIndex) => {
-            let id = idWithSuffix;
-            let suffix = '';
-            if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
-            else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
-            else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
-
-            let guaranteedNormalRolls = 0;
-            if (suffix === 'g') guaranteedNormalRolls = 10;
-            else if (suffix === 'f') guaranteedNormalRolls = 14;
-            else if (suffix === 's') guaranteedNormalRolls = 6;
-
-            const originalConfig = gachaMasterData.gachas[id];
-            if(!originalConfig) return null;
-
-            const config = { ...originalConfig };
-            config.pool = { ...originalConfig.pool };
-            if (config.pool.uber) {
-                config.pool.uber = [...config.pool.uber];
-            }
-            
-            config._guaranteedNormalRolls = guaranteedNormalRolls;
-            // ConfigにSuffix情報を保持させておく（セル生成時に使用）
-            config._suffix = suffix;
-            const addCount = uberAdditionCounts[colIndex] || 0;
-            if (addCount > 0) {
-                for (let k = 1; k <= addCount; k++) {
-                    config.pool.uber.unshift({ id: `sim-new-${k}`, name: `新規超激${k}`, rarity: 'uber' });
-                }
-            }
-            return config;
-        });
-
-        // 3. 上部エリア（Fast Forecast & Master Info）の生成
-        let findAreaHtml = '';
-        if (typeof generateFastForecast === 'function') {
-            findAreaHtml += generateFastForecast(initialSeed, columnConfigs);
-        }
-
-        if (typeof generateMasterInfoHtml === 'function') {
-            // Find表示ON(showFindInfo=true) かつ マスター情報ON(isMasterInfoVisible=true) の場合のみ表示
-            let visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
-            if (typeof isMasterInfoVisible !== 'undefined' && !isMasterInfoVisible) {
-                visibilityClass = 'hidden';
-            }
-
-            // ID="master-info-area" を追加
-            findAreaHtml += `<div id="master-info-area" class="${visibilityClass}" style="margin-bottom: 15px; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-top: none; margin-top: -16px; border-radius: 0 0 4px 4px; font-size: 0.85em;">`;
-            findAreaHtml += `<div style="border-top: 1px dashed #ccc; margin-bottom: 10px;"></div>`; 
-            findAreaHtml += generateMasterInfoHtml();
-            findAreaHtml += `</div>`;
-        }
-
-        // 4. ロールの実行
-        columnConfigs.forEach((config, colIndex) => {
-            if (!config) return;
-            let prevDrawA = null, prevDrawB = null;
-            for (let i = 0; i < numRolls; i++) {
-                const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
-                
-                const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
-                const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
-                if (!tableData[seedIndexA]) tableData[seedIndexA] = [];
-                tableData[seedIndexA][colIndex] = { gachaId: config.id, roll: rollResultA, isConsecutive: isConsecutiveA };
-                prevDrawA = { rarity: rollResultA.rarity, charId: rollResultA.charId, isRerolled: rollResultA.isRerolled };
-
-                if (seedIndexB < seeds.length - 2) {
-                    const rollResultB = rollWithSeedConsumptionFixed(seedIndexB, config, seeds, prevDrawB);
-                    const isConsecutiveB = prevDrawB && prevDrawB.isRerolled && rollResultB.isRerolled;
-                    if (!tableData[seedIndexB]) tableData[seedIndexB] = [];
-                    tableData[seedIndexB][colIndex] = { gachaId: config.id, roll: rollResultB, isConsecutive: isConsecutiveB };
-                    prevDrawB = { rarity: rollResultB.rarity, charId: rollResultB.charId, isRerolled: rollResultB.isRerolled };
-                }
-            }
-        });
-
-        // 5. Simモード用のハイライト準備
-        const highlightMap = new Map();
-        const guarHighlightMap = new Map();
-        if (isSimulationMode) { 
-            const simConfigEl = document.getElementById('sim-config');
-            if(simConfigEl && typeof parseSimConfig !== 'undefined') {
-                const simConfigs = parseSimConfig(simConfigEl.value.trim());
-                let rngForText = new Xorshift32(initialSeed);
-                let currentSeedIndex = 0;
-                let lastDrawForHighlight = { rarity: null, charId: null };
-                for (const sim of simConfigs) {
-                    if (gachaMasterData.gachas[sim.id]) sim.gachaConfig = gachaMasterData.gachas[sim.id];
-                    if (!sim.gachaConfig) continue;
-
-                    let normalRolls = sim.rolls; 
-                    let isGuaranteedStep = false;
-                    if (sim.g) {
-                        if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
-                        else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
-                        else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
-                        else { normalRolls = sim.rolls; }
-                    }
-
-                    if (isGuaranteedStep) {
-                        const startSeedIndex = currentSeedIndex;
-                        guarHighlightMap.set(startSeedIndex, sim.id);
-                        for(let k=0; k<normalRolls; k++){
-                             if(currentSeedIndex >= numRolls*2) break;
-                             highlightMap.set(currentSeedIndex, sim.id);
-                             const rr = rollWithSeedConsumptionFixed(currentSeedIndex, sim.gachaConfig, seeds, lastDrawForHighlight);
-                             if(rr.seedsConsumed===0) break;
-                             lastDrawForHighlight = {rarity: rr.rarity, charId: rr.charId};
-                             currentSeedIndex += rr.seedsConsumed;
-                             for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
-                        }
-                        if(startSeedIndex < numRolls*2) highlightMap.set(`${startSeedIndex}G`, sim.id);
-                        if(currentSeedIndex < seeds.length && typeof rollGuaranteedUber !== 'undefined') {
-                            const gr = rollGuaranteedUber(currentSeedIndex, sim.gachaConfig, seeds);
-                            currentSeedIndex += gr.seedsConsumed;
-                            for(let x=0; x<gr.seedsConsumed; x++) rngForText.next();
-                        }
-                    } else {
-                        for(let k=0; k<normalRolls; k++){
-                            if(currentSeedIndex >= numRolls*2) break;
-                            highlightMap.set(currentSeedIndex, sim.id);
-                            const rr = rollWithSeedConsumptionFixed(currentSeedIndex, sim.gachaConfig, seeds, lastDrawForHighlight);
-                            if(rr.seedsConsumed===0) break;
-                            lastDrawForHighlight = {rarity: rr.rarity, charId: rr.charId};
-                            currentSeedIndex += rr.seedsConsumed;
-                            for(let x=0; x<rr.seedsConsumed; x++) rngForText.next();
-                        }
-                    }
-                }
-                finalSeedForUpdate = rngForText.seed;
-            }
-        }
-
-        // 6. テーブルHTMLの構築開始
-        let buttonHtml = `<button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button> <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>`;
-        buttonHtml += `<span id="add-id-trigger" style="margin-left:8px; cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>`;
-        buttonHtml += `<span id="add-id-container" style="display:none; margin-left:5px;">`;
-        buttonHtml += `<label for="gacha-id-input" style="font-weight:normal; font-size:0.9em;">ID:</label>`;
-        buttonHtml += `<input type="number" id="gacha-id-input" style="width:60px; padding:1px; font-size:0.9em;" onkeydown="if(event.key==='Enter') addGachaById()">`;
-        buttonHtml += `<button onclick="addGachaById()" class="secondary" style="margin-left:3px; padding:1px 6px; font-size:0.85em;">追加</button>`;
-        buttonHtml += `</span>`;
-        buttonHtml += `<button class="remove-btn" style="margin-left:8px; padding: 2px 8px; font-size: 11px;" onclick="resetToFirstGacha()" title="一番左以外を全削除">×</button>`;
-
-        let totalGachaCols = 0;
-        tableGachaIds.forEach(idWithSuffix => {
-            let id = idWithSuffix.replace(/[gfs]$/, '');
-            if (gachaMasterData.gachas[id]) totalGachaCols += /[gfs]$/.test(idWithSuffix) ? 2 : 1;
-        });
-        const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-        const calcColSpan = showSeedColumns ? 5 : 0;
-        const totalTrackSpan = calcColSpan + totalGachaCols;
-
-        // 計算列の共通定義
-        const stickyCalcCols = `
-            <th class="${calcColClass}">SEED</th>
-            <th class="${calcColClass}">rarity</th>
-            <th class="${calcColClass}">slot</th>
-            <th class="${calcColClass}">ReRoll</th>
-            <th class="${calcColClass}">Guar</th>
-        `;
-        const controlCalcCols = `
-            <th class="${calcColClass}"></th>
-            <th class="${calcColClass}"></th>
-            <th class="${calcColClass}"></th>
-            <th class="${calcColClass}"></th>
-            <th class="${calcColClass}"></th>
-        `;
-
-        // ヘッダー生成 (view_header.js の関数を使用)
-        // 変更: 固定行(名前)とスクロール行(操作)に分割
-        let tableHtml = `<table><thead>
-            <tr><th class="col-no"></th><th colspan="${totalTrackSpan}">A ${buttonHtml}</th>
-            <th class="col-no"></th><th colspan="${totalTrackSpan}">B</th></tr>`;
-        
-        // 行1: 名前行 (Sticky)
-        tableHtml += `<tr class="sticky-row">`;
-        tableHtml += `<th class="col-no">NO.</th>`;
-        tableHtml += stickyCalcCols;
-        tableHtml += generateNameHeaderHTML(); 
-        tableHtml += `<th class="col-no">NO.</th>`;
-        tableHtml += stickyCalcCols;
-        tableHtml += generateNameHeaderHTML();
-        tableHtml += `</tr>`;
-
-        // 行2: 操作行 (Scrollable)
-        tableHtml += `<tr class="control-row">`;
-        tableHtml += `<th class="col-no"></th>`;
-        tableHtml += controlCalcCols;
-        tableHtml += generateControlHeaderHTML(true); 
-        tableHtml += `<th class="col-no"></th>`;
-        tableHtml += controlCalcCols;
-        tableHtml += generateControlHeaderHTML(false); // B側はボタン非表示
-        tableHtml += `</tr>`;
-        
-        tableHtml += `</thead><tbody>`;
-
-        // 7. 行ループとセル生成
-        for(let i=0; i<numRolls; i++){
-            const seedIndexA = i*2, seedIndexB = i*2+1;
-            
-            // 行の背景色判定 (view_analysis.js の関数を使用)
-            let styleNoA = '';
-            if (RowAnalysis.isSimpleYellow(seedIndexA, seeds) || RowAnalysis.isConsecutiveYellow(seedIndexA, seeds)) styleNoA = 'style="background-color: #ffeb3b;"';
-            else if (RowAnalysis.isSimpleOrange(seedIndexA, seeds) || RowAnalysis.isConsecutiveOrange(seedIndexA, seeds)) styleNoA = 'style="background-color: #ff9800;"';
-            
-            let styleNoB = '';
-            if (RowAnalysis.isSimpleYellow(seedIndexB, seeds) || RowAnalysis.isConsecutiveYellow(seedIndexB, seeds)) styleNoB = 'style="background-color: #ffeb3b;"';
-            else if (RowAnalysis.isSimpleOrange(seedIndexB, seeds) || RowAnalysis.isConsecutiveOrange(seedIndexB, seeds)) styleNoB = 'style="background-color: #ff9800;"';
-
-            // --- A側 ---
-            let rowHtml = `<tr><td class="col-no" ${styleNoA}>${i+1}</td>`;
-            rowHtml += generateDetailedCalcCells(seedIndexA, seeds, tableData); // view_cell_renderer.js
-
-            tableGachaIds.forEach((idWithSuffix, colIndex) => {
-                let id = idWithSuffix.replace(/[gfs]$/, '');
-                let suffix = '';
-                if (idWithSuffix.endsWith('f')) suffix = 'f';
-                else if (idWithSuffix.endsWith('s')) suffix = 's';
-                else if (idWithSuffix.endsWith('g')) suffix = 'g';
-                const isG = (suffix !== '');
-                if(!gachaMasterData.gachas[id]) return;
-                
-                // 通常セル生成 (view_cell_renderer.js)
-                let cellHtml = generateCell(seedIndexA, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
-                // 色置換
-                if (isSimulationMode) {
-                    // 通常ルート(薄緑) -> 鮮やかな水色
-                    cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
-                    // 高レア・限定ルート(濃い緑) -> 鮮やかな青色
-                    cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
-                }
-                rowHtml += cellHtml;
-                
-                // 確定枠生成
-                if(isG) {
-                    let gContent = '---';
-                    let cellStyle = '';
-                    // 確定枠も青色ハイライト
-                    if (isSimulationMode && guarHighlightMap.get(seedIndexA) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`; 
-                    if (typeof calculateGuaranteedLookahead !== 'undefined') {
-                         const config = columnConfigs[colIndex];
-                         const normalRolls = config._guaranteedNormalRolls || 10;
-                         let lastDraw = (i>0 && tableData[seedIndexA-2]?.[colIndex]?.roll) ? 
-                                       {rarity: tableData[seedIndexA-2][colIndex].roll.rarity, charId: tableData[seedIndexA-2][colIndex].roll.charId} : null;
-                         const gRes = calculateGuaranteedLookahead(seedIndexA, config, seeds, lastDraw, normalRolls);
-                         const addr = formatAddress(gRes.nextRollStartSeedIndex);
-                         let charName = gRes.name;
-                         
-                         // ★確定枠キャラ名へのクリックイベント設定
-                         // Simモード: ルート計算 + 確定入力
-                         // Viewモード: シードジャンプ
-                         let gClickAction = "";
-                         let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
-                         const escapedName = charName.replace(/'/g, "\\'");
-                         
-                         if (isSimulationMode) {
-                            gClickAction = `onclick="onGachaCellClick(${seedIndexA}, '${id}', '${escapedName}', '${gType}')"`;
-                         } else {
-                            if (gRes.nextRollStartSeedIndex > 0) {
-                                 const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
-                                 if (guarSeedIdx < seeds.length) {
-                                     const guarSeedVal = seeds[guarSeedIdx];
-                                     gClickAction = `onclick="updateSeedAndRefresh(${guarSeedVal})"`;
-                                 }
-                            }
-                         }
-                         
-                         charName = `<span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
-
-                         let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span>${charName}`;
-                         let altHtml = '';
-                         if (gRes.alternative) {
-                             const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
-                             let altCharName = gRes.alternative.name;
-                             let altClickAction = "";
-                             
-                             if (isSimulationMode) {
-                                const escAlt = altCharName.replace(/'/g, "\\'");
-                                altClickAction = `onclick="onGachaCellClick(${seedIndexA}, '${id}', '${escAlt}', '${gType}')"`;
-                             } else {
-                                 if (gRes.alternative.nextRollStartSeedIndex > 0) {
-                                     const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
-                                     if (altGuarSeedIdx < seeds.length) {
-                                         const altGuarSeedVal = seeds[altGuarSeedIdx];
-                                         altClickAction = `onclick="updateSeedAndRefresh(${altGuarSeedVal})"`;
-                                     }
-                                 }
-                             }
-                             altCharName = `<span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span>`;
-
-                             altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
-                         }
-                         gContent = altHtml + mainHtml;
-                         if (cellStyle !== '') {
-                             let isLimited = false;
-                             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-                                 if (limitedCats.includes(parseInt(gRes.charId)) || limitedCats.includes(String(gRes.charId))) isLimited = true;
-                             }
-                             // Simモード外の色 (ここではSimモード内なので cellStyle が優先されるが、上書きしないよう注意)
-                             // ここでの background-color: #32CD32 はSimモードでない場合の限定確定枠などに適用される
-                             // Simモードなら cellStyle が入っている
-                         }
-                    }
-                    rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
-                }
-            });
-
-            // --- B側 ---
-            rowHtml += `<td class="col-no" ${styleNoB}>${i+1}</td>`;
-            rowHtml += generateDetailedCalcCells(seedIndexB, seeds, tableData);
-
-            tableGachaIds.forEach((idWithSuffix, colIndex) => {
-                let id = idWithSuffix.replace(/[gfs]$/, '');
-                let suffix = '';
-                if (idWithSuffix.endsWith('f')) suffix = 'f';
-                else if (idWithSuffix.endsWith('s')) suffix = 's';
-                else if (idWithSuffix.endsWith('g')) suffix = 'g';
-                const isG = (suffix !== '');
-                if(!gachaMasterData.gachas[id]) return;
-
-                // 通常セル生成
-                let cellHtml = generateCell(seedIndexB, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
-                // 色置換
-                if (isSimulationMode) {
-                    cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
-                    cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
-                }
-                rowHtml += cellHtml;
-
-                if(isG) {
-                    let gContent = '---';
-                    let cellStyle = '';
-                    if (isSimulationMode && guarHighlightMap.get(seedIndexB) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`;
-                    if (typeof calculateGuaranteedLookahead !== 'undefined') {
-                        const config = columnConfigs[colIndex];
-                        const normalRolls = config._guaranteedNormalRolls || 10;
-                        let lastDraw = (i>0 && tableData[seedIndexB-2]?.[colIndex]?.roll) ? {rarity: tableData[seedIndexB-2][colIndex].roll.rarity, charId: tableData[seedIndexB-2][colIndex].roll.charId} : null;
-                        const gRes = calculateGuaranteedLookahead(seedIndexB, config, seeds, lastDraw, normalRolls);
-                        const addr = formatAddress(gRes.nextRollStartSeedIndex);
-                        let charName = gRes.name;
-                        
-                        let gClickAction = "";
-                        let gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
-                        const escapedName = charName.replace(/'/g, "\\'");
-                         
-                        if (isSimulationMode) {
-                            gClickAction = `onclick="onGachaCellClick(${seedIndexB}, '${id}', '${escapedName}', '${gType}')"`;
-                        } else {
-                            if (gRes.nextRollStartSeedIndex > 0) {
-                                 const guarSeedIdx = gRes.nextRollStartSeedIndex - 1;
-                                 if (guarSeedIdx < seeds.length) {
-                                     const guarSeedVal = seeds[guarSeedIdx];
-                                     gClickAction = `onclick="updateSeedAndRefresh(${guarSeedVal})"`;
-                                 }
-                            }
-                        }
-                        charName = `<span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
-
-                        let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span>${charName}`;
-                        let altHtml = '';
-                        if (gRes.alternative) {
-                             const altAddr = formatAddress(gRes.alternative.nextRollStartSeedIndex);
-                             let altCharName = gRes.alternative.name;
-                             let altClickAction = "";
-                             if (isSimulationMode) {
-                                const escAlt = altCharName.replace(/'/g, "\\'");
-                                altClickAction = `onclick="onGachaCellClick(${seedIndexB}, '${id}', '${escAlt}', '${gType}')"`;
-                             } else {
-                                 if (gRes.alternative.nextRollStartSeedIndex > 0) {
-                                     const altGuarSeedIdx = gRes.alternative.nextRollStartSeedIndex - 1;
-                                     if (altGuarSeedIdx < seeds.length) {
-                                         const altGuarSeedVal = seeds[altGuarSeedIdx];
-                                         altClickAction = `onclick="updateSeedAndRefresh(${altGuarSeedVal})"`;
-                                     }
-                                 }
-                             }
-                             altCharName = `<span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span>`;
-
-                             altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span>${altCharName}<br>`;
-                        }
-                        gContent = altHtml + mainHtml;
-                        if (cellStyle !== '') {
-                            // Simモードでハイライトされている場合
-                        } else {
-                            // Simモード外での色付けロジック (必要であれば)
-                            let isLimited = false;
-                             if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-                                 if (limitedCats.includes(parseInt(gRes.charId)) || limitedCats.includes(String(gRes.charId))) isLimited = true;
-                             }
-                             if(isLimited) cellStyle = 'background-color: #32CD32;';
-                        }
-                    }
-                    rowHtml += `<td style="${cellStyle}">${gContent}</td>`;
-                }
-            });
-            rowHtml += `</tr>`;
-            tableHtml += rowHtml;
-        }
-        
-        const seedBtnText = showSeedColumns ? 'SEED非表示' : 'SEED表示';
-        const fullColSpan = 2 + (totalTrackSpan * 2);
-        tableHtml += `<tr><td colspan="${fullColSpan}" style="padding: 10px; text-align: center;">
-            <button onclick="addMoreRolls()">+100行</button>
-            <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${seedBtnText}</button>
-        </td></tr>`;
-        tableHtml += '</tbody></table>';
-        const container = document.getElementById('rolls-table-container');
-        if(container) {
-            container.innerHTML = findAreaHtml + tableHtml;
-        }
-
-        const resultDiv = document.getElementById('result');
-        if(resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
-        updateUrlParams();
-
-    } catch(e) {
-        const container = document.getElementById('rolls-table-container');
-        if(container) container.innerHTML = `<p class="error">エラー: ${e.message}</p>`;
-        console.error(e);
-    }
 }
 
