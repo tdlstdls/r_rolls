@@ -1,7 +1,7 @@
 /** @file ui_controller.js @description UIのメイン制御（初期化、モード切替、描画指示）を担当 @dependency ui_globals.js, view_table.js */
 
-// マスター情報の表示状態管理フラグ
-let isMasterInfoVisible = true;
+// 変更箇所：デフォルトを true から false に変更
+let isMasterInfoVisible = false;
 
 // --- 初期化ロジック ---
 
