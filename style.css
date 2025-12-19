@@ -1,79 +1,746 @@
 @charset "UTF-8";
-/* ========================================= 基本設定 ========================================= */
-html, body { height: 100%; margin: 0; overflow: hidden; }
-body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; box-sizing: border-box; color: #333; background-color: #fff; display: flex; flex-direction: column; }
-.container { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-.header-row, .controls, .description-box, #result, .forecast-summary-container { flex-shrink: 0; }
-.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: nowrap; gap: 10px; }
-h1 { font-size: 20px; margin: 0; padding: 0; white-space: nowrap; }
-.header-actions { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
-.text-btn { cursor: pointer; color: #007bff; font-weight: bold; font-size: 0.9em; text-decoration: underline; white-space: nowrap; padding: 2px 4px; user-select: none; }
-.text-btn:hover { color: #0056b3; background-color: #f0f8ff; border-radius: 3px; }
-.text-btn.active { color: #28a745; text-decoration: none; border: 1px solid #28a745; border-radius: 3px; padding: 1px 3px; }
-.separator { color: #ccc; font-size: 0.8em; margin: 0 2px; user-select: none; }
-/* ========================================= コントロールエリア ========================================= */
-.controls { background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-.control-group { margin-bottom: 10px; }
-.control-group:last-child { margin-bottom: 0; }
-label { margin-right: 10px; font-weight: bold; }
-input[type="text"], input[type="number"] { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
-button { cursor: pointer; padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 14px; }
-button:hover { background: #0056b3; }
-button.secondary { background: #6c757d; }
-button.secondary:hover { background: #545b62; }
-button.active { background: #28a745; }
-/* ========================================= ユーティリティ ========================================= */
-.hidden { display: none !important; }
-.description-box { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em; }
-.result-box { margin-bottom: 10px; font-weight: bold; color: #d9534f; }
-.error { color: red; font-weight: bold; }
-/* ========================================= テーブルスタイル ========================================= */
-#rolls-table-container { overflow-x: auto; overflow-y: auto; max-height: none; flex-grow: 1; border: 1px solid #ddd; margin-bottom: 0; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; margin-top: 0; font-size: 12px; }
-th, td { border: 1px solid #ddd; padding: 6px; text-align: center; white-space: nowrap; }
-th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; box-shadow: 0 1px 0 #ddd; }
-.sticky-row th { position: sticky; top: 0; z-index: 20; border-bottom: none; box-shadow: 0 2px 2px rgba(0,0,0,0.1); background-color: #f8f9fa; }
-.control-row th { position: static; border-top: none; background-color: #f8f9fa; padding-top: 2px; padding-bottom: 4px; z-index: 1; }
-/* --- NO列の固定設定 --- */
-.col-no { background-color: #f8f9fa; width: 30px; }
-.col-no:first-child { position: sticky; left: 0; z-index: 10; background-color: #f8f9fa; box-shadow: 2px 0 2px rgba(0,0,0,0.1); }
-thead tr th.col-no:first-child { z-index: 30; }
-.calc-column { background-color: #f0f8ff; font-size: 0.9em; color: #555; }
-.gacha-column { min-width: 120px; }
-.gacha-cell { position: relative; }
-.highlight-uber { font-weight: bold; color: #c2185b; }
-.remove-btn { background: #dc3545; padding: 2px 6px; font-size: 10px; margin-left: 5px; }
-.add-gacha-btn { background: #28a745; padding: 2px 8px; font-size: 11px; }
-/* ========================================= スケジュール表示 ========================================= */
-#schedule-container { padding: 20px; background-color: #fff; border-top: 1px solid #ddd; max-width: 100%; box-sizing: border-box; flex-grow: 1; overflow-y: auto; }
-.schedule-scroll-wrapper { overflow-x: auto; max-height: none; border: 1px solid #ddd; max-width: 100%; }
-.schedule-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
-.schedule-table th, .schedule-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
-.schedule-table td:nth-child(3) { white-space: normal; text-align: left; min-width: 250px; }
-.schedule-table th { background-color: #eee; position: sticky; top: 0; z-index: 10; border-top: 1px solid #ddd; border-bottom: 1px solid #ccc; }
-.row-ended { background-color: #e0e0e0 !important; color: #666; }
-.row-guaranteed { background-color: #ffffe0 !important; }
-/* ========================================= ガントチャート ========================================= */
-.gantt-outer-wrapper { width: 100%; }
-.gantt-chart-container { border: 1px solid #ccc; background: #fff; font-size: 12px; margin-bottom: 20px; max-width: 100%; }
-.gantt-scroll-wrapper { overflow-x: auto; position: relative; padding-bottom: 10px; }
-.gantt-header { display: flex; border-bottom: 1px solid #ccc; background: #f9f9f9; position: sticky; top: 0; z-index: 6; }
-.gantt-label-col { width: 160px; min-width: 160px; padding: 5px; border-right: 1px solid #ccc; position: sticky; left: 0; z-index: 5; background-color: inherit; }
-.gantt-date-cell { border-right: 1px solid #eee; text-align: center; padding: 5px 0; font-size: 10px; flex-shrink: 0; }
-.gantt-row { display: flex; border-bottom: 1px solid #eee; height: 30px; }
-.gantt-bar { position: absolute; top: 5px; height: 20px; border-radius: 3px; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; z-index: 2; }
-.gantt-bar.g-kyoku { background-color: #e91e63; }
-.gantt-bar.g-cho { background-color: #9c27b0; }
-.gantt-bar.g-fest { background-color: #ff9800; }
-.gantt-bar.g-collab { background-color: #2196f3; }
-.gantt-current-line { position: absolute; top: 0; bottom: 0; width: 2px; background-color: #ff0000; z-index: 1; opacity: 0.7; }
-/* ========================================= モバイル最適化 ========================================= */
+/* =========================================
+   基本設定
+   ========================================= */
+/* HTMLとBODYの高さを100%にし、スクロールは内部で行うように設定 */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden; /* Body自体のスクロールを禁止 */
+}
+
+body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    padding: 20px;
+    box-sizing: border-box;
+    /* パディングを含めてサイズ計算 */
+    color: #333;
+    background-color: #fff;
+    /* Flexboxレイアウトに変更 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* コンテナも高さを確保し、中身をFlex配置 */
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 縮小させたくない要素（ヘッダーやコントロール） */
+.header-row, 
+.controls, 
+.description-box, 
+#result, 
+.forecast-summary-container {
+    flex-shrink: 0;
+}
+
+/* ヘッダーレイアウト */
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
+    /* 1行表示を強制 */
+    gap: 10px;
+}
+
+h1 {
+    font-size: 20px;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap; /* タイトルの折り返し禁止 */
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    /* 間隔を詰める */
+    flex-wrap: nowrap;
+}
+
+/* --- テキストボタン（ヘッダー用） --- */
+.text-btn {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: bold;
+    font-size: 0.9em;
+    text-decoration: underline;
+    white-space: nowrap;
+    padding: 2px 4px;
+    user-select: none;
+}
+
+.text-btn:hover {
+    color: #0056b3;
+    background-color: #f0f8ff;
+    border-radius: 3px;
+}
+
+.text-btn.active {
+    color: #28a745;
+    text-decoration: none;
+    border: 1px solid #28a745;
+    border-radius: 3px;
+    padding: 1px 3px; /* ボーダー分のズレ補正 */
+}
+
+.separator {
+    color: #ccc;
+    font-size: 0.8em;
+    margin: 0 2px;
+    user-select: none;
+}
+
+/* =========================================
+   コントロールエリア
+   ========================================= */
+.controls {
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.control-group {
+    margin-bottom: 10px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+label {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="number"] {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* =========================================
+   ボタン（通常）
+   ========================================= */
+button {
+    cursor: pointer;
+    padding: 6px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+button.secondary {
+    background: #6c757d;
+}
+
+button.secondary:hover {
+    background: #545b62;
+}
+
+button.active {
+    background: #28a745;
+}
+
+/* =========================================
+   ユーティリティ
+   ========================================= */
+.hidden {
+    display: none !important;
+}
+
+.description-box {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+.result-box {
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #d9534f;
+}
+
+.error {
+    color: red;
+    font-weight: bold;
+}
+
+/* =========================================
+   テーブルスタイル (Gacha Rolls)
+   ========================================= */
+#rolls-table-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    /* max-height: 80vh;  <-- 固定制限を削除 */
+    max-height: none; 
+    flex-grow: 1;
+    /* 残りの高さを全て埋める */
+    border: 1px solid #ddd;
+    margin-bottom: 0;
+}
+
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-top: 0;
+    font-size: 12px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 変更: th全体への sticky 指定を削除し、クラス指定に変更 */
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    /* position: sticky;  <-- 削除 */
+    /* top: 0;
+    <-- 削除 */
+    /* z-index: 10;       <-- 削除 */
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 1px 0 #ddd;
+}
+
+/* 新規追加: ガチャ名行（固定表示用）のスタイル */
+.sticky-row th {
+    position: sticky;
+    top: 0;
+    z-index: 20; /* 他の要素より手前に表示 */
+    border-bottom: none;
+    /* 下の行（操作行）との境界を目立たなくする */
+    box-shadow: 0 2px 2px rgba(0,0,0,0.1); /* 浮いている感を出すための影 */
+    background-color: #f8f9fa;
+    /* 背景色を明示 */
+}
+
+/* 新規追加: 操作ボタン行（スクロール用）のスタイル */
+.control-row th {
+    position: static;
+    /* 固定しない */
+    border-top: none; /* 上の行との一体感を出す */
+    background-color: #f8f9fa; /* 変更: タイトル行と同じ色に統一 (#f4f4f4 -> #f8f9fa) */
+    padding-top: 2px;
+    padding-bottom: 4px;
+    z-index: 1;
+}
+
+/* 列ごとのスタイル */
+.col-no {
+    background-color: #f8f9fa;
+    width: 30px;
+}
+
+.calc-column {
+    background-color: #f0f8ff;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.gacha-column {
+    min-width: 120px;
+}
+
+.gacha-cell {
+    position: relative;
+}
+
+.highlight {
+    position: relative;
+}
+
+.highlight-uber {
+    font-weight: bold;
+    color: #c2185b;
+}
+
+.char-link:hover {
+    color: #0056b3;
+}
+
+.remove-btn {
+    background: #dc3545;
+    padding: 2px 6px;
+    font-size: 10px;
+    margin-left: 5px;
+}
+
+.add-gacha-btn {
+    background: #28a745;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.uber-add-select {
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+/* =========================================
+   スケジュール表 & ガントチャート共通
+   ========================================= */
+#schedule-container {
+    padding: 20px;
+    background-color: #fff;
+    border-top: 1px solid #ddd;
+    /* コンテナ自体が画面幅を超えないように設定 */
+    max-width: 100%;
+    box-sizing: border-box;
+    /* スケジュール表示時も高さを埋める設定 */
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.schedule-scroll-wrapper {
+    overflow-x: auto;
+    /* max-height: 80vh;
+    <-- 固定制限を削除 */
+    max-height: none;
+    border: 1px solid #ddd;
+    /* 画面幅に収める */
+    max-width: 100%;
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 0;
+    font-size: 14px;
+}
+
+.schedule-table th,
+.schedule-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.schedule-table td:nth-child(3) {
+    white-space: normal;
+    text-align: left;
+    min-width: 250px;
+}
+
+.schedule-table th {
+    background-color: #eee;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ccc;
+}
+
+.row-ended {
+    background-color: #e0e0e0 !important;
+    color: #666;
+}
+
+.row-ended .gantt-bar {
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+.row-guaranteed {
+    background-color: #ffffe0 !important;
+}
+
+/* =========================================
+   ガントチャート
+   ========================================= */
+.gantt-outer-wrapper * {
+    box-sizing: border-box;
+}
+
+.gantt-outer-wrapper {
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: top;
+    width: 100%;
+    /* 幅を確保 */
+}
+
+.gantt-chart-container {
+    border: 1px solid #ccc;
+    background: #fff;
+    /* overflow: hidden;
+    を削除してスクロールバーを表示可能にする */
+    font-size: 12px;
+    margin-bottom: 20px;
+    max-width: 100%; /* はみ出し防止 */
+}
+
+.gantt-scroll-wrapper {
+    overflow-x: auto;
+    position: relative;
+    padding-bottom: 10px;
+    width: 100%; /* 幅を確保 */
+}
+
+.gantt-header {
+    display: flex;
+    border-bottom: 1px solid #ccc;
+    background: #f9f9f9;
+    position: sticky;
+    left: 0;
+    z-index: 6;
+}
+
+.gantt-label-col {
+    width: 160px;
+    min-width: 160px;
+    padding: 5px;
+    border-right: 1px solid #ccc;
+    background-color: inherit;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+}
+
+.gantt-header .gantt-label-col {
+    background-color: #f9f9f9;
+}
+
+.gantt-date-cell {
+    border-right: 1px solid #eee;
+    text-align: center;
+    padding: 5px 0;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.gantt-date-cell.today {
+    background-color: #ffeb3b;
+}
+
+.gantt-date-cell.weekend {
+    background-color: #e0f7fa;
+}
+
+.gantt-body {
+    position: relative;
+}
+
+.gantt-row {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    height: 30px;
+    background-color: #fff;
+}
+
+.gantt-row:hover {
+    filter: brightness(0.95);
+}
+
+.gantt-row .gantt-label-col {
+    font-weight: normal;
+    text-align: center;
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    line-height: 20px;
+}
+
+.gantt-bar-area {
+    position: relative;
+    height: 100%;
+    flex-grow: 1;
+}
+
+.gantt-bar {
+    position: absolute;
+    top: 5px;
+    height: 20px;
+    background-color: #4caf50;
+    border: 1px solid #4caf50;
+    box-shadow: none;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 2;
+}
+
+.gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
+.gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
+.gantt-bar.g-fest { background-color: #ff9800;
+    border-color: #ff9800; }
+.gantt-bar.g-collab { background-color: #2196f3; border-color: #2196f3; }
+
+.gantt-bar-text {
+    padding: 0 4px;
+}
+
+.gantt-grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid #f5f5f5;
+    z-index: 0;
+}
+
+.gantt-grid-line.weekend {
+    background-color: rgba(224, 247, 250, 0.3);
+}
+
+.gantt-current-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #ff0000;
+    z-index: 1;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* =========================================
+   モバイル用・高密度表示レイアウト
+   ========================================= */
 @media (max-width: 768px) {
-    html, body { height: 100%; margin: 0; padding: 0 !important; overflow: hidden; }
-    .container { height: 100%; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; }
-    .header-row { flex-direction: row !important; flex-wrap: nowrap !important; overflow-x: auto; align-items: center; padding-bottom: 5px; border-bottom: 1px solid #eee; margin-bottom: 5px; white-space: nowrap; }
-    #rolls-table-container { flex-grow: 1; max-height: none !important; margin-bottom: 0 !important; overflow-y: auto; width: 100%; }
-    #schedule-container { flex-grow: 1; width: 100%; max-width: 100vw; }
-    .gacha-column { min-width: 85px; max-width: 100px; }
-    .col-no:first-child { box-shadow: 1px 0 1px rgba(0,0,0,0.1); }
+    /* HTML, BODYの設定 */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+    /* 全体コンテナ */
+    .container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 4px;
+        box-sizing: border-box;
+    }
+
+    /* 各エリアの縮小禁止 */
+    .header-row, 
+    .controls, 
+    .description-box, 
+    #result,
+    .forecast-summary-container {
+        flex-shrink: 0;
+    }
+
+    /* --- ヘッダーのモバイル調整（1行表示） --- */
+    .header-row {
+        flex-direction: row !important;
+        /* 横並び強制 */
+        flex-wrap: nowrap !important;
+        /* 折り返し禁止 */
+        overflow-x: auto;
+        /* 幅が足りない場合はスクロール */
+        align-items: center;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 5px;
+        white-space: nowrap;
+    }
+
+    h1 {
+        font-size: 16px !important;
+        margin-right: 8px;
+        display: inline-block;
+    }
+
+    .header-actions {
+        width: auto;
+        flex-wrap: nowrap;
+        gap: 4px;
+    }
+
+    /* ボタン・文字サイズ調整 */
+    .text-btn {
+        font-size: 11px;
+        padding: 2px 3px;
+    }
+
+    .header-actions button, 
+    .header-actions span:not(.text-btn):not(.separator) {
+        font-size: 10px !important;
+        padding: 2px 6px !important;
+        height: 24px;
+        line-height: 20px;
+    }
+
+    /* テーブルエリアの拡張 */
+    #rolls-table-container {
+        flex-grow: 1;
+        max-height: none !important;
+        margin-bottom: 0 !important;
+        overflow-y: auto;
+        border-bottom: none;
+        width: 100%;
+        /* 横幅いっぱい */
+    }
+
+    /* スケジュールコンテナのモバイル調整（見切れ対策） */
+    #schedule-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-bottom: 0;
+        width: 100%; /* 横幅を100%に制限 */
+        max-width: 100vw;
+        /* 画面幅を超えない */
+        box-sizing: border-box;
+    }
+    .schedule-scroll-wrapper {
+        max-height: none !important;
+        width: 100%;
+        /* コンテナ幅に合わせる */
+    }
+
+    /* フォント・パディングの微調整 */
+    .controls {
+        padding: 8px;
+        margin-bottom: 5px;
+    }
+
+    .control-group {
+        margin-bottom: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    label {
+        font-size: 10px;
+        margin-right: 5px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+        font-size: 11px;
+        padding: 2px 4px;
+        height: 24px;
+    }
+
+    #seed, #sim-config {
+        max-width: 120px;
+    }
+
+    button {
+        padding: 3px 8px;
+        font-size: 11px;
+        height: 24px;
+        line-height: 1;
+    }
+
+    table {
+        font-size: 10px;
+        margin-top: 5px;
+    }
+
+    th, td {
+        padding: 2px 3px;
+        height: auto;
+    }
+
+    .gacha-column {
+        min-width: 85px;
+        max-width: 100px;
+        overflow: hidden;
+    }
+    
+    .gacha-header-wrapper {
+        gap: 2px;
+        justify-content: flex-start !important;
+        width: 100%;
+    }
+    
+    .gacha-header-wrapper select {
+        transform: none !important;
+    }
+    
+    th div[style*="margin-top"] {
+        transform: scale(0.85);
+        transform-origin: center top;
+        width: 115%;
+        margin-left: -7.5%;
+        white-space: nowrap;
+    }
+
+    .gacha-cell {
+        line-height: 1.1;
+    }
+
+    .calc-column {
+        font-size: 9px;
+        width: auto;
+    }
+
+    .schedule-table th, 
+    .schedule-table td {
+        padding: 2px 4px;
+        font-size: 10px;
+    }
+    
+    .schedule-table td:nth-child(3) {
+        min-width: 140px;
+    }
+
+    .gantt-row {
+        height: 24px !important;
+    }
+
+    .gantt-label-col {
+        width: 100px !important;
+        min-width: 100px !important;
+        font-size: 10px !important;
+        line-height: 24px !important;
+        padding: 0 2px !important;
+    }
+    
+    .gantt-bar {
+        height: 16px !important;
+        top: 4px !important;
+        font-size: 9px !important;
+    }
+    
+    .gantt-date-cell {
+        font-size: 9px !important;
+    }
+    
+    #result {
+        font-size: 10px;
+    }
 }

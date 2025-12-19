@@ -1,4 +1,4 @@
-/** @file url_manager.js @description URLパラメータとアプリ状態の同期（保存・復元）を担当 @dependency ui_globals.js, ui_controller.js */
+/** @file url_manager.js @description URLパラメータとアプリ状態の同期（保存・復元）を担当 @dependency ui_globals.js */
 
 function processUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -6,12 +6,12 @@ function processUrlParams() {
     const simConfigParam = urlParams.get('sim_config');
     const gachasParam = urlParams.get('gachas');
     // uberAdditionCounts をリセット
-    // ui_controller.js で定義された uberAdditionCounts を使用
+    // ui_globals.js で定義された uberAdditionCounts を使用
     if (typeof uberAdditionCounts !== 'undefined') {
         uberAdditionCounts.length = 0;
         // 配列を空にする
     } else {
-        // Fallback: ui_controller.js がまだ走っていない場合 (通常ありえないが)
+        // Fallback: ui_globals.js がまだ走っていない場合 (通常ありえないが)
         window.uberAdditionCounts = [];
     }
 
