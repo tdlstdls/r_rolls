@@ -346,7 +346,7 @@ function updateMasterInfoView() {
 /**
  * セルクリック時のハンドラ
  */
-function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null, fromFind = false) {
+function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null, fromFind = false, targetCharId = null) {
     if (isSimulationMode) {
         const errorEl = document.getElementById('sim-error-msg');
         if (errorEl) {
@@ -366,9 +366,9 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                     rolls: parseInt(guaranteedType.replace('g', ''), 10), 
                     g: true 
                 };
-                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction);
+                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction, targetCharId);
             } else {
-                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig);
+                routeConfig = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, null, targetCharId);
             }
 
             if (routeConfig) {
@@ -401,7 +401,7 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
         }
         
         setTimeout(() => {
-            onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType, fromFind);
+            onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType, fromFind, targetCharId);
         }, 100);
     }
 }

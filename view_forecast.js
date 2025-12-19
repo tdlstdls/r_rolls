@@ -83,15 +83,12 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
 
-    // マスターボタンON時の説明文スタイル
     const masterDescStyle = isMasterActive ? '' : 'display: none;';
 
-    // 特殊ガチャ設定に応じたメッセージ
     const specialStatusText = (typeof useSpecialInRoute !== 'undefined' && useSpecialInRoute)
         ? `<span style="color: #d9534f; font-weight: bold;">[特殊ガチャ許可ON]</span> 現在、プラチナ・レジェンドを経路に使用します。`
         : `超激確定・プラチナ・レジェンドは消費を避けるため使用しません。`;
 
-    // ボタンエリア HTML生成
     summaryHtml += `
         <div style="margin-bottom: 10px; text-align: left;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -250,15 +247,15 @@ function generateFastForecast(initialSeed, columnConfigs) {
             else if (data.isLimited) nameStyle += ' color:#d35400;'; 
             else nameStyle += ' color:#333;'; 
 
-            // セル番地をクリック可能なリンク（自動Simモード切り替え対応）に変更
             const hitLinks = data.hits.map(addr => {
                 const row = parseInt(addr);
                 const side = addr.endsWith('B') ? 1 : 0;
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
                 
+                // 第6引数に data.id (targetCharId) を渡して重みづけを強化
                 return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
-                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true)">${addr}</span>`;
+                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
             }).join("");
 
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
