@@ -11,7 +11,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
     let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 0; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0;">`;
-
     const legendSlots = [];
     const promotedSlots = []; 
     for (let n = 0; n < scanRows * 2; n++) {
@@ -28,7 +27,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const legendStr = legendSlots.length > 0 ? legendSlots.join(", ") : "なし";
     const promotedStr = promotedSlots.length > 0 ? promotedSlots.join(", ") : "なし";
-
     summaryHtml += `
         <div style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #eee; font-size: 0.85em;">
             <div style="margin-bottom: 4px;">
@@ -41,12 +39,10 @@ function generateFastForecast(initialSeed, columnConfigs) {
             </div>
         </div>
     `;
-
     // --- ボタンの状態判定 ---
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
-    
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
         limitedCats.forEach(id => {
@@ -74,7 +70,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         });
     });
-
     const isLegendActive = (availableLegendIds.length > 0) && availableLegendIds.every(cid => userTargetIds.has(cid));
     const isLimitedActive = (availableLimitedIds.length > 0) && availableLimitedIds.every(cid => userTargetIds.has(cid));
     const isMasterActive = (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true;
@@ -82,12 +77,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const legendBtnClass = isLegendActive ? 'text-btn active' : 'text-btn';
     const limitedBtnClass = isLimitedActive ? 'text-btn active' : 'text-btn';
     const masterBtnClass = isMasterActive ? 'text-btn active' : 'text-btn';
-
-    const masterDescStyle = isMasterActive ? '' : 'display: none;';
-
-    const specialStatusText = (typeof useSpecialInRoute !== 'undefined' && useSpecialInRoute)
-        ? `<span style="color: #d9534f; font-weight: bold;">[特殊ガチャ許可ON]</span> 現在、プラチナ・レジェンドを経路に使用します。`
-        : `超激確定・プラチナ・レジェンドは消費を避けるため使用しません。`;
 
     summaryHtml += `
         <div style="margin-bottom: 10px; text-align: left;">
@@ -101,11 +90,8 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
                 <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
             </div>
-            <div style="font-size: 0.75em; color: #d9534f; font-weight: bold; padding-left: 2px; ${masterDescStyle}">
-                ※マスターリスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。<br>
-                <span style="color: #666; font-weight: normal;">
-                    ※Simモードの自動計算：${specialStatusText}
-                </span>
+            <div style="font-size: 0.75em; color: #666; padding-left: 2px;">
+                ※マスターリスト内のキャラ名をタップ（クリック）すると、そのキャラを「Find」ターゲットとして登録/解除できます。
             </div>
         </div>
     `;
@@ -140,7 +126,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
                     const isNew = cStr.startsWith('sim-new-');
                     const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
-                    
                     if (isNew || isLimited || isManual) {
                         targetIds.add(cid);
                         poolsToCheck[r] = true;
@@ -150,7 +135,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
 
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
-
         const resultMap = new Map();
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
@@ -210,13 +194,11 @@ function generateFastForecast(initialSeed, columnConfigs) {
         }
 
         if (resultMap.size === 0) return;
-
         let listItems = [];
         resultMap.forEach((data, id) => {
             data.id = id;
             listItems.push(data);
         });
-
         listItems.sort((a, b) => {
             const getPriority = (item) => {
                 if (item.isNew) return 1;
@@ -229,6 +211,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const pA = getPriority(a);
             const pB = getPriority(b);
             if (pA !== pB) return pA - pB;
+    
             if (pA === 1) {
                 const nA = parseInt(String(a.id).replace('sim-new-', ''), 10);
                 const nB = parseInt(String(b.id).replace('sim-new-', ''), 10);
@@ -239,7 +222,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const firstHitB = parseInt(b.hits[0]);
             return firstHitA - firstHitB;
         });
-
         const itemHtmls = listItems.map(data => {
             let nameStyle = 'font-weight:bold; font-size: 0.9em;'; 
             if (data.isNew) nameStyle += ' color:#007bff;'; 
@@ -253,16 +235,13 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
                 
-                // 第6引数に data.id (targetCharId) を渡して重みづけを強化
                 return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
                              onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
             }).join("");
 
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
-            
             return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${hitLinks}</span></div>`;
         });
-
         summaryHtml += `<div style="margin-bottom: 8px;">
             <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 3px; font-size: 0.85em;">
                 ${config.name} (ID:${config.id})

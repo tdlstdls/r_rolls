@@ -1,4 +1,4 @@
-/** @file ui_mode_logic.js @description アプリの初期化とモード切替（Sim/skd/概要）の管理 */
+/** @file ui_mode_logic.js @description アプリの初期化とモード切替（Sim/skd/概要/Txt）の管理 */
 
 function initializeDefaultGachas() {
     if (typeof prepareScheduleInfo === 'function') {
@@ -72,11 +72,28 @@ function toggleAppMode() {
     onModeChange();
 }
 
+function toggleTxtMode() {
+    isTxtMode = !isTxtMode;
+    onModeChange();
+}
+
 function updateModeButtonState() {
-    const btn = document.getElementById('mode-toggle-btn');
-    if (btn) {
-        if (isSimulationMode) btn.classList.add('active');
-        else btn.classList.remove('active');
+    const btnSim = document.getElementById('mode-toggle-btn');
+    if (btnSim) {
+        if (isSimulationMode) btnSim.classList.add('active');
+        else btnSim.classList.remove('active');
+    }
+    
+    const btnTxt = document.getElementById('toggle-txt-btn');
+    const btnCopy = document.getElementById('copy-txt-btn');
+    if (btnTxt) {
+        if (isTxtMode) {
+            btnTxt.classList.add('active');
+            if (btnCopy) btnCopy.classList.remove('hidden');
+        } else {
+            btnTxt.classList.remove('active');
+            if (btnCopy) btnCopy.classList.add('hidden');
+        }
     }
 }
 

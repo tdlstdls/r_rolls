@@ -3,7 +3,6 @@
 function renderScheduleTable(tsvContent, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
     const data = parseGachaTSV(tsvContent);
     const now = new Date();
     const yesterday = new Date();
@@ -11,7 +10,6 @@ function renderScheduleTable(tsvContent, containerId) {
     const yesterdayInt = getDateInt(yesterday);
     
     let filteredData = data.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-    
     // フィルタ: 終了分の非表示設定
     if (hideEndedSchedules) {
         filteredData = filteredData.filter(item => {
@@ -30,15 +28,14 @@ function renderScheduleTable(tsvContent, containerId) {
         if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
 
         const isSpecialA = isPlatinumOrLegend(a);
+      
         const isSpecialB = isPlatinumOrLegend(b);
         if (isSpecialA !== isSpecialB) return isSpecialA ? 1 : -1; 
 
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     const ganttHtml = renderGanttChart(data);
     const hideBtnClass = hideEndedSchedules ? 'text-btn active' : 'text-btn';
-
     let html = `
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
             <h3 style="margin:0;">開催スケジュール</h3>
@@ -48,6 +45,7 @@ function renderScheduleTable(tsvContent, containerId) {
         <div style="margin-top: 20px;"></div>
         <div class="schedule-scroll-wrapper">
         <table class="schedule-table">
+        
         <thead>
             <tr>
                 <th style="min-width:50px;">自</th>
@@ -55,6 +53,7 @@ function renderScheduleTable(tsvContent, containerId) {
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
                 <th>激レア</th>
+    
                 <th>超激</th>
                 <th>伝説</th>
                 <th>確定</th>
@@ -62,7 +61,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
-
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
         if (item.guaranteed) seriesDisplay += " [確定]";
@@ -81,7 +79,14 @@ function renderScheduleTable(tsvContent, containerId) {
                 if (isLeg) return nextItem.seriesName.includes("レジェンド");
                 return false;
             });
+    
             if (nextSameType) {
+                // --- 転記される開始日が前日より前の場合は表示しない ---
+                if (parseInt(nextSameType.rawStart) < yesterdayInt) {
+                    return;
+                }
+                // ----------------------------------------------------
+
                 endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
                 isAppliedNextStart = true;
             }
@@ -94,27 +99,27 @@ function renderScheduleTable(tsvContent, containerId) {
         const isPlatLeg = isPlatinumOrLegend(item);
         const uberRateVal = parseInt(item.uber);
         let uberStyle = ( !isPlatLeg && uberRateVal !== 500 ) ? 'color:red; font-weight:bold;' : '';
-
         const legendRateVal = parseInt(item.legend);
         let legendStyle = ( !isPlatLeg && legendRateVal > 30 ) ? 'color:red; font-weight:bold;' : '';
-
         const endDateTime = parseDateTime(item.rawEnd, item.endTime);
         let rowClass = (now > endDateTime) ? "row-ended" : (item.guaranteed ? "row-guaranteed" : "");
-
         html += `
             <tr class="${rowClass}">
                 <td>${startStr}</td>
                 <td>${endStr}</td>
                 <td style="text-align:left; vertical-align: middle;">
                     <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
-                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+     
+                <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
                 </td>
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
                 <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
+                <td 
+                style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
-                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
+                    ${item.guaranteed ?
+                '<span style="color:red;">●</span>' : '-'}
                 </td>
             </tr>
         `;

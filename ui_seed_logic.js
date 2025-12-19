@@ -52,6 +52,31 @@ function copySeedToClipboard() {
     });
 }
 
+/** * ルート（Config）と表示テキストをクリップボードへコピー 
+ */
+function copyTxtToClipboard() {
+    const configInput = document.getElementById('sim-config');
+    const txtDisplay = document.getElementById('txt-route-display');
+    const notifEl = document.getElementById('sim-notif-msg');
+
+    if (!configInput || !txtDisplay) return;
+
+    // ルート入力値 + 改行 + テキストエリアの表示内容
+    const textToCopy = configInput.value + "\n\n" + txtDisplay.innerText;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        if (notifEl) {
+            notifEl.textContent = 'Copyed!';
+            notifEl.style.display = 'inline';
+            setTimeout(() => {
+                notifEl.style.display = 'none';
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+
 function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
