@@ -44,31 +44,26 @@ function generateFastForecast(initialSeed, columnConfigs) {
         </div>
     `;
 
-    // --- ボタンの状態判定 ---
+    // --- ボタンの状態判定用のデータ収集 ---
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-        limitedCats.forEach(id => {
-            limitedSet.add(id);
-            limitedSet.add(String(id));
-        });
+        limitedCats.forEach(id => { limitedSet.add(id); limitedSet.add(String(id)); });
     }
 
     columnConfigs.forEach((config) => {
-        if (!config) return;
-        if (processedGachaIdsForBtn.has(config.id)) return;
+        if (!config || processedGachaIdsForBtn.has(config.id)) return;
         processedGachaIdsForBtn.add(config.id);
 
-        if (config.pool.legend && config.pool.legend.length > 0) {
+        if (config.pool.legend) {
             config.pool.legend.forEach(c => availableLegendIds.push(c.id));
         }
         ['rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r]) {
                 config.pool[r].forEach(c => {
-                    const cStr = String(c.id);
-                    if (limitedSet.has(c.id) || limitedSet.has(cStr)) {
+                    if (limitedSet.has(c.id) || limitedSet.has(String(c.id))) {
                         availableLimitedIds.push(c.id);
                     }
                 });
@@ -105,34 +100,30 @@ function generateFastForecast(initialSeed, columnConfigs) {
     const processedGachaIds = new Set();
     const anniversarySet = new Set();
     if (typeof AnniversaryLimited !== 'undefined' && Array.isArray(AnniversaryLimited)) {
-        AnniversaryLimited.forEach(id => {
-            anniversarySet.add(id);
-            anniversarySet.add(String(id));
-        });
+        AnniversaryLimited.forEach(id => { anniversarySet.add(id); anniversarySet.add(String(id)); });
     }
 
-    columnConfigs.forEach((config, colIndex) => {
-        if (!config) return;
-        if (processedGachaIds.has(config.id)) return;
+    columnConfigs.forEach((config) => {
+        if (!config || processedGachaIds.has(config.id)) return;
         processedGachaIds.add(config.id);
 
         const targetIds = new Set();
-        const poolsToCheck = {}; 
+        const poolsToCheck = { legend: false, rare: false, super: false, uber: false };
 
-        const hasLegend = (config.rarity_rates.legend > 0 && config.pool.legend && config.pool.legend.length > 0);
-        if (hasLegend) {
-            config.pool.legend.forEach(c => targetIds.add(c.id));
-        }
-
-        ['rare', 'super', 'uber'].forEach(r => {
+        // 1. 表示すべきターゲット（現在の選択状態）を抽出
+        ['legend', 'rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r] && config.pool[r].length > 0) {
-                 config.pool[r].forEach(charObj => {
+                config.pool[r].forEach(charObj => {
                     const cid = charObj.id;
-                    const cStr = String(cid);
-                    const isNew = cStr.startsWith('sim-new-');
-                    const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
+                    const idStr = String(cid);
+                    
+                    // 自動ターゲット（addキャラ）かどうかの判定
+                    const isAuto = (typeof isAutomaticTarget === 'function') ? isAutomaticTarget(cid) : idStr.startsWith('sim-new-');
+                    const isHidden = hiddenFindIds.has(cid) || hiddenFindIds.has(idStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
-                    if (isNew || isLimited || isManual) {
+
+                    // 「自動ターゲットかつ非表示でない」または「手動ターゲット（伝説・限定含む）」の場合にFind対象とする
+                    if ((isAuto && !isHidden) || isManual) {
                         targetIds.add(cid);
                         poolsToCheck[r] = true;
                     }
@@ -140,12 +131,12 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         });
 
-        if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
+        if (targetIds.size === 0) return;
 
         const resultMap = new Map();
-        const missingTargets = new Set(targetIds); // 最初に見つかるまで検索する対象
+        const missingTargets = new Set(targetIds); 
 
-        // 1. 通常検索（0-2000件）
+        // 2. 通常検索（0-2000件）
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
             const rVal = s0 % 10000;
@@ -156,26 +147,18 @@ function generateFastForecast(initialSeed, columnConfigs) {
             else if (rVal < rates.rare + rates.super + rates.uber) rarity = 'uber';
             else if (rVal < rates.rare + rates.super + rates.uber + rates.legend) rarity = 'legend';
 
-            let targetPool = null;
-            let isLegendRank = false;
-            if (rarity === 'legend' && hasLegend) {
-                targetPool = config.pool.legend;
-                isLegendRank = true;
-            } else if (poolsToCheck[rarity]) {
-                targetPool = config.pool[rarity];
-            }
-
-            if (targetPool) {
+            if (poolsToCheck[rarity]) {
+                const targetPool = config.pool[rarity];
                 const s1 = seeds[n + 1];
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
                 
-                if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) continue;
                 if (targetIds.has(cid)) {
                     if (!resultMap.has(cid)) {
                         resultMap.set(cid, { 
-                            name: charObj.name, hits: [], isLegend: isLegendRank, isNew: String(cid).startsWith('sim-new-'),
+                            name: charObj.name, hits: [], isLegend: (rarity === 'legend'), 
+                            isNew: String(cid).startsWith('sim-new-'),
                             isLimited: limitedSet.has(cid) || limitedSet.has(String(cid)),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(String(cid))
                         });
@@ -188,7 +171,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         }
 
-        // 2. 延長検索（2000件で見つかっていないターゲットに限り、1回目が出るまで探す）
+        // 3. 延長検索（2000件で見つかっていないターゲットに限り、1回目が出るまで最大1万件探す）
         if (missingTargets.size > 0) {
             for (let n = scanRows * 2; n < extendedScanRows * 2; n++) {
                 if (missingTargets.size === 0) break;
@@ -202,26 +185,17 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 else if (rVal < rates.rare + rates.super + rates.uber) rarity = 'uber';
                 else if (rVal < rates.rare + rates.super + rates.uber + rates.legend) rarity = 'legend';
 
-                let targetPool = null;
-                let isLegendRank = false;
-                if (rarity === 'legend' && hasLegend) {
-                    targetPool = config.pool.legend;
-                    isLegendRank = true;
-                } else if (poolsToCheck[rarity]) {
-                    targetPool = config.pool[rarity];
-                }
-
-                if (targetPool) {
+                if (poolsToCheck[rarity]) {
+                    const targetPool = config.pool[rarity];
                     const s1 = seeds[n + 1];
                     const slot = s1 % targetPool.length;
                     const charObj = targetPool[slot];
                     const cid = charObj.id;
 
                     if (missingTargets.has(cid)) {
-                        if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) continue;
-                        
                         resultMap.set(cid, { 
-                            name: charObj.name, hits: [], isLegend: isLegendRank, isNew: String(cid).startsWith('sim-new-'),
+                            name: charObj.name, hits: [], isLegend: (rarity === 'legend'), 
+                            isNew: String(cid).startsWith('sim-new-'),
                             isLimited: limitedSet.has(cid) || limitedSet.has(String(cid)),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(String(cid)),
                             isExtended: true // 2000件以降のヒットであるフラグ
@@ -229,7 +203,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                         const row = Math.floor(n / 2) + 1;
                         const side = (n % 2 === 0) ? 'A' : 'B';
                         resultMap.get(cid).hits.push(`${row}${side}`);
-                        missingTargets.delete(cid); // 見つかったので除外
+                        missingTargets.delete(cid);
                     }
                 }
             }
@@ -278,6 +252,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const side = addr.endsWith('B') ? 1 : 0;
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
+                // 2000件以降のヒットは番地を少し薄く表示
                 const addrStyle = data.isExtended ? 'color: #999;' : '';
                 return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px; ${addrStyle}" 
                              onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
