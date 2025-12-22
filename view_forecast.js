@@ -44,7 +44,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
         </div>
     `;
 
-    // --- ボタンの状態判定用のデータ収集 ---
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
@@ -110,19 +109,15 @@ function generateFastForecast(initialSeed, columnConfigs) {
         const targetIds = new Set();
         const poolsToCheck = { legend: false, rare: false, super: false, uber: false };
 
-        // 1. 表示すべきターゲット（現在の選択状態）を抽出
         ['legend', 'rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r] && config.pool[r].length > 0) {
                 config.pool[r].forEach(charObj => {
                     const cid = charObj.id;
                     const idStr = String(cid);
-                    
-                    // 自動ターゲット（addキャラ）かどうかの判定
-                    const isAuto = (typeof isAutomaticTarget === 'function') ? isAutomaticTarget(cid) : idStr.startsWith('sim-new-');
+                    const isAuto = idStr.startsWith('sim-new-');
                     const isHidden = hiddenFindIds.has(cid) || hiddenFindIds.has(idStr);
                     const isManual = userTargetIds.has(cid) || userTargetIds.has(parseInt(cid));
 
-                    // 「自動ターゲットかつ非表示でない」または「手動ターゲット（伝説・限定含む）」の場合にFind対象とする
                     if ((isAuto && !isHidden) || isManual) {
                         targetIds.add(cid);
                         poolsToCheck[r] = true;
@@ -136,7 +131,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
         const resultMap = new Map();
         const missingTargets = new Set(targetIds); 
 
-        // 2. 通常検索（0-2000件）
+        // 1. 通常検索（0-2000件）
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
             const rVal = s0 % 10000;
@@ -162,7 +157,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                             isLimited: limitedSet.has(cid) || limitedSet.has(String(cid)),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(String(cid))
                         });
-                        missingTargets.delete(cid); // 2000件以内にあるので延長検索から除外
+                        missingTargets.delete(cid); 
                     }
                     const row = Math.floor(n / 2) + 1;
                     const side = (n % 2 === 0) ? 'A' : 'B';
@@ -171,7 +166,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         }
 
-        // 3. 延長検索（2000件で見つかっていないターゲットに限り、1回目が出るまで最大1万件探す）
+        // 2. 延長検索（2000件で見つかっていないターゲットを最大1万件まで探す）
         if (missingTargets.size > 0) {
             for (let n = scanRows * 2; n < extendedScanRows * 2; n++) {
                 if (missingTargets.size === 0) break;
@@ -198,7 +193,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                             isNew: String(cid).startsWith('sim-new-'),
                             isLimited: limitedSet.has(cid) || limitedSet.has(String(cid)),
                             isAnniversary: anniversarySet.has(cid) || anniversarySet.has(String(cid)),
-                            isExtended: true // 2000件以降のヒットであるフラグ
+                            isExtended: true 
                         });
                         const row = Math.floor(n / 2) + 1;
                         const side = (n % 2 === 0) ? 'A' : 'B';
@@ -252,10 +247,14 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const side = addr.endsWith('B') ? 1 : 0;
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
-                // 2000件以降のヒットは番地を少し薄く表示
-                const addrStyle = data.isExtended ? 'color: #999;' : '';
-                return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px; ${addrStyle}" 
-                             onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
+                
+                // --- 変更箇所: 2000番を超える場合はリンクにせずテキストのみにする ---
+                if (row > 2000) {
+                    return `<span style="margin-right:4px; color: #999; font-size: 0.9em;">${addr}</span>`;
+                } else {
+                    return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
+                                 onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
+                }
             }).join("");
 
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
