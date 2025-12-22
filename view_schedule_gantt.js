@@ -6,7 +6,7 @@ function renderGanttChart(data) {
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0); 
+    yesterday.setHours(0, 0, 0, 0);
     const yesterdayInt = getDateInt(yesterday);
     
     let activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
@@ -51,24 +51,25 @@ function renderGanttChart(data) {
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
     if (labelWidth > 320) labelWidth = 320; 
 
+    // チャートの開始日決定
     let minDate = parseDateStr(String(minDateInt));
     const viewStartDate = new Date(yesterday);
     viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) minDate = viewStartDate;
 
-    let limitDate = new Date(minDate);
-    limitDate.setDate(limitDate.getDate() + 35);
+    // チャートの終了日決定
     let chartEnd = new Date(maxEndDateTime);
-    if (chartEnd > limitDate) chartEnd = limitDate;
-
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
+
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
     
     if (totalDays <= 0) return '';
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
+    
+    // 合計幅を厳密に計算
+    const totalWidth = labelWidth + (totalDays * dayWidth);
     
     let currentLineHtml = '';
     if (now >= minDate && now < chartEnd) {
@@ -77,8 +78,9 @@ function renderGanttChart(data) {
         currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
     }
 
-    let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
-        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
+    // ヘッダー行: ガチャ名セルに flex centering を適用し、高さを30pxで固定
+    let headerHtml = `<div class="gantt-header" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; background: #f9f9f9; height: 30px;">
+        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none; display: flex; align-items: center; justify-content: center; height: 100%;">ガチャ名</div>`;
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(minDate);
         d.setDate(d.getDate() + i);
@@ -86,9 +88,9 @@ function renderGanttChart(data) {
         const isToday = getDateInt(d) === getDateInt(new Date());
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
         const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
-        headerHtml += `<div class="${cls}" style="width:${dayWidth}px;">${dateStr}</div>`;
+        headerHtml += `<div class="${cls}" style="width:${dayWidth}px; flex: none;">${dateStr}</div>`;
     }
-    headerHtml += `<div class="gantt-date-cell" style="width:${dayWidth/2}px; border-right:none;"></div></div>`;
+    headerHtml += `</div>`;
 
     let bodyHtml = '';
     activeData.forEach(item => {
@@ -121,9 +123,10 @@ function renderGanttChart(data) {
         else if (item.guaranteed) rowClass += ' row-guaranteed';
 
         bodyHtml += `
-            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
-                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;" title="${displayName} (ID:${item.id})">${displayName}</div>
-                <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
+            <div class="${rowClass}" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; height: 30px;">
+                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none;"
+                title="${displayName} (ID:${item.id})">${displayName}</div>
+                <div class="gantt-bar-area" style="width: ${totalDays * dayWidth}px; flex: none; position: relative;">
                     ${generateGridLines(totalDays, dayWidth, minDate)}
                     <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
                         <span class="gantt-bar-text">${durationDays}日間</span>
@@ -135,14 +138,16 @@ function renderGanttChart(data) {
     });
 
     return `
-        <div class="gantt-outer-wrapper">
+        <div class="gantt-outer-wrapper" style="width: 100%; max-width: 100%; overflow: hidden;">
             <div style="margin-bottom: 5px; text-align: right;">
                 <button onclick="saveGanttImage()" class="secondary" style="font-size: 11px; padding: 4px 8px;">画像として保存</button>
             </div>
-            <div class="gantt-chart-container">
-                <div class="gantt-scroll-wrapper">
-                    ${headerHtml}
-                    <div class="gantt-body">${bodyHtml}</div>
+            <div class="gantt-chart-container" style="width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ccc; background: #fff;">
+                <div class="gantt-scroll-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+                    <div style="width: ${totalWidth}px; min-width: ${totalWidth}px;">
+                        ${headerHtml}
+                        <div class="gantt-body">${bodyHtml}</div>
+                    </div>
                 </div>
             </div>
         </div>

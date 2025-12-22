@@ -35,40 +35,79 @@ function fmtRate(val) {
     return (parseInt(val) / 100) + "%";
 }
 
-/** ガントチャートを画像として保存 */
+/** ガントチャートを画像として全体保存（バーの右端でトリミングする版） */
 function saveGanttImage() {
     const element = document.querySelector('.gantt-chart-container');
-    if (!element) return;
+    const scrollWrapper = document.querySelector('.gantt-scroll-wrapper');
+    if (!element || !scrollWrapper) return;
     
-    const header = element.querySelector('.gantt-header');
-    if (!header) return;
-    const contentWidth = header.style.width;
+    // 1. 全体の要素情報を取得
+    const containerRect = element.getBoundingClientRect();
+    const bars = element.querySelectorAll('.gantt-bar');
+    
+    // 2. 最も右にあるバーの終端位置を探す
+    let maxBarRightEdge = 0;
+    bars.forEach(bar => {
+        const rect = bar.getBoundingClientRect();
+        const relativeRight = rect.right - containerRect.left;
+        if (relativeRight > maxBarRightEdge) {
+            maxBarRightEdge = relativeRight;
+        }
+    });
 
+    // 3. 切り出し幅の決定 (バーの終端 + 20px の余白)
+    // バーが一つも無い場合は要素全体の幅を使用
+    const buffer = 20;
+    const finalCropWidth = maxBarRightEdge > 0 ? maxBarRightEdge + buffer : element.offsetWidth;
+
+    // 4. スタイルの保存と一時変更
     const originalOverflow = element.style.overflow;
-    const originalWidth = element.style.width; 
-    const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
-    const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-    
-    element.style.overflow = 'visible';
-    element.style.width = contentWidth; 
-    
-    if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
-    
-    html2canvas(element).then(canvas => {
-        element.style.overflow = originalOverflow;
-        element.style.width = originalWidth;
-        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+    const originalWidth = element.style.width;
+    const originalMaxWidth = element.style.maxWidth;
+    const originalWrapperOverflow = scrollWrapper.style.overflow;
+    const originalWrapperWidth = scrollWrapper.style.width;
 
+    const stickyElements = element.querySelectorAll('.gantt-label-col, .gantt-header, .gantt-date-cell');
+    const originalStickyStyles = [];
+    stickyElements.forEach(el => {
+        originalStickyStyles.push({ el: el, position: el.style.position });
+        el.style.position = 'static'; // キャプチャ用に固定解除
+    });
+
+    // 全域レンダリングのために一時的に制限解除
+    element.style.overflow = 'visible';
+    element.style.maxWidth = 'none';
+    scrollWrapper.style.overflow = 'visible';
+
+    // 5. html2canvasで指定した幅（バーの少し右まで）をキャプチャ
+    html2canvas(element, {
+        width: finalCropWidth,       // ここで右側をトリミング
+        windowWidth: element.scrollWidth, 
+        scale: 2,                   // 高画質
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false
+    }).then(canvas => {
         const link = document.createElement('a');
-        link.download = 'gacha_schedule.png';
-        // 修正箇所: toToDataURL -> toDataURL
+        link.download = `gacha_schedule_${new Date().getTime()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
+        
+        restoreStyles();
     }).catch(err => {
         console.error("Image capture failed:", err);
         alert("画像の保存に失敗しました。");
+        restoreStyles();
+    });
+
+    function restoreStyles() {
         element.style.overflow = originalOverflow;
         element.style.width = originalWidth;
-        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
-    });
+        element.style.maxWidth = originalMaxWidth;
+        scrollWrapper.style.overflow = originalWrapperOverflow;
+        scrollWrapper.style.width = originalWrapperWidth;
+        originalStickyStyles.forEach(item => {
+            item.el.style.position = item.position;
+        });
+    }
 }

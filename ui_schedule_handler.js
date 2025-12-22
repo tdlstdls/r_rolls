@@ -15,13 +15,10 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
-            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-                        if (gachaMasterData && 
-                            gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
-         
+                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                  gachaMasterData.gachas[gId].name += " [確定]";
@@ -61,10 +58,7 @@ function toggleSchedule() {
         return;
     }
 
-    // モードを反転させる
     isScheduleMode = !isScheduleMode;
-
-    // もし概要モードが開いていれば、先に閉じる (排他制御)
     if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function' && isScheduleMode) {
         toggleDescription();
     }
@@ -77,15 +71,11 @@ function toggleSchedule() {
     const mainControls = document.getElementById('main-controls');
 
     if (isScheduleMode) {
-        // テキスト変更削除
-        // scheduleBtn.textContent = 'Back'; 
         scheduleBtn.classList.add('active');
-
         if (simWrapper) simWrapper.classList.add('hidden');
         if (tableContainer) tableContainer.classList.add('hidden');
         if (resultDiv) resultDiv.classList.add('hidden');
         if (mainControls) mainControls.classList.add('hidden');
-
         if (scheduleContainer) {
             scheduleContainer.classList.remove('hidden');
             if (typeof renderScheduleTable === 'function') {
@@ -93,15 +83,11 @@ function toggleSchedule() {
             }
         }
     } else {
-        // テキスト変更削除
-        // scheduleBtn.textContent = 'skd';
         scheduleBtn.classList.remove('active');
-
         if (isSimulationMode && simWrapper) simWrapper.classList.remove('hidden');
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
         if (mainControls) mainControls.classList.remove('hidden');
-
         if (scheduleContainer) scheduleContainer.classList.add('hidden');
     }
 }
@@ -115,37 +101,63 @@ function addGachasFromSchedule() {
 
     const scheduleData = parseGachaTSV(loadedTsvContent);
     const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const y = yesterday.getFullYear();
-    const m = String(yesterday.getMonth() + 1).padStart(2, '0');
-    const d = String(yesterday.getDate()).padStart(2, '0');
-    const yesterdayInt = parseInt(`${y}${m}${d}`, 10);
+    const todayStr = now.getFullYear() + 
+                     String(now.getMonth() + 1).padStart(2, '0') + 
+                     String(now.getDate()).padStart(2, '0');
+    const todayInt = parseInt(todayStr, 10);
 
-    let activeScheduleItems = scheduleData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
-    if (activeScheduleItems.length === 0) {
-        alert("条件に合致するスケジュール（昨日以降終了、または開催中・未来）がありません。");
+    const newGachaData = [];
+
+    scheduleData.forEach((item, index) => {
+        let endValue = parseInt(item.rawEnd, 10);
+        const isPlat = item.seriesName.includes("プラチナ");
+        const isLeg = item.seriesName.includes("レジェンド");
+
+        // 特別枠（プラチナ・レジェンド）の期間調整ロジック
+        if (isPlat || isLeg) {
+            const nextSameType = scheduleData.slice(index + 1).find(nextItem => {
+                if (isPlat) return nextItem.seriesName.includes("プラチナ");
+                if (isLeg) return nextItem.seriesName.includes("レジェンド");
+                return false;
+            });
+            if (nextSameType) {
+                endValue = parseInt(nextSameType.rawStart, 10);
+            }
+        }
+
+        // 調整後の終了日が本日よりも前であれば追加しない
+        if (endValue < todayInt) return;
+
+        let fullId = item.id.toString();
+        if (item.guaranteed) fullId += 'g';
+
+        // 表示優先度の設定 (通常: 0, プラチナ: 1, レジェンド: 2)
+        let typeOrder = 0;
+        if (isPlat) typeOrder = 1;
+        else if (isLeg) typeOrder = 2;
+        
+        newGachaData.push({
+            fullId: fullId,
+            rawStart: parseInt(item.rawStart, 10),
+            typeOrder: typeOrder,
+            count: 0
+        });
+    });
+
+    if (newGachaData.length === 0) {
+        alert("条件に合致するスケジュール（現在開催中または未来）がありません。");
         return;
     }
 
-    activeScheduleItems.sort((a, b) => {
-        const checkSpecial = (item) => {
-            if (typeof isPlatinumOrLegend === 'function') return isPlatinumOrLegend(item);
-            const n = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
-            return n.includes("プラチナガチャ") || n.includes("レジェンドガチャ");
-        };
-
-        const isSpecialA = checkSpecial(a);
-        
-        const isSpecialB = checkSpecial(b);
-        
-        if (isSpecialA && !isSpecialB) return 1; 
-        if (!isSpecialA && isSpecialB) return -1; 
-        return parseInt(a.rawStart) - parseInt(b.rawStart);
+    // ソート実行: タイプ順 (通常->プラチナ->レジェンド) を優先し、同じタイプ内では日付順
+    newGachaData.sort((a, b) => {
+        if (a.typeOrder !== b.typeOrder) return a.typeOrder - b.typeOrder;
+        return a.rawStart - b.rawStart;
     });
-    const scheduleIds = new Set(activeScheduleItems.map(item => item.id.toString()));
+
+    // 既存のメインテーブルにあるID（スケジュールにない手動追加分）を保持
+    const scheduleIds = new Set(newGachaData.map(d => d.fullId.replace(/[gfs]$/, '')));
     const keptGachas = [];
-    // 既存の手動追加分を残すかどうかのロジック（ここではスケジュールにないものは残す）
     tableGachaIds.forEach((idWithSuffix, index) => {
         const baseId = idWithSuffix.replace(/[gfs]$/, '');
         if (!scheduleIds.has(baseId)) {
@@ -154,20 +166,13 @@ function addGachasFromSchedule() {
                 count: uberAdditionCounts[index] || 0
             });
         }
-  
     });
 
-    const newScheduleGachas = activeScheduleItems.map(item => {
-        let newId = item.id.toString();
-        if (item.guaranteed) newId += 'g';
-        return {
-            fullId: newId,
-            count: 0
-        };
-    });
-    const finalGachaList = [...keptGachas, ...newScheduleGachas];
+    // リストの結合と反映
+    const finalGachaList = [...keptGachas, ...newGachaData];
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
+
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
