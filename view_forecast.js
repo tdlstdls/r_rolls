@@ -2,7 +2,8 @@
 
 function generateFastForecast(initialSeed, columnConfigs) {
     const scanRows = 2000;
-    const requiredSeeds = scanRows * 2 + 10;
+    const extendedScanRows = 10000; // 2000件で見つからない場合の最大検索範囲
+    const requiredSeeds = extendedScanRows * 2 + 10;
     const seeds = new Uint32Array(requiredSeeds);
     const rng = new Xorshift32(initialSeed);
     for (let i = 0; i < requiredSeeds; i++) {
@@ -11,8 +12,10 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const visibilityClass = (typeof showFindInfo !== 'undefined' && showFindInfo) ? '' : 'hidden';
     let summaryHtml = `<div id="forecast-summary-area" class="forecast-summary-container ${visibilityClass}" style="margin-bottom: 0; padding: 10px; background: #fdfdfd; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0;">`;
+
     const legendSlots = [];
     const promotedSlots = []; 
+    // 伝説・昇格枠の予報は2000件固定
     for (let n = 0; n < scanRows * 2; n++) {
         const val = seeds[n] % 10000;
         const row = Math.floor(n / 2) + 1;
@@ -27,6 +30,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
 
     const legendStr = legendSlots.length > 0 ? legendSlots.join(", ") : "なし";
     const promotedStr = promotedSlots.length > 0 ? promotedSlots.join(", ") : "なし";
+
     summaryHtml += `
         <div style="margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #eee; font-size: 0.85em;">
             <div style="margin-bottom: 4px;">
@@ -39,6 +43,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             </div>
         </div>
     `;
+
     // --- ボタンの状態判定 ---
     const processedGachaIdsForBtn = new Set();
     let availableLegendIds = [];
@@ -70,6 +75,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         });
     });
+
     const isLegendActive = (availableLegendIds.length > 0) && availableLegendIds.every(cid => userTargetIds.has(cid));
     const isLimitedActive = (availableLimitedIds.length > 0) && availableLimitedIds.every(cid => userTargetIds.has(cid));
     const isMasterActive = (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true;
@@ -88,7 +94,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 <span onclick="toggleLimitedTargets()" class="${limitedBtnClass}">限定</span>
                 <span class="separator">|</span>
                 <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${masterBtnClass}">マスター</span>
-                <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List (～${scanRows})</span>
+                <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List</span>
             </div>
             <div style="font-size: 0.75em; color: #666; padding-left: 2px;">
                 ※マスターリスト内のキャラ名をタップ（クリック）すると、そのキャラを「Find」ターゲットとして登録/解除できます。
@@ -135,22 +141,20 @@ function generateFastForecast(initialSeed, columnConfigs) {
         });
 
         if (!hasLegend && Object.keys(poolsToCheck).length === 0) return;
+
         const resultMap = new Map();
+        const missingTargets = new Set(targetIds); // 最初に見つかるまで検索する対象
+
+        // 1. 通常検索（0-2000件）
         for (let n = 0; n < scanRows * 2; n++) {
             const s0 = seeds[n];
             const rVal = s0 % 10000;
             const rates = config.rarity_rates;
             let rarity = 'rare'; 
-            const rareR = rates.rare;
-            const superR = rates.super;
-            const uberR = rates.uber;
-            const legendR = rates.legend;
-
-            if (rVal < rareR) { rarity = 'rare'; }
-            else if (rVal < rareR + superR) { rarity = 'super'; }
-            else if (rVal < rareR + superR + uberR) { rarity = 'uber'; }
-            else if (rVal < rareR + superR + uberR + legendR) { rarity = 'legend'; }
-            else { rarity = 'rare'; }
+            if (rVal < rates.rare) rarity = 'rare';
+            else if (rVal < rates.rare + rates.super) rarity = 'super';
+            else if (rVal < rates.rare + rates.super + rates.uber) rarity = 'uber';
+            else if (rVal < rates.rare + rates.super + rates.uber + rates.legend) rarity = 'legend';
 
             let targetPool = null;
             let isLegendRank = false;
@@ -166,25 +170,16 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const slot = s1 % targetPool.length;
                 const charObj = targetPool[slot];
                 const cid = charObj.id;
-                if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) {
-                    continue;
-                }
-                const cStr = String(cid);
-                const isNew = cStr.startsWith('sim-new-');
-                if (!isNew && !userTargetIds.has(cid) && !userTargetIds.has(parseInt(cid))) {
-                     continue;
-                }
-
-                if (isLegendRank || targetIds.has(cid)) {
+                
+                if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) continue;
+                if (targetIds.has(cid)) {
                     if (!resultMap.has(cid)) {
                         resultMap.set(cid, { 
-                            name: charObj.name, 
-                            hits: [], 
-                            isLegend: isLegendRank,
-                            isNew: isNew,
-                            isLimited: limitedSet.has(cid) || limitedSet.has(cStr),
-                            isAnniversary: anniversarySet.has(cid) || anniversarySet.has(cStr)
+                            name: charObj.name, hits: [], isLegend: isLegendRank, isNew: String(cid).startsWith('sim-new-'),
+                            isLimited: limitedSet.has(cid) || limitedSet.has(String(cid)),
+                            isAnniversary: anniversarySet.has(cid) || anniversarySet.has(String(cid))
                         });
+                        missingTargets.delete(cid); // 2000件以内にあるので延長検索から除外
                     }
                     const row = Math.floor(n / 2) + 1;
                     const side = (n % 2 === 0) ? 'A' : 'B';
@@ -193,12 +188,61 @@ function generateFastForecast(initialSeed, columnConfigs) {
             }
         }
 
+        // 2. 延長検索（2000件で見つかっていないターゲットに限り、1回目が出るまで探す）
+        if (missingTargets.size > 0) {
+            for (let n = scanRows * 2; n < extendedScanRows * 2; n++) {
+                if (missingTargets.size === 0) break;
+
+                const s0 = seeds[n];
+                const rVal = s0 % 10000;
+                const rates = config.rarity_rates;
+                let rarity = 'rare'; 
+                if (rVal < rates.rare) rarity = 'rare';
+                else if (rVal < rates.rare + rates.super) rarity = 'super';
+                else if (rVal < rates.rare + rates.super + rates.uber) rarity = 'uber';
+                else if (rVal < rates.rare + rates.super + rates.uber + rates.legend) rarity = 'legend';
+
+                let targetPool = null;
+                let isLegendRank = false;
+                if (rarity === 'legend' && hasLegend) {
+                    targetPool = config.pool.legend;
+                    isLegendRank = true;
+                } else if (poolsToCheck[rarity]) {
+                    targetPool = config.pool[rarity];
+                }
+
+                if (targetPool) {
+                    const s1 = seeds[n + 1];
+                    const slot = s1 % targetPool.length;
+                    const charObj = targetPool[slot];
+                    const cid = charObj.id;
+
+                    if (missingTargets.has(cid)) {
+                        if (hiddenFindIds.has(cid) || hiddenFindIds.has(String(cid))) continue;
+                        
+                        resultMap.set(cid, { 
+                            name: charObj.name, hits: [], isLegend: isLegendRank, isNew: String(cid).startsWith('sim-new-'),
+                            isLimited: limitedSet.has(cid) || limitedSet.has(String(cid)),
+                            isAnniversary: anniversarySet.has(cid) || anniversarySet.has(String(cid)),
+                            isExtended: true // 2000件以降のヒットであるフラグ
+                        });
+                        const row = Math.floor(n / 2) + 1;
+                        const side = (n % 2 === 0) ? 'A' : 'B';
+                        resultMap.get(cid).hits.push(`${row}${side}`);
+                        missingTargets.delete(cid); // 見つかったので除外
+                    }
+                }
+            }
+        }
+
         if (resultMap.size === 0) return;
+
         let listItems = [];
         resultMap.forEach((data, id) => {
             data.id = id;
             listItems.push(data);
         });
+
         listItems.sort((a, b) => {
             const getPriority = (item) => {
                 if (item.isNew) return 1;
@@ -211,7 +255,6 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const pA = getPriority(a);
             const pB = getPriority(b);
             if (pA !== pB) return pA - pB;
-    
             if (pA === 1) {
                 const nA = parseInt(String(a.id).replace('sim-new-', ''), 10);
                 const nB = parseInt(String(b.id).replace('sim-new-', ''), 10);
@@ -222,6 +265,7 @@ function generateFastForecast(initialSeed, columnConfigs) {
             const firstHitB = parseInt(b.hits[0]);
             return firstHitA - firstHitB;
         });
+
         const itemHtmls = listItems.map(data => {
             let nameStyle = 'font-weight:bold; font-size: 0.9em;'; 
             if (data.isNew) nameStyle += ' color:#007bff;'; 
@@ -234,14 +278,15 @@ function generateFastForecast(initialSeed, columnConfigs) {
                 const side = addr.endsWith('B') ? 1 : 0;
                 const sIdx = (row - 1) * 2 + side;
                 const escapedName = data.name.replace(/'/g, "\\'");
-                
-                return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px;" 
+                const addrStyle = data.isExtended ? 'color: #999;' : '';
+                return `<span class="char-link" style="cursor:pointer; text-decoration:underline; margin-right:4px; ${addrStyle}" 
                              onclick="onGachaCellClick(${sIdx}, '${config.id}', '${escapedName}', null, true, '${data.id}')">${addr}</span>`;
             }).join("");
 
             const closeBtn = `<span onclick="toggleCharVisibility('${data.id}')" style="cursor:pointer; margin-right:6px; color:#999; font-weight:bold; font-size:1em;" title="非表示にする">×</span>`;
             return `<div style="margin-bottom: 2px; line-height: 1.3;">${closeBtn}<span style="${nameStyle}">${data.name}</span>: <span style="font-size: 0.85em; color: #555;">${hitLinks}</span></div>`;
         });
+
         summaryHtml += `<div style="margin-bottom: 8px;">
             <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 3px; font-size: 0.85em;">
                 ${config.name} (ID:${config.id})

@@ -67,13 +67,14 @@ function generateRollsTable() {
 
 /** 内部関数: テーブルDOMの組み立て */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
+    // 修正箇所: 各ボタンのフォントサイズとパディングを小さく調整
     const buttonHtml = `
-        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; font-weight: normal; white-space: normal;">
-            <span style="font-weight: bold; margin-right: 2px;">A</span>
-            <button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>
-            <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>
-            <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
-            <button class="remove-btn" onclick="resetToFirstGacha()" title="一番左の列以外を解除" style="font-size:11px; padding:2px 6px; margin-left: 5px;">×</button>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; font-weight: normal; white-space: normal;">
+            <span style="font-weight: bold; margin-right: 1px; font-size: 11px;">A</span>
+            <button class="add-gacha-btn" onclick="addGachaColumn()" style="font-size: 11px; padding: 1px 4px;">＋列を追加</button>
+            <button class="add-gacha-btn" style="background-color: #17a2b8; font-size: 11px; padding: 1px 4px;" onclick="addGachasFromSchedule()">skdで追加</button>
+            <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size: 11px; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
+            <button class="remove-btn" onclick="resetToFirstGacha()" title="一番左の列以外を解除" style="font-size: 11px; padding: 1px 5px; margin-left: 2px;">×</button>
         </div>`;
     
     let totalGachaCols = 0;
@@ -86,13 +87,12 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
     const calcColSpan = showSeedColumns ? 5 : 0;
     const totalTrackSpan = calcColSpan + totalGachaCols;
 
-    // 変更箇所: A側とB側の colspan セルに width: 50% を指定して左右のバランスを固定
     let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
             <th class="col-no"></th>
-            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; width: 50%;">${buttonHtml}</th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; width: 50%;">${buttonHtml}</th>
             <th class="col-no"></th>
-            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; font-weight: bold; width: 50%;">B</th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; font-weight: bold; width: 50%;">B</th>
         </tr>
         <tr class="sticky-row">
             <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
@@ -143,7 +143,7 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
 
         let cellHtml = generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
         
-        // 変更箇所: セル内改行を許可。幅は自動(ヘッダーの50%指定が優先される)
+        // セル内改行を許可。幅は自動（ヘッダーの50%指定が優先される）
         cellHtml = cellHtml.replace('style="', 'style="white-space: normal; width: auto; word-break: break-all; vertical-align: middle; ');
         
         if (isSimulationMode) {
