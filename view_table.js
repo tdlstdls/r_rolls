@@ -23,7 +23,7 @@ function generateRollsTable() {
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
 
-        // 3. ハイライト判定 (view_table_highlight.js に定義)
+        // 3. ハイライト判定
         const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
@@ -67,7 +67,6 @@ function generateRollsTable() {
 
 /** 内部関数: テーブルDOMの組み立て */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
-    // 修正箇所: 各ボタンのフォントサイズとパディングを小さく調整
     const buttonHtml = `
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; font-weight: normal; white-space: normal;">
             <span style="font-weight: bold; margin-right: 1px; font-size: 11px;">A</span>
@@ -87,21 +86,25 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
     const calcColSpan = showSeedColumns ? 5 : 0;
     const totalTrackSpan = calcColSpan + totalGachaCols;
 
+    // 左端NO列（A側）を固定するためのCSSスタイル
+    const stickyLeftStyle = `position: sticky; left: 0; z-index: 30; background-color: #f8f9fa; border-right: 1px solid #ddd;`;
+    const stickyTopLeftStyle = `position: sticky; top: 0; left: 0; z-index: 40; background-color: #f8f9fa; border-right: 1px solid #ddd;`;
+
     let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
-            <th class="col-no"></th>
+            <th class="col-no" style="${stickyLeftStyle}"></th>
             <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; width: 50%;">${buttonHtml}</th>
             <th class="col-no"></th>
             <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; font-weight: bold; width: 50%;">B</th>
         </tr>
         <tr class="sticky-row">
-            <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
+            <th class="col-no" style="${stickyTopLeftStyle}">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
             ${generateNameHeaderHTML()}
             <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
             ${generateNameHeaderHTML()}
         </tr>
         <tr class="control-row">
-            <th class="col-no"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th>
+            <th class="col-no" style="${stickyLeftStyle}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th>
             ${generateControlHeaderHTML(true)}
             <th class="col-no"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th><th class="${calcColClass}"></th>
             ${generateControlHeaderHTML(false)}
@@ -110,8 +113,8 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
 
     for (let i = 0; i < numRolls; i++) {
         const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
-        html += `<tr>${renderTableRowSide(i, seedIndexA, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}`;
-        html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}</tr>`;
+        html += `<tr>${renderTableRowSide(i, seedIndexA, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, true)}`;
+        html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, false)}</tr>`;
     }
 
     const fullColSpan = 2 + (totalTrackSpan * 2);
@@ -123,12 +126,22 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
 }
 
 /** 内部関数: A側/B側それぞれの行レンダリング */
-function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
+function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, isLeftSide) {
     let styleNo = '';
-    if (RowAnalysis.isSimpleYellow(seedIndex, seeds) || RowAnalysis.isConsecutiveYellow(seedIndex, seeds)) styleNo = 'style="background-color: #ffeb3b;"';
-    else if (RowAnalysis.isSimpleOrange(seedIndex, seeds) || RowAnalysis.isConsecutiveOrange(seedIndex, seeds)) styleNo = 'style="background-color: #ff9800;"';
+    let bgColor = '#f8f9fa'; // デフォルトのNO列背景色
 
-    let sideHtml = `<td class="col-no" ${styleNo}>${rowIndex + 1}</td>`;
+    if (RowAnalysis.isSimpleYellow(seedIndex, seeds) || RowAnalysis.isConsecutiveYellow(seedIndex, seeds)) {
+        styleNo = 'background-color: #ffeb3b;';
+        bgColor = '#ffeb3b';
+    } else if (RowAnalysis.isSimpleOrange(seedIndex, seeds) || RowAnalysis.isConsecutiveOrange(seedIndex, seeds)) {
+        styleNo = 'background-color: #ff9800;';
+        bgColor = '#ff9800';
+    }
+
+    // 左側のNO列のみ sticky を適用
+    let stickyStyle = isLeftSide ? `position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd; background-color: ${bgColor};` : '';
+
+    let sideHtml = `<td class="col-no" style="${stickyStyle}${styleNo}">${rowIndex + 1}</td>`;
     sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
 
     tableGachaIds.forEach((idWithSuffix, colIndex) => {
