@@ -10,17 +10,20 @@ function generateRollsTable() {
         if (!seedEl) return;
         
         let initialSeed = parseInt(seedEl.value, 10);
-        if (isNaN(initialSeed)) { initialSeed = 12345; seedEl.value = "12345"; }
+        if (isNaN(initialSeed)) { 
+            initialSeed = 12345;
+            seedEl.value = "12345"; 
+        }
         
         const numRolls = currentRolls;
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-        
+
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
-        
-        // 3. ハイライト判定 (この関数は view_table_highlight.js に定義されています)
+
+        // 3. ハイライト判定 (view_table_highlight.js に定義)
         const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
@@ -64,14 +67,13 @@ function generateRollsTable() {
 
 /** 内部関数: テーブルDOMの組み立て */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
-    // ボタンエリアを中央揃え・改行可能なフレックスボックスに設定
     const buttonHtml = `
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 5px; font-weight: normal; white-space: normal;">
             <span style="font-weight: bold; margin-right: 2px;">A</span>
             <button class="add-gacha-btn" onclick="addGachaColumn()">＋列を追加</button>
             <button class="add-gacha-btn" style="background-color: #17a2b8;" onclick="addGachasFromSchedule()">skdで追加</button>
             <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size:0.9em; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
-            <span class="text-btn" style="color: #666; font-size: 1.1em; margin-left: 5px; cursor: pointer; text-decoration: none;" onclick="resetToFirstGacha()" title="一番左の列以外を解除">×</span>
+            <button class="remove-btn" onclick="resetToFirstGacha()" title="一番左の列以外を解除" style="font-size:11px; padding:2px 6px; margin-left: 5px;">×</button>
         </div>`;
     
     let totalGachaCols = 0;
@@ -79,16 +81,18 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
         let id = idWithSuffix.replace(/[gfs]$/, '');
         if (gachaMasterData.gachas[id]) totalGachaCols += /[gfs]$/.test(idWithSuffix) ? 2 : 1;
     });
+
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
     const calcColSpan = showSeedColumns ? 5 : 0;
     const totalTrackSpan = calcColSpan + totalGachaCols;
 
-    let html = `<table><thead>
+    // 変更箇所: A側とB側の colspan セルに width: 50% を指定して左右のバランスを固定
+    let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
             <th class="col-no"></th>
-            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px;">${buttonHtml}</th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; width: 50%;">${buttonHtml}</th>
             <th class="col-no"></th>
-            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; font-weight: bold;">B</th>
+            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 5px; font-weight: bold; width: 50%;">B</th>
         </tr>
         <tr class="sticky-row">
             <th class="col-no">NO.</th><th class="${calcColClass}">SEED</th><th class="${calcColClass}">rarity</th><th class="${calcColClass}">slot</th><th class="${calcColClass}">ReRoll</th><th class="${calcColClass}">Guar</th>
@@ -103,16 +107,17 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
             ${generateControlHeaderHTML(false)}
         </tr>
     </thead><tbody>`;
+
     for (let i = 0; i < numRolls; i++) {
         const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
         html += `<tr>${renderTableRowSide(i, seedIndexA, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}`;
         html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap)}</tr>`;
     }
+
     const fullColSpan = 2 + (totalTrackSpan * 2);
     html += `<tr><td colspan="${fullColSpan}" style="padding: 10px; text-align: center;">
         <button onclick="addMoreRolls()">+100行</button>
-        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ?
-        'SEED非表示' : 'SEED表示'}</button>
+        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
     </td></tr></tbody></table>`;
     return html;
 }
@@ -137,6 +142,10 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         if (!gachaMasterData.gachas[id]) return;
 
         let cellHtml = generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
+        
+        // 変更箇所: セル内改行を許可。幅は自動(ヘッダーの50%指定が優先される)
+        cellHtml = cellHtml.replace('style="', 'style="white-space: normal; width: auto; word-break: break-all; vertical-align: middle; ');
+        
         if (isSimulationMode) {
             cellHtml = cellHtml.replace(/background-color:\s*#98FB98;/gi, `background-color: ${COLOR_ROUTE_HIGHLIGHT};`);
             cellHtml = cellHtml.replace(/background-color:\s*#32CD32;/gi, `background-color: ${COLOR_ROUTE_UBER};`);
@@ -145,12 +154,13 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
 
         if (isG) {
             let gContent = '---';
-            let cellStyle = '';
-            if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) cellStyle = `background-color: ${COLOR_ROUTE_UBER};`;
+            let cellStyle = 'white-space: normal; width: auto; word-break: break-all; vertical-align: middle; ';
+            if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) cellStyle += `background-color: ${COLOR_ROUTE_UBER};`;
+            
             const config = columnConfigs[colIndex];
             const normalRolls = config._guaranteedNormalRolls || 10;
             let lastDraw = (rowIndex > 0 && tableData[seedIndex - 2]?.[colIndex]?.roll) ?
-            { rarity: tableData[seedIndex - 2][colIndex].roll.rarity, charId: tableData[seedIndex - 2][colIndex].roll.charId } : null;
+                { rarity: tableData[seedIndex - 2][colIndex].roll.rarity, charId: tableData[seedIndex - 2][colIndex].roll.charId } : null;
             
             const gRes = calculateGuaranteedLookahead(seedIndex, config, seeds, lastDraw, normalRolls);
             const addr = formatAddress(gRes.nextRollStartSeedIndex);
@@ -159,8 +169,9 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
             const escapedName = charName.replace(/'/g, "\\'");
 
             let gClickAction = isSimulationMode ?
-            `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
+                `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
                 (gRes.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.nextRollStartSeedIndex - 1]})"` : "");
+
             let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span><span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
             let altHtml = '';
             if (gRes.alternative) {
@@ -168,7 +179,7 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
                 let altCharName = gRes.alternative.name;
                 const escAlt = altCharName.replace(/'/g, "\\'");
                 let altClickAction = isSimulationMode ?
-                `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escAlt}', '${gType}')"` :
+                    `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escAlt}', '${gType}')"` :
                     (gRes.alternative.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.alternative.nextRollStartSeedIndex - 1]})"` : "");
                 altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span><span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span><br>`;
             }
@@ -198,8 +209,18 @@ function generateTxtRouteView(seeds, initialSeed) {
     const addStat = (map, name) => { map[name] = (map[name] || 0) + 1; };
 
     configs.forEach(sim => {
-        const gacha = gachaMasterData.gachas[sim.id];
-        if (!gacha) return;
+        const originalGacha = gachaMasterData.gachas[sim.id];
+        if (!originalGacha) return;
+
+        const colIdx = tableGachaIds.findIndex(tid => tid.replace(/[gfs]$/, '') === sim.id);
+        const addCount = (colIdx >= 0) ? (uberAdditionCounts[colIdx] || 0) : 0;
+
+        let gacha = JSON.parse(JSON.stringify(originalGacha));
+        if (addCount > 0 && gacha.pool.uber) {
+            for (let k = 1; k <= addCount; k++) {
+                gacha.pool.uber.unshift({ id: `sim-new-${k}`, name: `新規超激${k}`, rarity: 'uber' });
+            }
+        }
 
         let suffixText = "";
         let normalRolls = sim.rolls;
@@ -209,21 +230,22 @@ function generateTxtRouteView(seeds, initialSeed) {
 
         if (sim.g) {
             isG = true; stats.guar++;
-            if (sim.rolls === 11) { normalRolls = 10; suffixText = "（11連確定）"; }
-            else if (sim.rolls === 15) { normalRolls = 14; suffixText = "（15連確定）"; }
-            else if (sim.rolls === 7) { normalRolls = 6; suffixText = "（7連確定）"; }
-            else { normalRolls = sim.rolls; suffixText = `（${sim.rolls}連確定）`; }
+            if (sim.rolls === 11) { normalRolls = 10; suffixText = "11連確定"; }
+            else if (sim.rolls === 15) { normalRolls = 14; suffixText = "15連確定"; }
+            else if (sim.rolls === 7) { normalRolls = 6; suffixText = "7連確定"; }
+            else { normalRolls = sim.rolls; suffixText = `${sim.rolls}連確定`; }
         } else {
-            suffixText = `（単発${sim.rolls}ロール）`;
+            suffixText = `${sim.rolls}Roll`;
         }
 
         if (isPlat) stats.plat += normalRolls;
         else if (isLeg) stats.leg += normalRolls;
         else stats.single += normalRolls;
 
-        let segmentTxt = `[${gacha.name}]${suffixText}<br>=> `;
-        let charNames = [];
+        const startAddr = typeof formatAddress === 'function' ? formatAddress(currentIdx).replace(')', '') : '';
+        let segmentTxt = `[${gacha.name}]（${suffixText}/${startAddr}）<br>=> `;
 
+        let charNames = [];
         for (let k = 0; k < normalRolls; k++) {
             if (currentIdx + 1 >= seeds.length) break;
             const rr = rollWithSeedConsumptionFixed(currentIdx, gacha, seeds, lastDraw);
@@ -241,7 +263,7 @@ function generateTxtRouteView(seeds, initialSeed) {
             const charObj = gr.finalChar;
             charNames.push(charObj.name);
             if (limitedSet.has(charObj.id)) addStat(stats.limiteds, charObj.name);
-            else addStat(stats.ubers, charObj.name);
+            else if (gr.rarity === 'uber') addStat(stats.ubers, charObj.name);
             currentIdx += gr.seedsConsumed;
             lastDraw = { rarity: gr.rarity, charId: gr.charId, isRerolled: false };
         }
