@@ -197,7 +197,8 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
                 altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span><span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span><br>`;
             }
             gContent = altHtml + mainHtml;
-            sideHtml += `<td style="${cellStyle}">${gContent}</td>`;
+            // クラス class="gacha-cell gacha-column" を追加
+            sideHtml += `<td class="gacha-cell gacha-column" style="${cellStyle}">${gContent}</td>`;
         }
     });
     return sideHtml;
