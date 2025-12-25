@@ -543,6 +543,8 @@ FILE: index.html
     <script src="data_loader.js"></script>
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
+    <script src="view_schedule_editor.js"></script>
+    <script src="ui_schedule_editor_handler.js"></script>
     <script src="view_forecast.js"></script>
     <script src="view_master.js"></script>
     <script src="view_analysis.js"></script>
@@ -1003,6 +1005,7 @@ function parseGachaTSV(tsv) {
         // 2. 年月日・時刻情報の取得
         const startDateStr = cols[0]; 
         const startTimeStr = cols[1]; 
+   
         const endDateStr   = cols[2]; 
         const endTimeStr   = cols[3]; 
 
@@ -1011,6 +1014,7 @@ function parseGachaTSV(tsv) {
         for (let i = 10; i < cols.length; i += 15) {
             const descIndex = i + 14;
             if (descIndex >= cols.length) break;
+  
             const desc = cols[descIndex];
             if (desc && desc !== '0' && /[^\x01-\x7E]/.test(desc)) {
                 validBlockIndex = i;
@@ -1018,7 +1022,8 @@ function parseGachaTSV(tsv) {
             }
         }
 
-        if (validBlockIndex === -1) {
+        if (validBlockIndex === -1) 
+        {
             if (cols[10] && cols[10] !== '-1') {
                 validBlockIndex = 10;
             } else {
@@ -1053,6 +1058,7 @@ function parseGachaTSV(tsv) {
             rawEnd: endDateStr,
             startTime: startTimeStr,
             endTime: endTimeStr,
+ 
             seriesName: seriesName,
             tsvName: tsvName,
             rare: rateRare,
@@ -1528,30 +1534,30 @@ function compressRoute(path) {
 FILE: style.css
 ====================
 @charset "UTF-8";
+
 /* =========================================
    基本設定
    ========================================= */
-/* HTMLとBODYの高さを100%にし、スクロールは内部で行うように設定 */
-html, body { height: 100%; margin: 0; overflow: hidden; /* Body自体のスクロールを禁止 */ }
-body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; box-sizing: border-box; /* パディングを含めてサイズ計算 */
- color: #333; background-color: #fff; /* Flexboxレイアウトに変更 */ display: flex; flex-direction: column; }
-/* コンテナも高さを確保し、中身をFlex配置 */
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; box-sizing: border-box; color: #333; background-color: #fff; display: flex; flex-direction: column; }
+
 .container { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-/* 縮小させたくない要素（ヘッダーやコントロール） */
+
 .header-row, 
 .controls, 
 .description-box, 
 #result, 
 .forecast-summary-container { flex-shrink: 0; }
-/* ヘッダーレイアウト */
-.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: nowrap; /* 1行表示を強制 */ gap: 10px; }
-h1 { font-size: 20px; margin: 0; padding: 0; white-space: nowrap; /* タイトルの折り返し禁止 */ }
-.header-actions { display: flex; align-items: center; gap: 4px; /* 間隔を詰める */ flex-wrap: nowrap; }
-/* --- テキストボタン（ヘッダー用） --- */
+
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: nowrap; gap: 10px; }
+h1 { font-size: 20px; margin: 0; padding: 0; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+
 .text-btn { cursor: pointer; color: #007bff; font-weight: bold; font-size: 0.9em; text-decoration: underline; white-space: nowrap; padding: 2px 4px; user-select: none; }
 .text-btn:hover { color: #0056b3; background-color: #f0f8ff; border-radius: 3px; }
-.text-btn.active { color: #28a745; text-decoration: none; border: 1px solid #28a745; border-radius: 3px; padding: 1px 3px; /* ボーダー分のズレ補正 */ }
+.text-btn.active { color: #28a745; text-decoration: none; border: 1px solid #28a745; border-radius: 3px; padding: 1px 3px; }
 .separator { color: #ccc; font-size: 0.8em; margin: 0 2px; user-select: none; }
+
 /* =========================================
    コントロールエリア
    ========================================= */
@@ -1561,6 +1567,7 @@ h1 { font-size: 20px; margin: 0; padding: 0; white-space: nowrap; /* タイト�
 label { margin-right: 10px; font-weight: bold; }
 input[type="text"],
 input[type="number"] { padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+
 /* =========================================
    ボタン（通常）
    ========================================= */
@@ -1569,6 +1576,7 @@ button:hover { background: #0056b3; }
 button.secondary { background: #6c757d; }
 button.secondary:hover { background: #545b62; }
 button.active { background: #28a745; }
+
 /* =========================================
    ユーティリティ
    ========================================= */
@@ -1576,23 +1584,18 @@ button.active { background: #28a745; }
 .description-box { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em; }
 .result-box { margin-bottom: 10px; font-weight: bold; color: #d9534f; }
 .error { color: red; font-weight: bold; }
+
 /* =========================================
    テーブルスタイル (Gacha Rolls)
    ========================================= */
-#rolls-table-container { overflow-x: auto; overflow-y: auto; /* max-height: 80vh;  <-- 固定制限を削除 */
- max-height: none;  flex-grow: 1; /* 残りの高さを全て埋める */ border: 1px solid #ddd; margin-bottom: 0; }
+#rolls-table-container { overflow-x: auto; overflow-y: auto; max-height: none; flex-grow: 1; border: 1px solid #ddd; margin-bottom: 0; }
 table { border-collapse: separate; border-spacing: 0; width: 100%; margin-top: 0; font-size: 12px; }
 th, td { border: 1px solid #ddd; padding: 6px; text-align: center; white-space: nowrap; }
-/* 変更: th全体への sticky 指定を削除し、クラス指定に変更 */
-th { background-color: #f8f9fa; font-weight: bold; /* position: sticky;  <-- 削除 */ /* top: 0; <-- 削除 */ /* z-index: 10;   <-- 削除 */
- border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; box-shadow: 0 1px 0 #ddd; }
-/* 新規追加: ガチャ名行（固定表示用）のスタイル */
-.sticky-row th { position: sticky; top: 0; z-index: 20; /* 他の要素より手前に表示 */ border-bottom: none; /* 下の行（操作行）との境界を目立たなくする */
- box-shadow: 0 2px 2px rgba(0,0,0,0.1); /* 浮いている感を出すための影 */ background-color: #f8f9fa; /* 背景色を明示 */ }
-/* 新規追加: 操作ボタン行（スクロール用）のスタイル */
-.control-row th { position: static; /* 固定しない */ border-top: none; /* 上の行との一体感を出す */
- background-color: #f8f9fa; /* 変更: タイトル行と同じ色に統一 (#f4f4f4 -> #f8f9fa) */ padding-top: 2px; padding-bottom: 4px; z-index: 1; }
-/* 列ごとのスタイル */
+
+th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; box-shadow: 0 1px 0 #ddd; }
+.sticky-row th { position: sticky; top: 0; z-index: 20; border-bottom: none; box-shadow: 0 2px 2px rgba(0,0,0,0.1); background-color: #f8f9fa; }
+.control-row th { position: static; border-top: none; background-color: #f8f9fa; padding-top: 2px; padding-bottom: 4px; z-index: 1; }
+
 .col-no { background-color: #f8f9fa; width: 30px; }
 .calc-column { background-color: #f0f8ff; font-size: 0.9em; color: #555; }
 .gacha-column { min-width: 120px; }
@@ -1603,12 +1606,12 @@ th { background-color: #f8f9fa; font-weight: bold; /* position: sticky;  <-- 削
 .remove-btn { background: #dc3545; padding: 2px 6px; font-size: 10px; margin-left: 5px; }
 .add-gacha-btn { background: #28a745; padding: 2px 8px; font-size: 11px; }
 .uber-add-select { cursor: pointer; border: 1px solid #ccc; border-radius: 3px; background-color: #fff; }
+
 /* =========================================
    スケジュール表 & ガントチャート共通
    ========================================= */
-#schedule-container { padding: 20px; background-color: #fff; border-top: 1px solid #ddd; /* コンテナ自体が画面幅を超えないように設定 */
- max-width: 100%; box-sizing: border-box; /* スケジュール表示時も高さを埋める設定 */ flex-grow: 1; overflow-y: auto; }
-.schedule-scroll-wrapper { overflow-x: auto; /* max-height: 80vh; <-- 固定制限を削除 */ max-height: none; border: 1px solid #ddd; /* 画面幅に収める */ max-width: 100%; }
+#schedule-container { padding: 20px; background-color: #fff; border-top: 1px solid #ddd; max-width: 100%; box-sizing: border-box; flex-grow: 1; overflow-y: auto; }
+.schedule-scroll-wrapper { overflow-x: auto; max-height: none; border: 1px solid #ddd; max-width: 100%; }
 .schedule-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 0; font-size: 14px; }
 .schedule-table th,
 .schedule-table td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
@@ -1617,17 +1620,16 @@ th { background-color: #f8f9fa; font-weight: bold; /* position: sticky;  <-- 削
 .row-ended { background-color: #e0e0e0 !important; color: #666; }
 .row-ended .gantt-bar { filter: grayscale(100%); opacity: 0.6; }
 .row-guaranteed { background-color: #ffffe0 !important; }
+
 /* =========================================
    ガントチャート
    ========================================= */
 .gantt-outer-wrapper * { box-sizing: border-box; }
-.gantt-outer-wrapper { display: inline-block; max-width: 100%; vertical-align: top; width: 100%; /* 幅を確保 */ }
-.gantt-chart-container { border: 1px solid #ccc; background: #fff; /* overflow: hidden; を削除してスクロールバーを表示可能にする */
- font-size: 12px; margin-bottom: 20px; max-width: 100%; /* はみ出し防止 */ }
-.gantt-scroll-wrapper { overflow-x: auto; position: relative; padding-bottom: 10px; width: 100%; /* 幅を確保 */ }
+.gantt-outer-wrapper { display: inline-block; max-width: 100%; vertical-align: top; width: 100%; }
+.gantt-chart-container { border: 1px solid #ccc; background: #fff; font-size: 12px; margin-bottom: 20px; max-width: 100%; }
+.gantt-scroll-wrapper { overflow-x: auto; position: relative; padding-bottom: 10px; width: 100%; }
 .gantt-header { display: flex; border-bottom: 1px solid #ccc; background: #f9f9f9; position: sticky; left: 0; z-index: 6; }
-.gantt-label-col { width: 160px; min-width: 160px; padding: 5px; border-right: 1px solid #ccc; background-color: inherit; position: sticky;
- left: 0; z-index: 5; display: flex; align-items: center; justify-content: center; font-weight: bold; border-bottom: 1px solid #eee; }
+.gantt-label-col { width: 160px; min-width: 160px; padding: 5px; border-right: 1px solid #ccc; background-color: inherit; position: sticky; left: 0; z-index: 5; display: flex; align-items: center; justify-content: center; font-weight: bold; border-bottom: 1px solid #eee; }
 .gantt-header .gantt-label-col { background-color: #f9f9f9; }
 .gantt-date-cell { border-right: 1px solid #eee; text-align: center; padding: 5px 0; font-size: 10px; flex-shrink: 0; }
 .gantt-date-cell.today { background-color: #ffeb3b; }
@@ -1635,11 +1637,9 @@ th { background-color: #f8f9fa; font-weight: bold; /* position: sticky;  <-- 削
 .gantt-body { position: relative; }
 .gantt-row { display: flex; border-bottom: 1px solid #eee; height: 30px; background-color: #fff; }
 .gantt-row:hover { filter: brightness(0.95); }
-.gantt-row .gantt-label-col { font-weight: normal; text-align: center; justify-content: center; overflow: hidden; text-overflow: ellipsis;
- white-space: nowrap; display: block; line-height: 20px; }
+.gantt-row .gantt-label-col { font-weight: normal; text-align: center; justify-content: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 20px; }
 .gantt-bar-area { position: relative; height: 100%; flex-grow: 1; }
-.gantt-bar { position: absolute; top: 5px; height: 20px; background-color: #4caf50; border: 1px solid #4caf50; box-shadow: none; border-radius: 3px;
- color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; z-index: 2; }
+.gantt-bar { position: absolute; top: 5px; height: 20px; background-color: #4caf50; border: 1px solid #4caf50; box-shadow: none; border-radius: 3px; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; z-index: 2; }
 .gantt-bar.g-kyoku { background-color: #e91e63; border-color: #e91e63; }
 .gantt-bar.g-cho { background-color: #9c27b0; border-color: #9c27b0; }
 .gantt-bar.g-fest { background-color: #ff9800; border-color: #ff9800; }
@@ -1648,23 +1648,23 @@ th { background-color: #f8f9fa; font-weight: bold; /* position: sticky;  <-- 削
 .gantt-grid-line { position: absolute; top: 0; bottom: 0; border-right: 1px solid #f5f5f5; z-index: 0; }
 .gantt-grid-line.weekend { background-color: rgba(224, 247, 250, 0.3); }
 .gantt-current-line { position: absolute; top: 0; bottom: 0; width: 2px; background-color: #ff0000; z-index: 1; opacity: 0.7; pointer-events: none; }
+
 /* =========================================
    モバイル用・高密度表示レイアウト
    ========================================= */
-@media (max-width: 768px) { /* HTML, BODYの設定 */ html, body { height: 100%; margin: 0; padding: 0 !important; overflow: hidden; }
- /* 全体コンテナ */ .container { height: 100%; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; }
- /* 各エリアの縮小禁止 */ .header-row,  .controls,  .description-box,  #result, .forecast-summary-container { flex-shrink: 0; }
- /* --- ヘッダーのモバイル調整（1行表示） --- */ .header-row { flex-direction: row !important; /* 横並び強制 */ flex-wrap: nowrap !important; /* 折り返し禁止 */
- overflow-x: auto; /* 幅が足りない場合はスクロール */ align-items: center; padding-bottom: 5px; border-bottom: 1px solid #eee; margin-bottom: 5px; white-space: nowrap; }
+@media (max-width: 768px) { 
+ html, body { height: 100%; margin: 0; padding: 0 !important; overflow: hidden; }
+ .container { height: 100%; display: flex; flex-direction: column; padding: 4px; box-sizing: border-box; }
+ .header-row, .controls, .description-box, #result, .forecast-summary-container { flex-shrink: 0; }
+ .header-row { flex-direction: row !important; flex-wrap: nowrap !important; overflow-x: auto; align-items: center; padding-bottom: 5px; border-bottom: 1px solid #eee; margin-bottom: 5px; white-space: nowrap; }
  h1 { font-size: 16px !important; margin-right: 8px; display: inline-block; }
  .header-actions { width: auto; flex-wrap: nowrap; gap: 4px; }
- /* ボタン・文字サイズ調整 */ .text-btn { font-size: 11px; padding: 2px 3px; }
- .header-actions button,  .header-actions span:not(.text-btn):not(.separator) { font-size: 10px !important; padding: 2px 6px !important; height: 24px; line-height: 20px; }
- /* テーブルエリアの拡張 */ #rolls-table-container { flex-grow: 1; max-height: none !important; margin-bottom: 0 !important; overflow-y: auto;
- border-bottom: none; width: 100%; /* 横幅いっぱい */ }
- /* スケジュールコンテナのモバイル調整（見切れ対策） */ #schedule-container { flex-grow: 1; overflow-y: auto; padding-bottom: 0; width: 100%; /* 横幅を100%に制限 */
- max-width: 100vw; /* 画面幅を超えない */ box-sizing: border-box; } .schedule-scroll-wrapper { max-height: none !important; width: 100%; /* コンテナ幅に合わせる */ }
- /* フォント・パディングの微調整 */ .controls { padding: 8px; margin-bottom: 5px; }
+ .text-btn { font-size: 11px; padding: 2px 3px; }
+ .header-actions button, .header-actions span:not(.text-btn):not(.separator) { font-size: 10px !important; padding: 2px 6px !important; height: 24px; line-height: 20px; }
+ #rolls-table-container { flex-grow: 1; max-height: none !important; margin-bottom: 0 !important; overflow-y: auto; border-bottom: none; width: 100%; }
+ #schedule-container { flex-grow: 1; overflow-y: auto; padding-bottom: 0; width: 100%; max-width: 100vw; box-sizing: border-box; } 
+ .schedule-scroll-wrapper { max-height: none !important; width: 100%; }
+ .controls { padding: 8px; margin-bottom: 5px; }
  .control-group { margin-bottom: 4px; display: flex; flex-wrap: wrap; align-items: center; }
  label { font-size: 10px; margin-right: 5px; }
  input[type="text"], input[type="number"], select { font-size: 11px; padding: 2px 4px; height: 24px; }
@@ -1672,17 +1672,43 @@ th { background-color: #f8f9fa; font-weight: bold; /* position: sticky;  <-- 削
  button { padding: 3px 8px; font-size: 11px; height: 24px; line-height: 1; }
  table { font-size: 10px; margin-top: 5px; }
  th, td { padding: 2px 3px; height: auto; }
- .gacha-column { min-width: 85px; max-width: 100px; overflow: hidden; }  .gacha-header-wrapper { gap: 2px; justify-content: flex-start !important; width: 100%; }
- .gacha-header-wrapper select { transform: none !important; }
+ .gacha-column { min-width: 85px; max-width: 100px; overflow: hidden; }  
+ .gacha-header-wrapper { gap: 2px; justify-content: flex-start !important; width: 100%; }
  th div[style*="margin-top"] { transform: scale(0.85); transform-origin: center top; width: 115%; margin-left: -7.5%; white-space: nowrap; }
  .gacha-cell { line-height: 1.1; }
  .calc-column { font-size: 9px; width: auto; }
- .schedule-table th,  .schedule-table td { padding: 2px 4px; font-size: 10px; }  .schedule-table td:nth-child(3) { min-width: 140px; }
+ .schedule-table th, .schedule-table td { padding: 2px 4px; font-size: 10px; }  
+ .schedule-table td:nth-child(3) { min-width: 140px; }
  .gantt-row { height: 24px !important; }
  .gantt-label-col { width: 100px !important; min-width: 100px !important; font-size: 10px !important; line-height: 24px !important; padding: 0 2px !important; }
  .gantt-bar { height: 16px !important; top: 4px !important; font-size: 9px !important; }
  .gantt-date-cell { font-size: 9px !important; }
  #result { font-size: 10px; }
+}
+
+/* =========================================
+   スケジュールエディタ用スタイル
+   ========================================= */
+#schedule-editor-table input[type="text"],
+#schedule-editor-table input[type="number"] {
+    font-size: 11px;
+    padding: 2px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    box-sizing: border-box;
+}
+
+#schedule-editor-table td {
+    padding: 4px 2px;
+    vertical-align: middle;
+}
+
+#schedule-editor-table .remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
 }
 
 ====================
@@ -2034,6 +2060,226 @@ function updateMasterInfoView() {
 }
 
 ====================
+FILE: ui_schedule_editor_handler.js
+====================
+/** @file ui_schedule_editor_handler.js @description スケジュールエディタの操作イベント（追加・削除・インポート）を管理 */
+
+/**
+ * テキストからスケジュールを解析して行を追加する
+ */
+function processTextImport() {
+    const textArea = document.getElementById('import-text-input');
+    if (!textArea) return;
+
+    let text = textArea.value;
+    // ANSIエスケープシーケンス（\x1b[...m）を削除
+    text = text.replace(/\x1b\[[0-9;]*m/g, "");
+
+    const lines = text.split('\n');
+    let addCount = 0;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    lines.forEach(line => {
+        if (!line.trim() || !line.includes('月')) return;
+
+        try {
+            // 1. 日付の抽出: [12月 25日 ~ 29日]
+            const dateMatch = line.match(/\[(\d+)月\s*(\d+)日\s*~\s*(\d+)日\]/);
+            if (!dateMatch) return;
+
+            const month = dateMatch[1].padStart(2, '0');
+            const startDay = dateMatch[2].padStart(2, '0');
+            const endDay = dateMatch[3].padStart(2, '0');
+
+            let year = currentYear;
+            if (now.getMonth() === 0 && month === "12") year--;
+            if (now.getMonth() === 11 && month === "01") year++;
+
+            const rawStart = `${year}${month}${startDay}`;
+            const rawEnd = `${year}${month}${endDay}`;
+
+            // 2. ガチャ名の抽出
+            const afterDate = line.substring(line.indexOf(']') + 1).trim();
+            let gachaName = afterDate.split(/[\[<]/)[0].trim();
+            gachaName = gachaName.replace(/\(\+.+?\)/, "").trim();
+
+            // 3. フラグの抽出: [G|L|N] など
+            const flagsMatch = line.match(/\[([^\]]*[GLNPRSP][^\]]*)\]/);
+            const isGuaranteed = flagsMatch ? flagsMatch[1].includes('G') : false;
+
+            // 4. 特殊確率の抽出: UR = 7%
+            let uberRate = "500";
+            const rateMatch = line.match(/UR\s*=\s*(\d+)%/);
+            if (rateMatch) {
+                uberRate = parseInt(rateMatch[1]) * 100;
+            } else if (gachaName.includes("超ネコ祭") || gachaName.includes("極ネコ祭")) {
+                uberRate = "900";
+            } else if (gachaName.includes("超極ネコ祭")) {
+                uberRate = "1000";
+            } else if (gachaName.includes("超国王祭")) {
+                uberRate = "700";
+            }
+
+            // 5. マスターデータからIDを検索
+            let foundId = "0";
+            if (typeof getGachaSelectorOptions === 'function') {
+                const options = getGachaSelectorOptions();
+                
+                // まずはテキストのガチャ名で検索
+                const match = options.find(opt => opt.label.includes(gachaName)) || 
+                              options.find(opt => gachaName.includes(opt.label.split(') ')[1]));
+                
+                if (match) {
+                    foundId = match.value;
+                } else {
+                    // 見つからなかった場合は「ネコルガ族」をデフォルトにする
+                    const fallback = options.find(opt => opt.label.includes("ネコルガ族"));
+                    if (fallback) foundId = fallback.value;
+                }
+            }
+
+            // 行を追加
+            const item = {
+                rawStart: rawStart, startTime: "1100",
+                rawEnd: rawEnd, endTime: "1059",
+                id: foundId, tsvName: gachaName,
+                uber: uberRate, legend: "30",
+                guaranteed: isGuaranteed
+            };
+
+            const tbody = document.querySelector('#schedule-editor-table tbody');
+            if (tbody) {
+                const tempTable = document.createElement('table');
+                tempTable.innerHTML = createEditorRowHtml(item);
+                tbody.appendChild(tempTable.querySelector('tr'));
+                addCount++;
+            }
+        } catch (e) {
+            console.warn("Line parse error:", line, e);
+        }
+    });
+
+    if (addCount > 0) {
+        alert(`${addCount}件のスケジュールを追加しました。`);
+        textArea.value = "";
+        toggleImportArea();
+    } else {
+        alert("解析可能な行が見つかりませんでした。");
+    }
+}
+
+/**
+ * 現在のエディタの内容を解析してTSV文字列を生成する
+ */
+function captureEditorDataToTsv() {
+    const rows = document.querySelectorAll('#schedule-editor-table tbody tr');
+    let tsvRows = [];
+
+    rows.forEach(row => {
+        const rawStartD = row.querySelector('.edit-start-date').value.replace(/-/g, '');
+        const rawEndD = row.querySelector('.edit-end-date').value.replace(/-/g, '');
+        const startH = row.querySelector('.edit-start-time').value;
+        const endH = row.querySelector('.edit-end-time').value;
+        const startT = startH + "00";
+        const endT = endH + "59";
+
+        const gId = row.querySelector('.edit-id').value.trim();
+        const name = row.querySelector('.edit-name').value.trim();
+        const uber = row.querySelector('.edit-uber').value.trim();
+        const legend = row.querySelector('.edit-legend').value.trim();
+        const isG = row.querySelector('.edit-guaranteed').checked ? "1" : "0";
+
+        if (!rawStartD || !rawEndD || !gId) return;
+
+        let cols = Array(25).fill("0");
+        cols[0] = rawStartD; cols[1] = startT;
+        cols[2] = rawEndD; cols[3] = endT;
+        cols[8] = "1"; cols[10] = gId;
+        cols[16] = "7000"; cols[18] = "2500"; 
+        cols[20] = uber; cols[21] = isG;
+        cols[22] = legend; cols[24] = name;
+
+        tsvRows.push(cols.join('\t'));
+    });
+    return tsvRows.join('\n');
+}
+
+/**
+ * 編集内容を一時的にアプリに反映させる
+ */
+function applyScheduleTemporarily() {
+    const tsvContent = captureEditorDataToTsv();
+    if (!tsvContent) {
+        alert("有効な予定データがありません。");
+        return;
+    }
+
+    loadedTsvContent = tsvContent;
+    isScheduleAnalyzed = false;
+    window.isScheduleEditMode = false;
+
+    if (typeof renderScheduleTable === 'function') {
+        renderScheduleTable(loadedTsvContent, 'schedule-container');
+    }
+    
+    if (typeof generateRollsTable === 'function') generateRollsTable();
+}
+
+/**
+ * エディタに新しい予定行を末尾に追加する
+ */
+function addNewScheduleRow() {
+    const tbody = document.querySelector('#schedule-editor-table tbody');
+    if (!tbody) return;
+    
+    if (typeof createEditorRowHtml === 'function') {
+        const newRowHtml = createEditorRowHtml();
+        const tempTable = document.createElement('table');
+        tempTable.innerHTML = newRowHtml;
+        const newRow = tempTable.querySelector('tr');
+        tbody.appendChild(newRow);
+        newRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+/**
+ * 指定された行を削除する
+ */
+function deleteEditorRow(btn) {
+    if (confirm("この予定を削除しますか？")) {
+        const row = btn.closest('tr');
+        if (row) {
+            row.parentNode.removeChild(row);
+        }
+    }
+}
+
+/**
+ * 現在のエディタの内容を gatya.tsv 形式でダウンロードする
+ */
+function generateAndDownloadTSV() {
+    const tsvContent = captureEditorDataToTsv();
+    if (!tsvContent) {
+        alert("データがありません。");
+        return;
+    }
+
+    const blob = new Blob([tsvContent], { type: 'text/tab-separated-values' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gatya.tsv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    loadedTsvContent = tsvContent;
+    alert("gatya.tsv を作成しました。\nGitHubの gatya.tsv をこのファイルで上書きしてください。");
+}
+
+====================
 FILE: ui_schedule_handler.js
 ====================
 /** @file ui_schedule_handler.js @description スケジュールモード（skd）の切替、スケジュールからの列追加を担当 @dependency schedule_logic.js, view_schedule.js */
@@ -2053,13 +2299,16 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
+            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+         
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                  gachaMasterData.gachas[gId].name += " [確定]";
+            
                             }
                         }
                     }
@@ -2097,6 +2346,11 @@ function toggleSchedule() {
     }
 
     isScheduleMode = !isScheduleMode;
+    
+    if (!isScheduleMode) {
+        window.isScheduleEditMode = false;
+    }
+
     if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function' && isScheduleMode) {
         toggleDescription();
     }
@@ -2116,6 +2370,8 @@ function toggleSchedule() {
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) {
             scheduleContainer.classList.remove('hidden');
+            // 反映ボタン等で解析フラグが落ちている場合に備えて再解析
+            prepareScheduleInfo();
             if (typeof renderScheduleTable === 'function') {
                 renderScheduleTable(loadedTsvContent, 'schedule-container');
             }
@@ -2126,13 +2382,26 @@ function toggleSchedule() {
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
         if (mainControls) mainControls.classList.remove('hidden');
-        if (scheduleContainer) scheduleContainer.classList.add('hidden');
+        if (scheduleContainer) {
+            scheduleContainer.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * 編集モードへの移行処理
+ */
+function enterScheduleEditMode() {
+    if (!loadedTsvContent) return;
+    window.isScheduleEditMode = true;
+    if (typeof renderScheduleEditor === 'function') {
+        renderScheduleEditor(loadedTsvContent, 'schedule-container');
     }
 }
 
 // スケジュールから開催中・予定のガチャを一括追加
 function addGachasFromSchedule() {
-    if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
+    if (!loadedTsvContent || typeof parseGachaTSV === 'function') {
         alert("スケジュールデータがありません。");
         return;
     }
@@ -2151,7 +2420,6 @@ function addGachasFromSchedule() {
         const isPlat = item.seriesName.includes("プラチナ");
         const isLeg = item.seriesName.includes("レジェンド");
 
-        // 特別枠（プラチナ・レジェンド）の期間調整ロジック
         if (isPlat || isLeg) {
             const nextSameType = scheduleData.slice(index + 1).find(nextItem => {
                 if (isPlat) return nextItem.seriesName.includes("プラチナ");
@@ -2163,13 +2431,11 @@ function addGachasFromSchedule() {
             }
         }
 
-        // 調整後の終了日が本日よりも前であれば追加しない
         if (endValue < todayInt) return;
 
         let fullId = item.id.toString();
         if (item.guaranteed) fullId += 'g';
 
-        // 表示優先度の設定 (通常: 0, プラチナ: 1, レジェンド: 2)
         let typeOrder = 0;
         if (isPlat) typeOrder = 1;
         else if (isLeg) typeOrder = 2;
@@ -2187,13 +2453,11 @@ function addGachasFromSchedule() {
         return;
     }
 
-    // ソート実行: タイプ順 (通常->プラチナ->レジェンド) を優先し、同じタイプ内では日付順
     newGachaData.sort((a, b) => {
         if (a.typeOrder !== b.typeOrder) return a.typeOrder - b.typeOrder;
         return a.rawStart - b.rawStart;
     });
 
-    // 既存のメインテーブルにあるID（スケジュールにない手動追加分）を保持
     const scheduleIds = new Set(newGachaData.map(d => d.fullId.replace(/[gfs]$/, '')));
     const keptGachas = [];
     tableGachaIds.forEach((idWithSuffix, index) => {
@@ -2206,11 +2470,9 @@ function addGachasFromSchedule() {
         }
     });
 
-    // リストの結合と反映
     const finalGachaList = [...keptGachas, ...newGachaData];
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
-
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
@@ -3469,6 +3731,188 @@ function generateMasterInfoHtml() {
 }
 
 ====================
+FILE: view_schedule_editor.js
+====================
+/** @file view_schedule_editor.js @description スケジュール予定の編集用UIレンダリング */
+
+/**
+ * 編集モードのテーブルを描画する
+ */
+function renderScheduleEditor(tsvContent, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const data = parseGachaTSV(tsvContent);
+
+    let html = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin:0;">スケジュール編集モード</h3>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="toggleImportArea()" class="secondary" style="padding: 5px 10px;">テキストから読み取り</button>
+                <button onclick="addNewScheduleRow()" class="add-gacha-btn" style="padding: 5px 10px;">＋ 予定を追加</button>
+                <button onclick="applyScheduleTemporarily()" style="background-color: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">一時反映</button>
+                <button onclick="generateAndDownloadTSV()" style="background-color: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">TSV保存 (DL)</button>
+                <button onclick="toggleSchedule()" class="secondary" style="padding: 5px 10px;">キャンセル</button>
+            </div>
+        </div>
+
+        <div id="import-area" style="display:none; background: #f8f9fa; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px;">
+            <p style="margin: 0 0 5px 0; font-size: 0.8em; font-weight: bold;">解析テキストをここに貼り付けてください:</p>
+            <textarea id="import-text-input" style="width: 100%; height: 80px; font-size: 10px; font-family: monospace;" placeholder="[12月 25日 ~ 29日] クリスマスギャルズ ..."></textarea>
+            <div style="text-align: right; margin-top: 5px;">
+                <button onclick="processTextImport()" style="background-color: #17a2b8; color: white; font-size: 11px;">解析して追加</button>
+                <button onclick="toggleImportArea()" style="font-size: 11px;" class="secondary">閉じる</button>
+            </div>
+        </div>
+
+        <div style="background: #fff3cd; color: #856404; padding: 8px; border-radius: 4px; font-size: 0.8em; margin-bottom: 10px; border: 1px solid #ffeeba;">
+            ※カレンダーと時刻(時)を選択して編集してください。保存時に分は自動補完されます（開始:00分、終了:59分）。
+        </div>
+        <div class="schedule-scroll-wrapper">
+        <table class="schedule-table" id="schedule-editor-table" style="font-size: 11px;">
+            <thead>
+                <tr>
+                    <th style="min-width:120px;">開始日 / 時</th>
+                    <th style="min-width:120px;">終了日 / 時</th>
+                    <th style="min-width:100px;">ID / ガチャ名選択</th>
+                    <th>ガチャ詳細(TSV表示名)</th>
+                    <th style="min-width:45px;">超激%</th>
+                    <th style="min-width:45px;">伝説%</th>
+                    <th style="min-width:30px;">確定</th>
+                    <th style="min-width:30px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    data.forEach((item) => {
+        html += createEditorRowHtml(item);
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+}
+
+/**
+ * インポートエリアの表示・非表示切り替え
+ */
+function toggleImportArea() {
+    const area = document.getElementById('import-area');
+    if (area) {
+        area.style.display = (area.style.display === 'none') ? 'block' : 'none';
+    }
+}
+
+/**
+ * 行のHTML生成ヘルパー
+ */
+function createEditorRowHtml(item = null) {
+    let d;
+    if (item) {
+        d = item;
+    } else {
+        // デフォルト値
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const aft = new Date();
+        aft.setDate(now.getDate() + 2);
+        const ay = aft.getFullYear();
+        const am = String(aft.getMonth() + 1).padStart(2, '0');
+        const ad = String(aft.getDate()).padStart(2, '0');
+
+        let defaultId = "0";
+        let defaultName = "新規予定";
+        if (typeof getGachaSelectorOptions === 'function') {
+            const options = getGachaSelectorOptions();
+            const targetGacha = options.find(opt => opt.label.includes("ネコルガ族"));
+            if (targetGacha) {
+                defaultId = targetGacha.value;
+                const match = targetGacha.label.match(/\)\s*(.+)$/);
+                defaultName = match ? match[1].replace(/\[確定\]$/, "").trim() : targetGacha.label;
+            }
+        }
+
+        d = {
+            rawStart: `${y}${m}${day}`, startTime: "1100", 
+            rawEnd: `${ay}${am}${ad}`, endTime: "1059",
+            id: defaultId, tsvName: defaultName,
+            uber: "500", legend: "30", guaranteed: false
+        };
+    }
+
+    const isoStart = `${d.rawStart.substring(0,4)}-${d.rawStart.substring(4,6)}-${d.rawStart.substring(6,8)}`;
+    const isoEnd = `${d.rawEnd.substring(0,4)}-${d.rawEnd.substring(4,6)}-${d.rawEnd.substring(6,8)}`;
+    const startHour = d.startTime.toString().padStart(4, '0').substring(0, 2);
+    const endHour = d.endTime.toString().padStart(4, '0').substring(0, 2);
+
+    const getHourOptions = (selected) => {
+        let options = "";
+        for (let i = 0; i < 24; i++) {
+            const h = i.toString().padStart(2, '0');
+            options += `<option value="${h}" ${h === selected ? 'selected' : ''}>${h}時</option>`;
+        }
+        return options;
+    };
+
+    const options = typeof getGachaSelectorOptions === 'function' ? getGachaSelectorOptions(d.id) : [];
+    let idOptionsHtml = "";
+    options.forEach(opt => {
+        const selected = (opt.value == d.id) ? 'selected' : '';
+        idOptionsHtml += `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+    });
+
+    const isGuaranteedChecked = d.guaranteed ? 'checked' : '';
+    
+    return `
+        <tr>
+            <td>
+                <input type="date" value="${isoStart}" class="edit-start-date" style="width:115px; display:block; margin-bottom:2px;">
+                <select class="edit-start-time" style="width:60px;">${getHourOptions(startHour)}</select>
+            </td>
+            <td>
+                <input type="date" value="${isoEnd}" class="edit-end-date" style="width:115px; display:block; margin-bottom:2px;">
+                <select class="edit-end-time" style="width:60px;">${getHourOptions(endHour)}</select>
+            </td>
+            <td>
+                <select class="edit-id" style="width:100%; max-width:150px;" onchange="updateEditorNameFromId(this)">
+                    ${idOptionsHtml}
+                </select>
+            </td>
+            <td><input type="text" value="${d.tsvName}" class="edit-name" style="width:95%; min-width:140px;"></td>
+            <td><input type="number" value="${d.uber}" class="edit-uber" style="width:45px;"></td>
+            <td><input type="number" value="${d.legend}" class="edit-legend" style="width:40px;"></td>
+            <td><input type="checkbox" ${isGuaranteedChecked} class="edit-guaranteed"></td>
+            <td><button onclick="deleteEditorRow(this)" class="remove-btn" style="padding: 2px 6px;">×</button></td>
+        </tr>
+    `;
+}
+
+/**
+ * IDプルダウン変更時にガチャ名を自動セットする補助関数
+ */
+function updateEditorNameFromId(selectEl) {
+    const row = selectEl.closest('tr');
+    const nameInput = row.querySelector('.edit-name');
+    const uberInput = row.querySelector('.edit-uber');
+    if (!nameInput) return;
+
+    const selectedText = selectEl.options[selectEl.selectedIndex].text;
+    const match = selectedText.match(/\)\s*(.+)$/);
+    if (match && match[1]) {
+        const name = match[1].replace(/\[確定\]$/, "").trim();
+        nameInput.value = name;
+        if (uberInput) {
+            if (name.includes("超ネコ祭") || name.includes("極ネコ祭")) uberInput.value = "900";
+            else if (name.includes("超極ネコ祭")) uberInput.value = "1000";
+            else if (name.includes("超国王祭")) uberInput.value = "700";
+            else uberInput.value = "500";
+        }
+    }
+}
+
+====================
 FILE: view_schedule_gantt.js
 ====================
 /** @file view_schedule_gantt.js @description ガントチャートの描画処理 */
@@ -3697,6 +4141,7 @@ function renderScheduleTable(tsvContent, containerId) {
                 <th style="min-width:50px;">至</th>
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
+            
                 <th>激レア</th>
     
                 <th>超激</th>
@@ -3708,7 +4153,11 @@ function renderScheduleTable(tsvContent, containerId) {
     `;
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
-        if (item.guaranteed) seriesDisplay += " [確定]";
+        
+        // 重複防止：seriesNameにすでに [確定] が含まれている場合は追加しない
+        if (item.guaranteed && !seriesDisplay.includes("[確定]")) {
+            seriesDisplay += " [確定]";
+        }
 
         const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
         const endDateFormatted = formatDateJP(item.rawEnd);
@@ -3726,11 +4175,9 @@ function renderScheduleTable(tsvContent, containerId) {
             });
     
             if (nextSameType) {
-                // --- 転記される開始日が前日より前の場合は表示しない ---
                 if (parseInt(nextSameType.rawStart) < yesterdayInt) {
                     return;
                 }
-                // ----------------------------------------------------
 
                 endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
                 isAppliedNextStart = true;
@@ -3760,8 +4207,8 @@ function renderScheduleTable(tsvContent, containerId) {
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
                 <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                <td 
-                style="${legendStyle}">${fmtRate(item.legend)}</td>
+                
+                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
                     ${item.guaranteed ?
                 '<span style="color:red;">●</span>' : '-'}
@@ -3771,6 +4218,16 @@ function renderScheduleTable(tsvContent, containerId) {
     });
 
     html += `</tbody></table></div>`;
+
+    // 編集モードへの移行ボタンを追加
+    html += `
+        <div style="margin-top: 20px; padding-bottom: 30px; text-align: center;">
+            <button id="enter-edit-mode-btn" class="secondary" onclick="enterScheduleEditMode()" style="padding: 10px 20px; font-size: 14px;">
+                スケジュールを編集する
+            </button>
+        </div>
+    `;
+
     container.innerHTML = html;
 }
 

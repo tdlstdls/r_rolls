@@ -64,7 +64,11 @@ function renderScheduleTable(tsvContent, containerId) {
     `;
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
-        if (item.guaranteed) seriesDisplay += " [確定]";
+        
+        // 重複防止：seriesNameにすでに [確定] が含まれている場合は追加しない
+        if (item.guaranteed && !seriesDisplay.includes("[確定]")) {
+            seriesDisplay += " [確定]";
+        }
 
         const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;
         const endDateFormatted = formatDateJP(item.rawEnd);
@@ -74,7 +78,6 @@ function renderScheduleTable(tsvContent, containerId) {
         const isLeg = item.seriesName.includes("レジェンド");
         let isAppliedNextStart = false;
 
-  
         if (isPlat || isLeg) {
             const nextSameType = filteredData.slice(index + 1).find(nextItem => {
                 if (isPlat) return nextItem.seriesName.includes("プラチナ");
@@ -83,11 +86,9 @@ function renderScheduleTable(tsvContent, containerId) {
             });
     
             if (nextSameType) {
-                // --- 転記される開始日が前日より前の場合は表示しない ---
                 if (parseInt(nextSameType.rawStart) < yesterdayInt) {
                     return;
                 }
-                // ----------------------------------------------------
 
                 endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
                 isAppliedNextStart = true;

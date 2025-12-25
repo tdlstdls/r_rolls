@@ -11,7 +11,6 @@ function renderGanttChart(data) {
     
     let activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
     const now = new Date();
-
     // フィルタ: 終了分の非表示設定
     if (hideEndedSchedules) {
         activeData = activeData.filter(item => {
@@ -42,10 +41,16 @@ function renderGanttChart(data) {
         const eDt = parseDateTime(item.rawEnd, item.endTime);
         if (eDt > maxEndDateTime) maxEndDateTime = eDt;
 
+        // 表示名の計算（重複チェック付き）
         let displayName = item.seriesName;
-        if (item.guaranteed) displayName += " [確定]";
-        const textW = calcTextWidth(displayName);
-        if (textW > maxLabelTextWidth) maxLabelTextWidth = textW;
+        if (item.guaranteed && !displayName.includes("[確定]")) {
+            displayName += " [確定]";
+        }
+        
+        if (typeof calcTextWidth === 'function') {
+            const textW = calcTextWidth(displayName);
+            if (textW > maxLabelTextWidth) maxLabelTextWidth = textW;
+        }
     });
 
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
@@ -67,8 +72,6 @@ function renderGanttChart(data) {
     if (totalDays <= 0) return '';
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    
-    // 合計幅を厳密に計算
     const totalWidth = labelWidth + (totalDays * dayWidth);
     
     let currentLineHtml = '';
@@ -78,7 +81,7 @@ function renderGanttChart(data) {
         currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
     }
 
-    // ヘッダー行: ガチャ名セルに flex centering を適用し、高さを30pxで固定
+    // ヘッダー行
     let headerHtml = `<div class="gantt-header" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; background: #f9f9f9; height: 30px;">
         <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none; display: flex; align-items: center; justify-content: center; height: 100%;">ガチャ名</div>`;
     for (let i = 0; i < totalDays; i++) {
@@ -108,14 +111,19 @@ function renderGanttChart(data) {
         if (offsetPx + widthPx > maxPx) widthPx = maxPx - offsetPx; 
         if (widthPx <= 0) return;
 
+        // 重複チェック付きの表示名
         let displayName = item.seriesName;
-        if (item.guaranteed) displayName += " [確定]";
+        if (item.guaranteed && !displayName.includes("[確定]")) {
+            displayName += " [確定]";
+        }
 
+        // バーの色分けロジック（従前の仕様  に準拠）
         let barClass = 'gantt-bar';
         if (displayName.includes("極選抜")) barClass += ' g-kyoku';
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
+        // 通常の確定ガチャなどはデフォルトの緑(gantt-bar)のまま表示
 
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
         let rowClass = 'gantt-row';
