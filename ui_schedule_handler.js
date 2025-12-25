@@ -16,6 +16,7 @@ function prepareScheduleInfo() {
                 
                 if (now >= startDt && now <= endDt) {
             
+                    /**
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
@@ -28,6 +29,7 @@ function prepareScheduleInfo() {
                             }
                         }
                     }
+                    */
                 }
             });
             isScheduleAnalyzed = true;
