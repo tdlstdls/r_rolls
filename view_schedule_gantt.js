@@ -54,7 +54,7 @@ function renderGanttChart(data) {
     });
 
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
-    if (labelWidth > 320) labelWidth = 320; 
+    if (labelWidth > 500) labelWidth = 500; 
 
     // チャートの開始日決定
     let minDate = parseDateStr(String(minDateInt));
@@ -173,4 +173,5 @@ function generateGridLines(days, width, startDate) {
         html += `<div class="${cls}" style="${style}"></div>`;
     }
     return html;
+
 }
