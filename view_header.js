@@ -42,7 +42,11 @@ function generateNameHeaderHTML() {
             displayHTML = `${selectedLabel}${addInfoStr}`;
         }
 
-        const cls = isGuaranteed ? '' : 'class="gacha-column"';
+        // 確定列の場合はクラスを外す（下のセルが幅を規定するため）か、
+        // または幅制限のない別のクラスを検討します。
+        // 今回は「下のセル（td）が幅を持つ」ため、ヘッダーは colspan のみを活かす形が安全です。
+        const cls = isGuaranteed ? '' : 'class="gacha-column"'; 
+
         // 名前行なので ControlArea は出力しない
         html += `<th ${cls} ${isGuaranteed?'colspan="2"':''} style="vertical-align: bottom; padding-bottom: 2px;">
                     <div style="text-align: center; line-height: 1.25;">${displayHTML}</div>
