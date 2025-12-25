@@ -90,7 +90,7 @@ function renderGanttChart(data) {
     });
     
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
-    if (labelWidth > 320) labelWidth = 320; 
+    if (labelWidth > 500) labelWidth = 500; 
 
     let minDate = parseDateStr(String(minDateInt));
     const viewStartDate = new Date(yesterday);
@@ -357,4 +357,5 @@ function renderScheduleTable(tsvContent, containerId) {
         </div>
     `;
     container.innerHTML = html;
+
 }
