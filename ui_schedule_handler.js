@@ -16,20 +16,19 @@ function prepareScheduleInfo() {
                 
                 if (now >= startDt && now <= endDt) {
             
-                    /**
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
+                        /**
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
          
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                  gachaMasterData.gachas[gId].name += " [確定]";
-            
                             }
                         }
+                        */
                     }
-                    */
                 }
             });
             isScheduleAnalyzed = true;
@@ -195,3 +194,4 @@ function addGachasFromSchedule() {
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
 }
+
