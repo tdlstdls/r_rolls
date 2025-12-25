@@ -57,7 +57,7 @@ function saveGanttImage() {
 
     // 3. 切り出し幅の決定 (バーの終端 + 20px の余白)
     // バーが一つも無い場合は要素全体の幅を使用
-    const buffer = 20;
+    const buffer = 40;
     const finalCropWidth = maxBarRightEdge > 0 ? maxBarRightEdge + buffer : element.offsetWidth;
 
     // 4. スタイルの保存と一時変更
@@ -110,4 +110,5 @@ function saveGanttImage() {
             item.el.style.position = item.position;
         });
     }
+
 }
