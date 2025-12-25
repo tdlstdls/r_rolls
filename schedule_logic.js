@@ -77,6 +77,7 @@ function parseGachaTSV(tsv) {
         // 2. 年月日・時刻情報の取得
         const startDateStr = cols[0]; 
         const startTimeStr = cols[1]; 
+   
         const endDateStr   = cols[2]; 
         const endTimeStr   = cols[3]; 
 
@@ -85,6 +86,7 @@ function parseGachaTSV(tsv) {
         for (let i = 10; i < cols.length; i += 15) {
             const descIndex = i + 14;
             if (descIndex >= cols.length) break;
+  
             const desc = cols[descIndex];
             if (desc && desc !== '0' && /[^\x01-\x7E]/.test(desc)) {
                 validBlockIndex = i;
@@ -92,7 +94,8 @@ function parseGachaTSV(tsv) {
             }
         }
 
-        if (validBlockIndex === -1) {
+        if (validBlockIndex === -1) 
+        {
             if (cols[10] && cols[10] !== '-1') {
                 validBlockIndex = 10;
             } else {
@@ -127,6 +130,7 @@ function parseGachaTSV(tsv) {
             rawEnd: endDateStr,
             startTime: startTimeStr,
             endTime: endTimeStr,
+ 
             seriesName: seriesName,
             tsvName: tsvName,
             rare: rateRare,

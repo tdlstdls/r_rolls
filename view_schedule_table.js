@@ -52,6 +52,7 @@ function renderScheduleTable(tsvContent, containerId) {
                 <th style="min-width:50px;">至</th>
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
+            
                 <th>激レア</th>
     
                 <th>超激</th>
@@ -73,6 +74,7 @@ function renderScheduleTable(tsvContent, containerId) {
         const isLeg = item.seriesName.includes("レジェンド");
         let isAppliedNextStart = false;
 
+  
         if (isPlat || isLeg) {
             const nextSameType = filteredData.slice(index + 1).find(nextItem => {
                 if (isPlat) return nextItem.seriesName.includes("プラチナ");
@@ -115,8 +117,8 @@ function renderScheduleTable(tsvContent, containerId) {
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
                 <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                <td 
-                style="${legendStyle}">${fmtRate(item.legend)}</td>
+                
+                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
                     ${item.guaranteed ?
                 '<span style="color:red;">●</span>' : '-'}
@@ -126,5 +128,15 @@ function renderScheduleTable(tsvContent, containerId) {
     });
 
     html += `</tbody></table></div>`;
+
+    // 編集モードへの移行ボタンを追加
+    html += `
+        <div style="margin-top: 20px; padding-bottom: 30px; text-align: center;">
+            <button id="enter-edit-mode-btn" class="secondary" onclick="enterScheduleEditMode()" style="padding: 10px 20px; font-size: 14px;">
+                スケジュールを編集する
+            </button>
+        </div>
+    `;
+
     container.innerHTML = html;
 }

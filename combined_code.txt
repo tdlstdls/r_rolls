@@ -3479,7 +3479,7 @@ function renderGanttChart(data) {
 
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0); 
+    yesterday.setHours(0, 0, 0, 0);
     const yesterdayInt = getDateInt(yesterday);
     
     let activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
@@ -3524,24 +3524,25 @@ function renderGanttChart(data) {
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
     if (labelWidth > 320) labelWidth = 320; 
 
+    // チャートの開始日決定
     let minDate = parseDateStr(String(minDateInt));
     const viewStartDate = new Date(yesterday);
     viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) minDate = viewStartDate;
 
-    let limitDate = new Date(minDate);
-    limitDate.setDate(limitDate.getDate() + 35);
+    // チャートの終了日決定
     let chartEnd = new Date(maxEndDateTime);
-    if (chartEnd > limitDate) chartEnd = limitDate;
-
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
+
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
     
     if (totalDays <= 0) return '';
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
-    const totalWidth = labelWidth + (totalDays * dayWidth) + (dayWidth / 2);
+    
+    // 合計幅を厳密に計算
+    const totalWidth = labelWidth + (totalDays * dayWidth);
     
     let currentLineHtml = '';
     if (now >= minDate && now < chartEnd) {
@@ -3550,8 +3551,9 @@ function renderGanttChart(data) {
         currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
     }
 
-    let headerHtml = `<div class="gantt-header" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
-        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;">ガチャ名</div>`;
+    // ヘッダー行: ガチャ名セルに flex centering を適用し、高さを30pxで固定
+    let headerHtml = `<div class="gantt-header" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; background: #f9f9f9; height: 30px;">
+        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none; display: flex; align-items: center; justify-content: center; height: 100%;">ガチャ名</div>`;
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(minDate);
         d.setDate(d.getDate() + i);
@@ -3559,9 +3561,9 @@ function renderGanttChart(data) {
         const isToday = getDateInt(d) === getDateInt(new Date());
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
         const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
-        headerHtml += `<div class="${cls}" style="width:${dayWidth}px;">${dateStr}</div>`;
+        headerHtml += `<div class="${cls}" style="width:${dayWidth}px; flex: none;">${dateStr}</div>`;
     }
-    headerHtml += `<div class="gantt-date-cell" style="width:${dayWidth/2}px; border-right:none;"></div></div>`;
+    headerHtml += `</div>`;
 
     let bodyHtml = '';
     activeData.forEach(item => {
@@ -3594,9 +3596,10 @@ function renderGanttChart(data) {
         else if (item.guaranteed) rowClass += ' row-guaranteed';
 
         bodyHtml += `
-            <div class="${rowClass}" style="min-width: ${totalWidth}px; width: ${totalWidth}px;">
-                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px;" title="${displayName} (ID:${item.id})">${displayName}</div>
-                <div class="gantt-bar-area" style="width: ${(totalDays * dayWidth) + (dayWidth/2)}px;">
+            <div class="${rowClass}" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; height: 30px;">
+                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none;"
+                title="${displayName} (ID:${item.id})">${displayName}</div>
+                <div class="gantt-bar-area" style="width: ${totalDays * dayWidth}px; flex: none; position: relative;">
                     ${generateGridLines(totalDays, dayWidth, minDate)}
                     <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
                         <span class="gantt-bar-text">${durationDays}日間</span>
@@ -3608,14 +3611,16 @@ function renderGanttChart(data) {
     });
 
     return `
-        <div class="gantt-outer-wrapper">
+        <div class="gantt-outer-wrapper" style="width: 100%; max-width: 100%; overflow: hidden;">
             <div style="margin-bottom: 5px; text-align: right;">
                 <button onclick="saveGanttImage()" class="secondary" style="font-size: 11px; padding: 4px 8px;">画像として保存</button>
             </div>
-            <div class="gantt-chart-container">
-                <div class="gantt-scroll-wrapper">
-                    ${headerHtml}
-                    <div class="gantt-body">${bodyHtml}</div>
+            <div class="gantt-chart-container" style="width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ccc; background: #fff;">
+                <div class="gantt-scroll-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+                    <div style="width: ${totalWidth}px; min-width: ${totalWidth}px;">
+                        ${headerHtml}
+                        <div class="gantt-body">${bodyHtml}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3658,9 +3663,8 @@ function renderScheduleTable(tsvContent, containerId) {
         });
     }
 
-    // ソート順：開催終了分を最優先 -> 通常ガチャ（日付順） -> プラチナ（日付順） -> レジェンド（日付順）
+    // ソート順：開催終了分を最優先 -> 通常ガチャ（日付順） -> 特別枠（日付順）
     filteredData.sort((a, b) => {
-        // 1. 終了済みの判定（終了したものを上に）
         const endA = parseDateTime(a.rawEnd, a.endTime);
         const endB = parseDateTime(b.rawEnd, b.endTime);
         const isEndedA = now > endA;
@@ -3668,23 +3672,13 @@ function renderScheduleTable(tsvContent, containerId) {
 
         if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
 
-        // 2. タイプ別の優先順位（通常:0, プラチナ:1, レジェンド:2）
-        const getTypeOrder = (item) => {
-            const name = (item.seriesName + (item.tsvName || "")).replace(/\s/g, "");
-            if (name.includes("プラチナ")) return 1;
-            if (name.includes("レジェンド")) return 2;
-            return 0; // 通常ガチャ
-        };
+        const isSpecialA = isPlatinumOrLegend(a);
+      
+        const isSpecialB = isPlatinumOrLegend(b);
+        if (isSpecialA !== isSpecialB) return isSpecialA ? 1 : -1; 
 
-        const orderA = getTypeOrder(a);
-        const orderB = getTypeOrder(b);
-
-        if (orderA !== orderB) return orderA - orderB;
-
-        // 3. 同じタイプ内では開始日順
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     const ganttHtml = renderGanttChart(data);
     const hideBtnClass = hideEndedSchedules ? 'text-btn active' : 'text-btn';
     let html = `
@@ -3704,6 +3698,7 @@ function renderScheduleTable(tsvContent, containerId) {
                 <th>ガチャ名 / 詳細</th>
                 <th>レア</th>
                 <th>激レア</th>
+    
                 <th>超激</th>
                 <th>伝説</th>
                 <th>確定</th>
@@ -3711,7 +3706,6 @@ function renderScheduleTable(tsvContent, containerId) {
         </thead>
         <tbody>
     `;
-
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
         if (item.guaranteed) seriesDisplay += " [確定]";
@@ -3725,18 +3719,18 @@ function renderScheduleTable(tsvContent, containerId) {
         let isAppliedNextStart = false;
 
         if (isPlat || isLeg) {
-            // 次の同一タイプのガチャを探す
             const nextSameType = filteredData.slice(index + 1).find(nextItem => {
                 if (isPlat) return nextItem.seriesName.includes("プラチナ");
                 if (isLeg) return nextItem.seriesName.includes("レジェンド");
                 return false;
             });
-
+    
             if (nextSameType) {
-                // 転記される日付（次の開始日）が昨日以前の場合はこの行を表示しない
+                // --- 転記される開始日が前日より前の場合は表示しない ---
                 if (parseInt(nextSameType.rawStart) < yesterdayInt) {
                     return;
                 }
+                // ----------------------------------------------------
 
                 endStr = `${formatDateJP(nextSameType.rawStart)}<br><span style="font-size:0.85em">${formatTime(nextSameType.startTime)}</span>`;
                 isAppliedNextStart = true;
@@ -3752,24 +3746,25 @@ function renderScheduleTable(tsvContent, containerId) {
         let uberStyle = ( !isPlatLeg && uberRateVal !== 500 ) ? 'color:red; font-weight:bold;' : '';
         const legendRateVal = parseInt(item.legend);
         let legendStyle = ( !isPlatLeg && legendRateVal > 30 ) ? 'color:red; font-weight:bold;' : '';
-
         const endDateTime = parseDateTime(item.rawEnd, item.endTime);
         let rowClass = (now > endDateTime) ? "row-ended" : (item.guaranteed ? "row-guaranteed" : "");
-
         html += `
             <tr class="${rowClass}">
                 <td>${startStr}</td>
                 <td>${endStr}</td>
                 <td style="text-align:left; vertical-align: middle;">
                     <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
-                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+     
+                <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
                 </td>
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
                 <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                <td style="${legendStyle}">${fmtRate(item.legend)}</td>
+                <td 
+                style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
-                    ${item.guaranteed ? '<span style="color:red;">●</span>' : '-'}
+                    ${item.guaranteed ?
+                '<span style="color:red;">●</span>' : '-'}
                 </td>
             </tr>
         `;
@@ -3819,42 +3814,81 @@ function fmtRate(val) {
     return (parseInt(val) / 100) + "%";
 }
 
-/** ガントチャートを画像として保存 */
+/** ガントチャートを画像として全体保存（バーの右端でトリミングする版） */
 function saveGanttImage() {
     const element = document.querySelector('.gantt-chart-container');
-    if (!element) return;
+    const scrollWrapper = document.querySelector('.gantt-scroll-wrapper');
+    if (!element || !scrollWrapper) return;
     
-    const header = element.querySelector('.gantt-header');
-    if (!header) return;
-    const contentWidth = header.style.width;
+    // 1. 全体の要素情報を取得
+    const containerRect = element.getBoundingClientRect();
+    const bars = element.querySelectorAll('.gantt-bar');
+    
+    // 2. 最も右にあるバーの終端位置を探す
+    let maxBarRightEdge = 0;
+    bars.forEach(bar => {
+        const rect = bar.getBoundingClientRect();
+        const relativeRight = rect.right - containerRect.left;
+        if (relativeRight > maxBarRightEdge) {
+            maxBarRightEdge = relativeRight;
+        }
+    });
 
+    // 3. 切り出し幅の決定 (バーの終端 + 20px の余白)
+    // バーが一つも無い場合は要素全体の幅を使用
+    const buffer = 20;
+    const finalCropWidth = maxBarRightEdge > 0 ? maxBarRightEdge + buffer : element.offsetWidth;
+
+    // 4. スタイルの保存と一時変更
     const originalOverflow = element.style.overflow;
-    const originalWidth = element.style.width; 
-    const scrollWrapper = element.querySelector('.gantt-scroll-wrapper');
-    const originalWrapperOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
-    
-    element.style.overflow = 'visible';
-    element.style.width = contentWidth; 
-    
-    if(scrollWrapper) scrollWrapper.style.overflow = 'visible';
-    
-    html2canvas(element).then(canvas => {
-        element.style.overflow = originalOverflow;
-        element.style.width = originalWidth;
-        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
+    const originalWidth = element.style.width;
+    const originalMaxWidth = element.style.maxWidth;
+    const originalWrapperOverflow = scrollWrapper.style.overflow;
+    const originalWrapperWidth = scrollWrapper.style.width;
 
+    const stickyElements = element.querySelectorAll('.gantt-label-col, .gantt-header, .gantt-date-cell');
+    const originalStickyStyles = [];
+    stickyElements.forEach(el => {
+        originalStickyStyles.push({ el: el, position: el.style.position });
+        el.style.position = 'static'; // キャプチャ用に固定解除
+    });
+
+    // 全域レンダリングのために一時的に制限解除
+    element.style.overflow = 'visible';
+    element.style.maxWidth = 'none';
+    scrollWrapper.style.overflow = 'visible';
+
+    // 5. html2canvasで指定した幅（バーの少し右まで）をキャプチャ
+    html2canvas(element, {
+        width: finalCropWidth,       // ここで右側をトリミング
+        windowWidth: element.scrollWidth, 
+        scale: 2,                   // 高画質
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false
+    }).then(canvas => {
         const link = document.createElement('a');
-        link.download = 'gacha_schedule.png';
-        // 修正箇所: toToDataURL -> toDataURL
+        link.download = `gacha_schedule_${new Date().getTime()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
+        
+        restoreStyles();
     }).catch(err => {
         console.error("Image capture failed:", err);
         alert("画像の保存に失敗しました。");
+        restoreStyles();
+    });
+
+    function restoreStyles() {
         element.style.overflow = originalOverflow;
         element.style.width = originalWidth;
-        if(scrollWrapper) scrollWrapper.style.overflow = originalWrapperOverflow;
-    });
+        element.style.maxWidth = originalMaxWidth;
+        scrollWrapper.style.overflow = originalWrapperOverflow;
+        scrollWrapper.style.width = originalWrapperWidth;
+        originalStickyStyles.forEach(item => {
+            item.el.style.position = item.position;
+        });
+    }
 }
 
 ====================

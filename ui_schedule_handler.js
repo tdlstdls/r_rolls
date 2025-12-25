@@ -15,13 +15,16 @@ function prepareScheduleInfo() {
                 const endDt = parseDateTime(item.rawEnd, item.endTime);
                 
                 if (now >= startDt && now <= endDt) {
+            
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
                         if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+         
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {
                                  gachaMasterData.gachas[gId].name += " [確定]";
+            
                             }
                         }
                     }
@@ -59,6 +62,11 @@ function toggleSchedule() {
     }
 
     isScheduleMode = !isScheduleMode;
+    
+    if (!isScheduleMode) {
+        window.isScheduleEditMode = false;
+    }
+
     if (typeof isDescriptionMode !== 'undefined' && isDescriptionMode && typeof toggleDescription === 'function' && isScheduleMode) {
         toggleDescription();
     }
@@ -78,6 +86,8 @@ function toggleSchedule() {
         if (mainControls) mainControls.classList.add('hidden');
         if (scheduleContainer) {
             scheduleContainer.classList.remove('hidden');
+            // 反映ボタン等で解析フラグが落ちている場合に備えて再解析
+            prepareScheduleInfo();
             if (typeof renderScheduleTable === 'function') {
                 renderScheduleTable(loadedTsvContent, 'schedule-container');
             }
@@ -88,13 +98,26 @@ function toggleSchedule() {
         if (tableContainer) tableContainer.classList.remove('hidden');
         if (resultDiv && showResultDisplay) resultDiv.classList.remove('hidden');
         if (mainControls) mainControls.classList.remove('hidden');
-        if (scheduleContainer) scheduleContainer.classList.add('hidden');
+        if (scheduleContainer) {
+            scheduleContainer.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * 編集モードへの移行処理
+ */
+function enterScheduleEditMode() {
+    if (!loadedTsvContent) return;
+    window.isScheduleEditMode = true;
+    if (typeof renderScheduleEditor === 'function') {
+        renderScheduleEditor(loadedTsvContent, 'schedule-container');
     }
 }
 
 // スケジュールから開催中・予定のガチャを一括追加
 function addGachasFromSchedule() {
-    if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
+    if (!loadedTsvContent || typeof parseGachaTSV === 'function') {
         alert("スケジュールデータがありません。");
         return;
     }
@@ -113,7 +136,6 @@ function addGachasFromSchedule() {
         const isPlat = item.seriesName.includes("プラチナ");
         const isLeg = item.seriesName.includes("レジェンド");
 
-        // 特別枠（プラチナ・レジェンド）の期間調整ロジック
         if (isPlat || isLeg) {
             const nextSameType = scheduleData.slice(index + 1).find(nextItem => {
                 if (isPlat) return nextItem.seriesName.includes("プラチナ");
@@ -125,13 +147,11 @@ function addGachasFromSchedule() {
             }
         }
 
-        // 調整後の終了日が本日よりも前であれば追加しない
         if (endValue < todayInt) return;
 
         let fullId = item.id.toString();
         if (item.guaranteed) fullId += 'g';
 
-        // 表示優先度の設定 (通常: 0, プラチナ: 1, レジェンド: 2)
         let typeOrder = 0;
         if (isPlat) typeOrder = 1;
         else if (isLeg) typeOrder = 2;
@@ -149,13 +169,11 @@ function addGachasFromSchedule() {
         return;
     }
 
-    // ソート実行: タイプ順 (通常->プラチナ->レジェンド) を優先し、同じタイプ内では日付順
     newGachaData.sort((a, b) => {
         if (a.typeOrder !== b.typeOrder) return a.typeOrder - b.typeOrder;
         return a.rawStart - b.rawStart;
     });
 
-    // 既存のメインテーブルにあるID（スケジュールにない手動追加分）を保持
     const scheduleIds = new Set(newGachaData.map(d => d.fullId.replace(/[gfs]$/, '')));
     const keptGachas = [];
     tableGachaIds.forEach((idWithSuffix, index) => {
@@ -168,11 +186,9 @@ function addGachasFromSchedule() {
         }
     });
 
-    // リストの結合と反映
     const finalGachaList = [...keptGachas, ...newGachaData];
     tableGachaIds = finalGachaList.map(item => item.fullId);
     uberAdditionCounts = finalGachaList.map(item => item.count);
-
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
     if (typeof updateUrlParams === 'function') updateUrlParams();
