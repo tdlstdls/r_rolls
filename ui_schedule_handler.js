@@ -118,7 +118,7 @@ function enterScheduleEditMode() {
 
 // スケジュールから開催中・予定のガチャを一括追加
 function addGachasFromSchedule() {
-    if (!loadedTsvContent || typeof parseGachaTSV === 'function') {
+    if (!loadedTsvContent || typeof parseGachaTSV !== 'function') {
         alert("スケジュールデータがありません。");
         return;
     }
