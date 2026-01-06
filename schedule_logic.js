@@ -3,12 +3,9 @@
 // YYYYMMDD -> M/D (年は無視、20300101は「永続」)
 function formatDateJP(dateStr) {
     if (!dateStr || dateStr.length < 8) return dateStr;
-    // 特殊対応: 2030/1/1 (20300101) は「永続」と表示
     if (dateStr === '20300101') {
         return '永続';
     }
-
-    // 年は切り捨てて 月/日 形式に変換 (parseIntで0埋めを除去: 05月 -> 5)
     const m = parseInt(dateStr.substring(4, 6), 10);
     const d = parseInt(dateStr.substring(6, 8), 10);
     return `${m}/${d}`;
@@ -67,35 +64,26 @@ function parseGachaTSV(tsv) {
     const schedule = [];
     lines.forEach(line => {
         if (line.trim().startsWith('[') || !line.trim()) return;
-
         const cols = line.split('\t');
         if (cols.length < 10) return;
-
-        // 1. フィルタリング: 9列目(index 8)が '1' のもののみ抽出
         if (cols[8] !== '1') return;
 
-        // 2. 年月日・時刻情報の取得
         const startDateStr = cols[0]; 
         const startTimeStr = cols[1]; 
-   
         const endDateStr   = cols[2]; 
         const endTimeStr   = cols[3]; 
 
-        // 3. 有効なガチャ情報ブロックの探索
         let validBlockIndex = -1;
         for (let i = 10; i < cols.length; i += 15) {
             const descIndex = i + 14;
             if (descIndex >= cols.length) break;
-  
             const desc = cols[descIndex];
             if (desc && desc !== '0' && /[^\x01-\x7E]/.test(desc)) {
                 validBlockIndex = i;
                 break; 
             }
         }
-
-        if (validBlockIndex === -1) 
-        {
+        if (validBlockIndex === -1) {
             if (cols[10] && cols[10] !== '-1') {
                 validBlockIndex = 10;
             } else {
@@ -104,7 +92,6 @@ function parseGachaTSV(tsv) {
         }
 
         const base = validBlockIndex;
-        // ガチャ情報抽出
         const gachaId = cols[base];
         const rateRare = cols[base + 6];
         const rateSupa = cols[base + 8]; 
@@ -130,7 +117,6 @@ function parseGachaTSV(tsv) {
             rawEnd: endDateStr,
             startTime: startTimeStr,
             endTime: endTimeStr,
- 
             seriesName: seriesName,
             tsvName: tsvName,
             rare: rateRare,
@@ -141,36 +127,46 @@ function parseGachaTSV(tsv) {
         });
     });
 
-    // 開始日順にソート
+    // --- 重複期間の自動短縮ロジック（ID一致なら確定・非確定問わず適用） ---
+    for (let i = 0; i < schedule.length; i++) {
+        const itemA = schedule[i];
+        const startA = parseInt(itemA.start);
+        const endA = parseInt(itemA.end);
+
+        // 同じIDで、自分より「後に開始」し、かつ自分の「終了前」に開始される別枠を探す
+        const itemB = schedule.find(target => 
+            target !== itemA &&
+            target.id === itemA.id && 
+            parseInt(target.start) > startA && 
+            parseInt(target.start) < endA
+        );
+
+        if (itemB) {
+            // 後続枠の開始タイミングに合わせて、前の枠を終了させる
+            itemA.end = itemB.start;
+            itemA.rawEnd = itemB.rawStart;
+            itemA.endTime = itemB.startTime;
+        }
+    }
+
     schedule.sort((a, b) => parseInt(a.start) - parseInt(b.start));
     return schedule;
 }
 
-/**
- * ロールズ（シミュレータ）の初期値を決定する関数
- * - 終了していないガチャの中で開始日が最も早いものを選択
- * - 確定ガチャの場合は '11g'、それ以外は '11' を推奨設定として返す
- */
 function findDefaultGachaState(data) {
     const now = new Date();
-    // 1. フィルタリング (終了していない & プラチナ・レジェンド除外)
     let candidates = data.filter(item => {
-        if (isPlatinumOrLegend(item)) return false; // 通常ロールズ対象外を除外
-        
+        if (isPlatinumOrLegend(item)) return false;
         const endDt = parseDateTime(item.rawEnd, item.endTime);
-        return endDt >= now; // 現在時刻を過ぎていない
+        return endDt >= now;
     });
-    // 2. 開始日順にソート
     candidates.sort((a, b) => {
         const startA = parseDateTime(a.rawStart, a.startTime);
         const startB = parseDateTime(b.rawStart, b.startTime);
         return startA - startB;
     });
     if (candidates.length === 0) return null;
-
-    // 3. 最も開催が近い(または開催中の)ものを選択
     const target = candidates[0];
-    // 確定フラグがあれば初期表示を '11g' (11連確定) にする
     const recommendedRollType = target.guaranteed ? '11g' : '11';
     return {
         gacha: target,

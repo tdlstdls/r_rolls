@@ -38,25 +38,45 @@
                 <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
             </div>
         </div>
-        <div id="description-content" class="description-box hidden" style="font-size: 0.8em;">
-            <h3 style="margin-top:0;">【ツール概要】</h3>
-            <p style="margin-bottom:10px;">レアガチャの排出結果を予測・シミュレーションするツールです。<br>各ガチャの排出キャラの確認や、確定枠等を利用したルート取りを支援します。</p>
-            <h3 style="margin-top:0;">【基本操作】</h3>
-            <ul style="padding-left: 20px; margin-bottom:10px;">
-                <li><strong>SEED設定:</strong> SEEDを押し、実行前シードを入力してください。</li>
-                <li><strong>ガチャ選択:</strong> 表のヘッダー下部のプルダウンから、表示したいガチャを選択できます。</li>
-                <li><strong>列の追加・削除:</strong> 「＋列を追加」ボタンで比較用の列を増やせます。「skdで追加」を押すと、スケジュール一覧のガチャを一括で追加します。</li>
-            </ul>
-            <h3 style="margin-top:0;">【主要機能】</h3>
-            <dl style="margin-bottom:10px;">
-                <dt><strong>1. Find</strong></dt>
-                <dd style="margin-bottom:5px;">2000ロール先までの「伝説枠」等を検索して表示します。リスト内のキャラ名をクリックすると、そのキャラを「Find」ターゲットとして登録/解除できます。</dd>
-                <dt><strong>2. Sim (シミュレーションモード)</strong></dt>
-                <dd style="margin-bottom:5px;">複数のガチャを跨いで引いた場合の結果をシミュレーションします。<br>「ルート」欄に形式に従って入力してください。また、Simモードでテーブル上のキャラ名をタップ（クリック）すると、そこまでのルートを自動計算します。自動計算では、超激確定・プラチナ・レジェンドは消費を避けるため使用しません。</dd>
-                <dt><strong>3. skd (スケジュール)</strong></dt>
-                <dd>「skd」ボタンで、直近のガチャ開催スケジュールを確認できます。</dd>
-            </dl>
+
+        <div id="description-content" class="description-box hidden" style="font-size: 0.85em; line-height: 1.6;">
+            <h3 style="margin: 0 0 10px 0; color: #333; border-bottom: 2px solid #007bff; display: inline-block;">【R_Rolls 使い方ガイド】</h3>
+            <p style="margin-bottom: 15px;">このツールは、自分の「シード値（SEED）」を元に、<strong>どのガチャをどの順番で引けば狙いのキャラが手に入るか</strong>を予測・計画するためのシミュレーターです。</p>
+
+            <h4 style="margin: 10px 0 5px 0; color: #007bff;">1. まずはシード（SEED）を入力</h4>
+            <p style="margin-bottom: 10px;">
+                上部の<strong>「SEED」</strong>を押し、現在の実行前シード値を入力してOKを押してください。画面に予測テーブルが表示されます。
+            </p>
+
+            <h4 style="margin: 10px 0 5px 0; color: #007bff;">2. ガチャを選んで比較する</h4>
+            <p style="margin-bottom: 10px;">
+                テーブル上のプルダウンメニューからガチャを切り替えられます。<strong>「＋列を追加」</strong>で複数のガチャを並べて比較できます。
+            </p>
+
+            <h4 style="margin: 10px 0 5px 0; color: #007bff;">3. Find（キャラ別検索）で狙い目を探す</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>「Find」</strong>を押すと、2000〜10000ロール先までの「伝説枠」や「限定キャラ」を自動で検索します。
+                <br>・<strong>リスト内のキャラ名</strong>をタップ：そのキャラをリストの一番上に表示します。
+                <br>・<strong>「other」</strong>をタップ：ロールズに表示しているガチャ以外の全ガチャシリーズでの出現位置をまとめて検索します。
+            </p>
+
+            <h4 style="margin: 10px 0 5px 0; color: #007bff;">4. Sim（シミュレーション）でルートを決める</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>「Sim」</strong>をONにすると、複数のガチャを跨いで引く計画を立てられます。
+                <br>・<strong>テーブル上のキャラ名</strong>をタップ：現在地からそのキャラまでのルートを自動計算します。
+                <br>・<strong>MaxPlat / MaxG</strong>：自動計算時に、プラチナチケットや確定11連を最大何回まで使って良いか設定できます（デフォルトは0＝温存）。
+                <br>・<strong>「Txt」</strong>ボタン：作成したルートをテキスト形式で表示します。
+            </p>
+
+            <h4 style="margin: 10px 0 5px 0; color: #007bff;">5. skd（スケジュール）で開催予定をチェック</h4>
+            <p style="margin-bottom: 10px;">
+                <strong>「skd」</strong>を押すと、近日開催予定のガチャ一覧が表示されます。「skdで一括追加」ボタンを使うと、開催予定のガチャをすべてテーブルに並べて比較できます。
+            </p>
+            <p style="font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 5px;">
+                ※このツールは予測値を提供するものであり、実際のゲーム内での結果を100%保証するものではありません。
+            </p>
         </div>
+
         <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
             <div id="seed-input-container" class="control-group hidden" style="margin-bottom: 0; display: flex; align-items: center; gap: 5px;">
                 <label for="seed" style="font-size:0.9em;">Seed:</label>
@@ -66,11 +86,15 @@
                 <button onclick="cancelSeedInput()" class="secondary" style="padding: 1px 6px; font-size: 11px;">×</button>
             </div>
             <div class="control-group hidden" id="sim-control-wrapper" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; width: 100%;">
-                <div style="display: flex; align-items: center; width: 100%; gap: 5px;">
+                <div style="display: flex; align-items: center; width: 100%; gap: 5px; flex-wrap: wrap;">
                     <label for="sim-config" style="font-size:0.9em;">ルート:</label>
-                    <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1;">
+                    <input type="text" id="sim-config" placeholder="e.g. 1006 4 942 11g" onchange="updateUrlParams(); resetAndGenerateTable();" style="flex-grow: 1; min-width: 150px;">
                     <button onclick="backSimConfig()" style="font-size: 11px; min-width: 40px;">Back</button>
                     <button onclick="clearSimConfig()" style="font-size: 11px;">Clear</button>
+                    <label style="font-size: 0.8em; margin-left: 5px;">MaxPlat:</label>
+                    <input type="number" id="sim-max-plat" value="0" min="0" max="5" style="width: 35px; font-size: 0.9em; padding: 1px 2px;">
+                    <label style="font-size: 0.8em; margin-left: 2px;">MaxG:</label>
+                    <input type="number" id="sim-max-guar" value="0" min="0" max="5" style="width: 35px; font-size: 0.9em; padding: 1px 2px;">
                     <button id="toggle-txt-btn" onclick="toggleTxtMode()" style="font-size: 11px;">Txt</button>
                     <button id="copy-txt-btn" onclick="copyTxtToClipboard()" class="hidden" style="margin-left: 2px; font-size: 11px;">Copy</button>
                     <span id="sim-notif-msg" style="color: #28a745; font-size: 0.8em; margin-left: 5px; font-weight: bold; display: none;"></span>

@@ -27,7 +27,6 @@ let loadedTsvContent = null; // スケジュールデータ (gatya.tsv)
 // 全データのロードと構築を行うメイン関数
 async function loadAllData() {
     console.log("Loading data...");
-    
     // 1. キャラクターデータ (cats.js) の処理
     processCatsData();
 
@@ -38,7 +37,6 @@ async function loadAllData() {
             fetch('GatyaData_Option_SetR.tsv'),
             fetch('gatya.tsv') // スケジュールデータもここで取得
         ]);
-
         if (!csvRes.ok) throw new Error("GatyaDataSetR1.csv fetch failed");
         if (!tsvRes.ok) throw new Error("GatyaData_Option_SetR.tsv fetch failed");
         
@@ -56,7 +54,6 @@ async function loadAllData() {
 
         // マスタデータの構築
         const gachasMaster = buildGachaMaster(gachaMasterData.cats, csvText, tsvText);
-        
         // gatya.tsv から正確なレート情報を反映
         if (gatyaTsvText) {
             applyTsvRates(gachasMaster, gatyaTsvText);
@@ -66,7 +63,6 @@ async function loadAllData() {
         
         console.log("Master Data Built:", Object.keys(gachasMaster).length, "gachas loaded.");
         return true;
-
     } catch (e) {
         console.error("Critical Data Load Error:", e);
         return false;
@@ -77,7 +73,6 @@ async function loadAllData() {
 function processCatsData() {
     const fallbackCats = [{id:31, name:"ネコぼさつ", rarity:3}];
     let catsData = (typeof cats !== 'undefined') ? cats : fallbackCats;
-
     const rarityMap = { 0: "nomal", 1: "ex", 2: "rare", 3: "super", 4: "uber", 5: "legend" };
     const catsMaster = {};
     
@@ -90,17 +85,15 @@ function processCatsData() {
 // マスタデータ構築ロジック (CSV行番号 = ID)
 function buildGachaMaster(catsMaster, csvText, tsvText) {
     const gachasMaster = {};
-
     // 1. CSVを行ごとに分割 (1行目=ID:0, 2行目=ID:1...)
     const gachaPools = csvText.split(/\r?\n/);
-
     // 2. Option TSVをパースして GatyaSetID -> seriesID のマップを作成
     const tsvLines = tsvText.split(/\r?\n/);
     const headers = tsvLines[0].split('\t').map(h => h.trim());
     const idIdx = headers.indexOf('GatyaSetID');
     const seriesIdx = headers.indexOf('seriesID');
 
-    const gachaSeriesMap = {}; 
+    const gachaSeriesMap = {};
     if (idIdx !== -1 && seriesIdx !== -1) {
         for (let i = 1; i < tsvLines.length; i++) {
             const line = tsvLines[i];
@@ -175,39 +168,42 @@ function applyTsvRates(gachasMaster, tsvContent) {
     lines.forEach(line => {
         if (line.trim().startsWith('[') || !line.trim()) return;
         const cols = line.split('\t');
-        if (cols.length < 15) return; // 最小カラム数チェック
+        if (cols.length < 15) return;
 
-        // 9列目(Idx 8)が「1」以外の行は除外（レアロールズ対象外）
+        // 9列目(Idx 8)が「1」以外の行は除外
         if (cols[8] !== '1') return;
 
-        // 11列目(Idx 10)から15列ごとにブロックが存在する
         for (let i = 10; i < cols.length; i += 15) {
-            // ブロックの必須カラムが存在するか確認
             if (i + 14 >= cols.length) break;
 
-            const gachaIdStr = cols[i];
-            const gachaId = parseInt(gachaIdStr);
-            
-            // IDが無効、または-1の場合はスキップ
+            const gachaId = parseInt(cols[i]);
             if (isNaN(gachaId) || gachaId < 0) continue;
 
-            // 定義に基づきレート情報を取得
-            // i+6: Rare, i+8: Super, i+10: Uber, i+11: Guaranteed, i+12: Legend
+            const isGuaranteed = cols[i + 11] === '1';
+            // 確定フラグがある場合はID末尾に'g'を付けた別エントリとして保持する
+            const storageId = isGuaranteed ? `${gachaId}g` : `${gachaId}`;
+
             const rateRare = parseInt(cols[i + 6]) || 0;
             const rateSupa = parseInt(cols[i + 8]) || 0;
             const rateUber = parseInt(cols[i + 10]) || 0;
-            const isGuaranteed = cols[i + 11] === '1';
             const rateLegend = parseInt(cols[i + 12]) || 0;
 
             if (gachasMaster[gachaId]) {
-                gachasMaster[gachaId].rarity_rates = {
+                // 元のデータをコピーして新しい設定を適用
+                gachasMaster[storageId] = JSON.parse(JSON.stringify(gachasMaster[gachaId]));
+                gachasMaster[storageId].id = storageId.toString();
+                gachasMaster[storageId].rarity_rates = {
                     rare: rateRare,
                     super: rateSupa,
                     uber: rateUber,
                     legend: rateLegend
                 };
-                // 確定フラグを保存
-                gachasMaster[gachaId].guaranteed = isGuaranteed;
+                gachasMaster[storageId].guaranteed = isGuaranteed;
+                
+                // 確定名称の付与
+                if (isGuaranteed && !gachasMaster[storageId].name.includes("確定")) {
+                    gachasMaster[storageId].name += " [確定]";
+                }
             }
         }
     });

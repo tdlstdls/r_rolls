@@ -19,11 +19,11 @@ function generateRollsTable() {
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
         for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
-
+        
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
-
-        // 3. ハイライト判定
+        
+        // 3. ハイライト判定とシミュレーション後の最終シード取得
         const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
@@ -39,24 +39,36 @@ function generateRollsTable() {
         const container = document.getElementById('rolls-table-container');
         if (!container) return;
 
+        // テーブル本体のHTMLを先に生成
+        const tableHtml = buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap);
+        
+        let simNoticeHtml = '';
+        if (isSimulationMode) {
+            simNoticeHtml = `<div id="sim-auto-calc-notice" style="font-size: 0.75em; color: #666; padding: 5px 10px; background: #fff;">
+                ※下の表のキャラ名をタップ（クリック）するとそのセルまでのルートを自動計算します。自動計算では、超激確定・プラチナ・レジェンドは消費を避けるため使用しません。
+            </div>`;
+        }
+
+        // --- 修正箇所: Sim/Txtモード時の表示ロジック ---
         if (isTxtMode && isSimulationMode) {
-            // テキスト表示モード
             const txtViewHtml = generateTxtRouteView(seeds, initialSeed);
-            container.innerHTML = findAreaHtml + txtViewHtml;
+            
+            // ルート未入力時のエラーメッセージが含まれているかチェック
+            if (txtViewHtml.includes("ルートが入力されていません")) {
+                // ルートがない場合は、メッセージを表示せず通常のテーブルのみを表示
+                container.innerHTML = findAreaHtml + simNoticeHtml + tableHtml;
+            } else {
+                // ルートがある場合は、テキストビューを上、テーブルを下にして両方表示（利便性のため）
+                container.innerHTML = findAreaHtml + txtViewHtml + simNoticeHtml + tableHtml;
+            }
         } else {
             // 通常テーブル表示モード
-            let simNoticeHtml = '';
-            if (isSimulationMode) {
-                simNoticeHtml = `<div id="sim-auto-calc-notice" style="font-size: 0.75em; color: #666; padding: 5px 10px; background: #fff;">
-                    ※下の表のキャラ名をタップ（クリック）するとそのセルまでのルートを自動計算します。自動計算では、超激確定・プラチナ・レジェンドは消費を避けるため使用しません。
-                </div>`;
-            }
-            const tableHtml = buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap);
             container.innerHTML = findAreaHtml + simNoticeHtml + tableHtml;
         }
 
         const resultDiv = document.getElementById('result');
         if (resultDiv) resultDiv.textContent = isSimulationMode ? "Simulation active..." : "Display Mode";
+        
         updateUrlParams();
     } catch (e) {
         const container = document.getElementById('rolls-table-container');
@@ -72,21 +84,19 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
             <span style="font-weight: bold; margin-right: 1px; font-size: 11px;">A</span>
             <button class="add-gacha-btn" onclick="addGachaColumn()" style="font-size: 11px; padding: 1px 4px;">＋列を追加</button>
             <button class="add-gacha-btn" style="background-color: #17a2b8; font-size: 11px; padding: 1px 4px;" onclick="addGachasFromSchedule()">skdで追加</button>
-            <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size: 11px; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
+            <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size: 11px; font-weight:bold;"
+onclick="showIdInput()">IDで追加</span>
             <button class="remove-btn" onclick="resetToFirstGacha()" title="一番左の列以外を解除" style="font-size: 11px; padding: 1px 5px; margin-left: 2px;">×</button>
         </div>`;
-    
     let totalGachaCols = 0;
     tableGachaIds.forEach(idWithSuffix => {
         let id = idWithSuffix.replace(/[gfs]$/, '');
         if (gachaMasterData.gachas[id]) totalGachaCols += /[gfs]$/.test(idWithSuffix) ? 2 : 1;
     });
-
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
     const calcColSpan = showSeedColumns ? 5 : 0;
     const totalTrackSpan = calcColSpan + totalGachaCols;
 
-    // 左端NO列（A側）を固定するためのCSSスタイル
     const stickyLeftStyle = `position: sticky; left: 0; z-index: 30; background-color: #f8f9fa; border-right: 1px solid #ddd;`;
     const stickyTopLeftStyle = `position: sticky; top: 0; left: 0; z-index: 40; background-color: #f8f9fa; border-right: 1px solid #ddd;`;
 
@@ -110,7 +120,6 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
             ${generateControlHeaderHTML(false)}
         </tr>
     </thead><tbody>`;
-
     for (let i = 0; i < numRolls; i++) {
         const seedIndexA = i * 2, seedIndexB = i * 2 + 1;
         html += `<tr>${renderTableRowSide(i, seedIndexA, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, true)}`;
@@ -128,7 +137,7 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
 /** 内部関数: A側/B側それぞれの行レンダリング */
 function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, isLeftSide) {
     let styleNo = '';
-    let bgColor = '#f8f9fa'; // デフォルトのNO列背景色
+    let bgColor = '#f8f9fa';
 
     if (RowAnalysis.isSimpleYellow(seedIndex, seeds) || RowAnalysis.isConsecutiveYellow(seedIndex, seeds)) {
         styleNo = 'background-color: #ffeb3b;';
@@ -138,12 +147,10 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         bgColor = '#ff9800';
     }
 
-    // 左側のNO列のみ sticky を適用
     let stickyStyle = isLeftSide ? `position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd; background-color: ${bgColor};` : '';
-
     let sideHtml = `<td class="col-no" style="${stickyStyle}${styleNo}">${rowIndex + 1}</td>`;
     sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
-
+    
     tableGachaIds.forEach((idWithSuffix, colIndex) => {
         let id = idWithSuffix.replace(/[gfs]$/, '');
         let suffix = '';
@@ -155,8 +162,6 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         if (!gachaMasterData.gachas[id]) return;
 
         let cellHtml = generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
-        
-        // セル内改行を許可。幅は自動（ヘッダーの50%指定が優先される）
         cellHtml = cellHtml.replace('style="', 'style="white-space: normal; width: auto; word-break: break-all; vertical-align: middle; ');
         
         if (isSimulationMode) {
@@ -184,7 +189,6 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
             let gClickAction = isSimulationMode ?
                 `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
                 (gRes.nextRollStartSeedIndex > 0 ? `onclick="updateSeedAndRefresh(${seeds[gRes.nextRollStartSeedIndex - 1]})"` : "");
-
             let mainHtml = `<span style="font-size:0.9em; color:#666;">${addr}</span><span class="char-link" style="cursor:pointer;" ${gClickAction}>${charName}</span>`;
             let altHtml = '';
             if (gRes.alternative) {
@@ -197,7 +201,6 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
                 altHtml = `<span style="font-size:0.9em; color:#666;">${altAddr}</span><span class="char-link" style="cursor:pointer;" ${altClickAction}>${altCharName}</span><br>`;
             }
             gContent = altHtml + mainHtml;
-            // クラス class="gacha-cell gacha-column" を追加
             sideHtml += `<td class="gacha-cell gacha-column" style="${cellStyle}">${gContent}</td>`;
         }
     });
@@ -214,14 +217,12 @@ function generateTxtRouteView(seeds, initialSeed) {
     let currentIdx = 0;
     let lastDraw = null;
     let outputArr = [];
-
     let stats = { single: 0, plat: 0, leg: 0, guar: 0, legends: {}, limiteds: {}, ubers: {} };
     const limitedSet = new Set();
     if (typeof limitedCats !== 'undefined') {
         limitedCats.forEach(id => { limitedSet.add(id); limitedSet.add(String(id)); });
     }
     const addStat = (map, name) => { map[name] = (map[name] || 0) + 1; };
-
     configs.forEach(sim => {
         const originalGacha = gachaMasterData.gachas[sim.id];
         if (!originalGacha) return;
@@ -284,13 +285,11 @@ function generateTxtRouteView(seeds, initialSeed) {
         segmentTxt += charNames.join(", ");
         outputArr.push(segmentTxt);
     });
-
     const formatStatMap = (map) => {
         const entries = Object.entries(map);
         if (entries.length === 0) return "";
         return entries.map(([name, count]) => count >= 2 ? `${name}（${count}）` : name).join("、");
     };
-
     let countsHtml = "";
     if (stats.single > 0) countsHtml += `レアチケ：${stats.single}回<br>`;
     if (stats.plat > 0) countsHtml += `プラチケ：${stats.plat}回<br>`;

@@ -3,21 +3,25 @@
 /** 各列のガチャ設定を構築 */
 function prepareColumnConfigs() {
     return tableGachaIds.map((idWithSuffix, colIndex) => {
-        let id = idWithSuffix;
         let suffix = '';
-        if (idWithSuffix.endsWith('f')) { suffix = 'f'; id = idWithSuffix.slice(0, -1); }
-        else if (idWithSuffix.endsWith('s')) { suffix = 's'; id = idWithSuffix.slice(0, -1); }
-        else if (idWithSuffix.endsWith('g')) { suffix = 'g'; id = idWithSuffix.slice(0, -1); }
+        let baseId = idWithSuffix;
+        
+        // 接尾辞の解析
+        if (idWithSuffix.endsWith('f')) { suffix = 'f'; baseId = idWithSuffix.slice(0, -1); }
+        else if (idWithSuffix.endsWith('s')) { suffix = 's'; baseId = idWithSuffix.slice(0, -1); }
+        else if (idWithSuffix.endsWith('g')) { suffix = 'g'; baseId = idWithSuffix.slice(0, -1); }
 
         let guaranteedNormalRolls = 0;
         if (suffix === 'g') guaranteedNormalRolls = 10;
         else if (suffix === 'f') guaranteedNormalRolls = 14;
         else if (suffix === 's') guaranteedNormalRolls = 6;
 
-        const originalConfig = gachaMasterData.gachas[id];
-        if (!originalConfig) return null;
+        // 検索順: 1.接尾辞付きID (1006g等) -> 2.数値のみのID (1006等)
+        const configSource = gachaMasterData.gachas[idWithSuffix] || gachaMasterData.gachas[baseId];
+        
+        if (!configSource) return null;
 
-        const config = JSON.parse(JSON.stringify(originalConfig)); // 深いコピー
+        const config = JSON.parse(JSON.stringify(configSource));
         config._guaranteedNormalRolls = guaranteedNormalRolls;
         config._suffix = suffix;
 
@@ -34,7 +38,6 @@ function prepareColumnConfigs() {
 /** 全ガチャ列のシミュレーションを実行 */
 function executeTableSimulation(numRolls, columnConfigs, seeds) {
     const tableData = Array(numRolls * 2).fill(null).map(() => []);
-
     columnConfigs.forEach((config, colIndex) => {
         if (!config) return;
         let prevDrawA = null, prevDrawB = null;
@@ -43,7 +46,6 @@ function executeTableSimulation(numRolls, columnConfigs, seeds) {
             const seedIndexA = i * 2;
             const seedIndexB = i * 2 + 1;
 
-            // A側
             const rollResultA = rollWithSeedConsumptionFixed(seedIndexA, config, seeds, prevDrawA);
             const isConsecutiveA = prevDrawA && prevDrawA.isRerolled && rollResultA.isRerolled;
             tableData[seedIndexA][colIndex] = { 
@@ -53,7 +55,6 @@ function executeTableSimulation(numRolls, columnConfigs, seeds) {
             };
             prevDrawA = { rarity: rollResultA.rarity, charId: rollResultA.charId, isRerolled: rollResultA.isRerolled };
 
-            // B側
             if (seedIndexB < seeds.length - 2) {
                 const rollResultB = rollWithSeedConsumptionFixed(seedIndexB, config, seeds, prevDrawB);
                 const isConsecutiveB = prevDrawB && prevDrawB.isRerolled && rollResultB.isRerolled;

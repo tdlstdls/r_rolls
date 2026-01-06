@@ -19,8 +19,7 @@ function prepareScheduleInfo() {
                     if (item.guaranteed) {
                         const gId = parseInt(item.id);
                         activeGuaranteedIds.add(gId);
-                        /**
-                        if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
+                        /* if (gachaMasterData && gachaMasterData.gachas && gachaMasterData.gachas[gId]) {
          
                             const currentName = gachaMasterData.gachas[gId].name;
                             if (!currentName.includes('[確定]')) {

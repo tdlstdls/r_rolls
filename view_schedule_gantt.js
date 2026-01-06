@@ -11,7 +11,6 @@ function renderGanttChart(data) {
     
     let activeData = filteredData.filter(item => parseInt(item.rawEnd) >= yesterdayInt);
     const now = new Date();
-    // フィルタ: 終了分の非表示設定
     if (hideEndedSchedules) {
         activeData = activeData.filter(item => {
             const endDt = parseDateTime(item.rawEnd, item.endTime);
@@ -19,7 +18,6 @@ function renderGanttChart(data) {
         });
     }
 
-    // ソート: 開催終了分を最優先
     activeData.sort((a, b) => {
         const endA = parseDateTime(a.rawEnd, a.endTime);
         const endB = parseDateTime(b.rawEnd, b.endTime);
@@ -28,20 +26,17 @@ function renderGanttChart(data) {
         if (isEndedA !== isEndedB) return isEndedA ? -1 : 1;
         return parseInt(a.rawStart) - parseInt(b.rawStart);
     });
-
     if (activeData.length === 0) return '<p>表示可能な開催中のスケジュールはありません。</p>';
 
     let minDateInt = parseInt(activeData[0].rawStart);
     let maxEndDateTime = new Date(0);
     let maxLabelTextWidth = 0;
-
     activeData.forEach(item => {
         const s = parseInt(item.rawStart);
         if (s < minDateInt) minDateInt = s;
         const eDt = parseDateTime(item.rawEnd, item.endTime);
         if (eDt > maxEndDateTime) maxEndDateTime = eDt;
 
-        // 表示名の計算（重複チェック付き）
         let displayName = item.seriesName;
         if (item.guaranteed && !displayName.includes("[確定]")) {
             displayName += " [確定]";
@@ -52,23 +47,19 @@ function renderGanttChart(data) {
             if (textW > maxLabelTextWidth) maxLabelTextWidth = textW;
         }
     });
-
     let labelWidth = Math.max(160, maxLabelTextWidth + 20);
-    if (labelWidth > 500) labelWidth = 500; 
+    if (labelWidth > 1000) labelWidth = 1000;
 
-    // チャートの開始日決定
     let minDate = parseDateStr(String(minDateInt));
     const viewStartDate = new Date(yesterday);
     viewStartDate.setDate(viewStartDate.getDate() - 2);
     if (minDate < viewStartDate) minDate = viewStartDate;
 
-    // チャートの終了日決定
     let chartEnd = new Date(maxEndDateTime);
     chartEnd.setHours(0, 0, 0, 0);
     chartEnd.setDate(chartEnd.getDate() + 1);
 
     const totalDays = Math.ceil((chartEnd - minDate) / (1000 * 60 * 60 * 24));
-    
     if (totalDays <= 0) return '';
     const dayWidth = 50; 
     const msPerDay = 1000 * 60 * 60 * 24;
@@ -81,9 +72,8 @@ function renderGanttChart(data) {
         currentLineHtml = `<div class="gantt-current-line" style="left:${currentLineLeftPx}px;"></div>`;
     }
 
-    // ヘッダー行
     let headerHtml = `<div class="gantt-header" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; background: #f9f9f9; height: 30px;">
-        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none; display: flex; align-items: center; justify-content: center; height: 100%;">ガチャ名</div>`;
+        <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none; display: block; height: 30px; line-height: 30px; text-align: center; box-sizing: border-box; font-weight: bold; border-right: 1px solid #ddd; padding: 0; margin: 0;">ガチャ名</div>`;
     for (let i = 0; i < totalDays; i++) {
         const d = new Date(minDate);
         d.setDate(d.getDate() + i);
@@ -91,7 +81,7 @@ function renderGanttChart(data) {
         const isToday = getDateInt(d) === getDateInt(new Date());
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
         const cls = `gantt-date-cell${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}`;
-        headerHtml += `<div class="${cls}" style="width:${dayWidth}px; flex: none;">${dateStr}</div>`;
+        headerHtml += `<div class="${cls}" style="width:${dayWidth}px; flex: none; display: block; height: 30px; line-height: 30px; text-align: center; box-sizing: border-box; border-right: 1px solid #eee; padding: 0; margin: 0;">${dateStr}</div>`;
     }
     headerHtml += `</div>`;
 
@@ -111,19 +101,16 @@ function renderGanttChart(data) {
         if (offsetPx + widthPx > maxPx) widthPx = maxPx - offsetPx; 
         if (widthPx <= 0) return;
 
-        // 重複チェック付きの表示名
         let displayName = item.seriesName;
         if (item.guaranteed && !displayName.includes("[確定]")) {
             displayName += " [確定]";
         }
 
-        // バーの色分けロジック（従前の仕様  に準拠）
         let barClass = 'gantt-bar';
         if (displayName.includes("極選抜")) barClass += ' g-kyoku';
         else if (displayName.includes("超選抜")) barClass += ' g-cho';
         else if (displayName.includes("ネコ祭")) barClass += ' g-fest';
         else if (displayName.includes("コラボ")) barClass += ' g-collab';
-        // 通常の確定ガチャなどはデフォルトの緑(gantt-bar)のまま表示
 
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
         let rowClass = 'gantt-row';
@@ -132,12 +119,12 @@ function renderGanttChart(data) {
 
         bodyHtml += `
             <div class="${rowClass}" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; height: 30px;">
-                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none;"
+                <div class="gantt-label-col" style="width:${labelWidth}px; min-width:${labelWidth}px; flex: none; display: block; height: 30px; line-height: 30px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-right: 1px solid #ddd; box-sizing: border-box; padding: 0; margin: 0;"
                 title="${displayName} (ID:${item.id})">${displayName}</div>
-                <div class="gantt-bar-area" style="width: ${totalDays * dayWidth}px; flex: none; position: relative;">
+                <div class="gantt-bar-area" style="width: ${totalDays * dayWidth}px; flex: none; position: relative; height: 30px;">
                     ${generateGridLines(totalDays, dayWidth, minDate)}
-                    <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px;">
-                        <span class="gantt-bar-text">${durationDays}日間</span>
+                    <div class="${barClass}" style="left: ${offsetPx}px; width: ${widthPx}px; height: 20px; top: 5px; position: absolute; display: flex; align-items: center; justify-content: center;">
+                        <span class="gantt-bar-text" style="font-size: 10px; line-height: 20px;">${durationDays}日間</span>
                     </div>
                     ${currentLineHtml}
                 </div>
@@ -168,10 +155,9 @@ function generateGridLines(days, width, startDate) {
         const d = new Date(startDate);
         d.setDate(d.getDate() + i);
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        const style = `left:${i * width}px; width:${width}px;`;
+        const style = `left:${i * width}px; width:${width}px; position: absolute; height: 100%; border-right: 1px solid #eee; box-sizing: border-box; pointer-events: none;`;
         const cls = isWeekend ? 'gantt-grid-line weekend' : 'gantt-grid-line';
         html += `<div class="${cls}" style="${style}"></div>`;
     }
     return html;
-
 }
