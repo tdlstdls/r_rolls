@@ -18,7 +18,7 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     let firstId = firstGachaIdWithSuffix.replace(/[gfs]$/, '');
     const originalConfig = gachaMasterData.gachas[firstId];
     if(!originalConfig) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
-
+    
     const config = { ...originalConfig };
     config.pool = { ...originalConfig.pool };
     if (config.pool.uber) {
@@ -29,13 +29,11 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
         }
     }
 
-    if (seedIndex + 10 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
-    const sNum1 = seedIndex + 1;
-    const sNum2 = seedIndex + 2;
+    if (seedIndex + 1 >= seeds.length) return `<td class="${calcColClass}">End</td>`.repeat(5);
     const sVal_0 = seeds[seedIndex];
     const sVal_1 = seeds[seedIndex+1];
-    const colSeed = `<td>(S${sNum1})<br>${sVal_0}</td>`;
-
+    
+    const colSeed = `<td>(S${seedIndex+1})<br>${sVal_0}</td>`;
     const rVal = sVal_0 % 10000;
     const rates = config.rarity_rates || {};
     const rareRate = rates.rare || 0, superRate = rates.super || 0, uberRate = rates.uber || 0, legendRate = rates.legend || 0;
@@ -44,52 +42,44 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     else if (rVal < rareRate + superRate) rType = 'super';
     else if (rVal < rareRate + superRate + uberRate) rType = 'uber';
     else if (rVal < rareRate + superRate + uberRate + legendRate) rType = 'legend';
-    
-    const colRarity = `<td>(S${sNum1})<br>${rVal}<br>(${rType})</td>`;
-    const pool = config.pool[rType] || [];
-    let colSlot = '<td>-</td>';
-    let slotVal = '-';
-    if (pool.length > 0) {
-        slotVal = sVal_1 % pool.length;
-        colSlot = `<td>(S${sNum2})<br>%${pool.length}<br>${slotVal}</td>`;
-    }
+    const colRarity = `<td>(S${seedIndex+1})<br>${rVal}<br>(${rType})</td>`;
 
+    let colSlot = '<td>-</td>';
     let colReRoll = '<td>-</td>';
     if (tableData[seedIndex] && tableData[seedIndex][0] && tableData[seedIndex][0].roll) {
         const roll = tableData[seedIndex][0].roll;
-        if (pool.length > 0) {
-            if (roll.isRerolled) {
-                const finalPoolSize = roll.uniqueTotal;
-                const finalVal = roll.reRollIndex;
-                const finalSeedIndex = seedIndex + roll.seedsConsumed - 1;
-                const sNumFinal = finalSeedIndex + 1;
-                colReRoll = `<td>(S${sNumFinal})<br>%${finalPoolSize}<br>${finalVal}</td>`;
-            } else {
-                colReRoll = `<td>false</td>`;
-            }
+        colSlot = `<td>(S${seedIndex+2})<br>%${roll.totalChars}<br>${roll.charIndex}</td>`;
+        if (roll.isRerolled) {
+            const finalSeedIdx = seedIndex + roll.seedsConsumed;
+            colReRoll = `<td>(S${finalSeedIdx})<br>%${roll.uniqueTotal}<br>${roll.reRollIndex}</td>`;
+        } else {
+            colReRoll = `<td>false</td>`;
         }
     }
 
-    let tempSeedIdx = seedIndex;
-    let tempDraw = null;
-    let validSim = true;
-    for(let k=0; k<10; k++) {
-        if (tempSeedIdx + 1 >= seeds.length) { validSim = false; break; }
-        const rr = rollWithSeedConsumptionFixed(tempSeedIdx, config, seeds, tempDraw);
-        if (rr.seedsConsumed === 0) { validSim = false; break; }
-        tempSeedIdx += rr.seedsConsumed;
-        tempDraw = { rarity: rr.rarity, charId: rr.charId };
-    }
     let colGuar = '<td>-</td>';
-    if (validSim && tempSeedIdx < seeds.length) {
-        const uberPool = config.pool['uber'] || [];
-        if (uberPool.length > 0) {
-            const guarSeedVal = seeds[tempSeedIdx];
-            const guarSlot = guarSeedVal % uberPool.length;
-            const sNumGuar = tempSeedIdx + 1;
-            colGuar = `<td>(S${sNumGuar})<br>%${uberPool.length}<br>${guarSlot}</td>`;
+    const uberPool = config.pool['uber'] || [];
+    if (seedIndex < seeds.length - 20 && uberPool.length > 0) {
+        let tempIdx = seedIndex;
+        let tempDraw = null;
+        for(let k=0; k<10; k++) {
+            const rr = rollWithSeedConsumptionFixed(tempIdx, config, seeds, tempDraw);
+            if (rr.seedsConsumed === 0) break;
+            tempIdx += rr.seedsConsumed;
+            tempDraw = { 
+                rarity: rr.rarity, 
+                charId: rr.charId, 
+                originalCharId: rr.originalChar ? rr.originalChar.id : rr.charId,
+                isRerolled: rr.isRerolled, 
+                lastRerollSlot: rr.lastRerollSlot, 
+                fromRerollRoute: rr.isRerolled 
+            };
+        }
+        if (tempIdx < seeds.length) {
+            colGuar = `<td>(S${tempIdx+1})<br>%${uberPool.length}<br>${seeds[tempIdx] % uberPool.length}</td>`;
         }
     }
+
     return colSeed + colRarity + colSlot + colReRoll + colGuar;
 }
 
@@ -99,94 +89,72 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     const fullRoll = tableData[seedIndex][colIndex].roll;
     if(!fullRoll) return `<td>N/A</td>`;
     
-    const gachaConfig = gachaMasterData.gachas[id];
-    const gachaName = gachaConfig ? gachaConfig.name : "";
-    const isPlatOrLegend = gachaName.includes("プラチナ") || gachaName.includes("レジェンド");
-    
-    const charId = fullRoll.finalChar.id;
-    const charIdStr = String(charId);
-
-    // --- 限定キャラ判定 ---
-    let isLimited = false;
-    if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
-        if (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charIdStr)) {
-            isLimited = true;
-        }
-    }
-
-    // --- Findターゲット判定 ---
+    const gConfig = gachaMasterData.gachas[id];
+    const isPlatOrLegend = gConfig?.name.includes("プラチナ") || gConfig?.name.includes("レジェンド");
+    const charId = String(fullRoll.finalChar.id);
+    let isLimited = (typeof limitedCats !== 'undefined') && (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charId));
     const isAuto = isAutomaticTarget(charId);
-    const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId)) || hiddenFindIds.has(charIdStr);
+    const isHidden = hiddenFindIds.has(charId) || (typeof charId === 'number' && hiddenFindIds.has(charId));
     const isManual = userTargetIds.has(charId) || (typeof charId === 'number' && userTargetIds.has(charId));
     const isFindTarget = (isAuto && !isHidden) || isManual;
 
-    let hlClass = '';
-    let isSimRoute = false;
-    let style = '';
-
-    if (isSimulationMode) {
-        if (highlightMap.get(seedIndex) === id) {
-            isSimRoute = true;
-            // 修正：Findターゲット、限定、伝説、超激レアがルート上にある場合は「青ハイライト＋太字赤字」
-            if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend' || isFindTarget) {
-                style = 'background-color: #32CD32;'; // view_table.jsで青色(COLOR_ROUTE_UBER)に置換
-                hlClass = ' highlight highlight-uber'; // 太字・赤字クラス
-            } else {
-                style = 'background-color: #98FB98;'; // view_table.jsで水色(COLOR_ROUTE_HIGHLIGHT)に置換
-                hlClass = ' highlight';
-            }
+    let hlClass = '', isSimRoute = false, style = '';
+    if (isSimulationMode && highlightMap.get(seedIndex) === id) {
+        isSimRoute = true;
+        if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend' || isFindTarget) {
+            style = 'background-color: #32CD32;';
+            hlClass = ' highlight highlight-uber';
+        } else {
+            style = 'background-color: #98FB98;';
+            hlClass = ' highlight';
         }
     }
 
-    // Simルート外、またはSimモードOFFの場合の通常着色
     if (!isSimRoute) {
         if (isFindTarget) {
             style = 'background-color: #adff2f; font-weight: bold;';
         } else if (isLimited) {
             style = 'background-color: #66FFFF;';
-        } else if (isPlatOrLegend) {
-            style = '';
-        } else {
+        } else if (!isPlatOrLegend) {
             const sv = seeds[seedIndex] % 10000;
-            if(sv >= 9970) style = 'background-color: #DDA0DD;';
-            else if(sv >= 9940) style = 'background-color: #de59de;';
-            else if(sv >= 9500) style = 'background-color: #FF4C4C;';
-            else if(sv >= 9100) style = 'background-color: #FFB6C1;';
-            else if(sv >= 6970) style = 'background-color: #ffff33;';
-            else if(sv >= 6470) style = 'background-color: #FFFFcc;';
+            if (fullRoll.rarity === 'legend') style = 'background-color: #ffcc00;';
+            else if (fullRoll.rarity === 'uber') style = 'background-color: #FF4C4C;';
+            else if (sv >= 9100) style = 'background-color: #FFB6C1;';
+            else if (fullRoll.rarity === 'super') style = 'background-color: #ffff33;';
+            else if (sv >= 6470) style = 'background-color: #FFFFcc;';
         }
     }
 
-    // クリックイベント
-    const charNameForCopy = fullRoll.finalChar.name.replace(/'/g, "\\'");
-    const clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${charNameForCopy}')"`;
+    const charName = fullRoll.finalChar.name;
+    const clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${charName.replace(/'/g, "\\'")}')"`;
     style += ' cursor: pointer;';
 
-    let content = fullRoll.finalChar.name;
-    if (!isSimulationMode) {
-        if (fullRoll.isRerolled) {
+    let content = charName;
+
+    // リロール（被り遷移）表示
+    if (fullRoll.isRerolled) {
+        const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
+        let addr = formatAddress(nextSeedIdx);
+        
+        // 【修正箇所】連続レア被りが発生している場合のみ、アドレスの前にRを付与
+        if (fullRoll.isConsecutiveRerollTarget) {
+            addr = 'R' + addr;
+        }
+
+        if (!isSimulationMode) {
             const s2Val = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
             const s3Val = (seedIndex + 2 < seeds.length) ? seeds[seedIndex + 2] : null;
             const originalName = fullRoll.originalChar.name;
-            const finalName = fullRoll.finalChar.name;
-            let originalHtml = originalName;
-            if (s2Val !== null) originalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s2Val})">${originalName}</span>`;
-            let finalHtml = finalName;
-            if (s3Val !== null) finalHtml = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${s3Val})">${finalName}</span>`;
-            const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-            let addr = formatAddress(nextSeedIdx);
-            if (fullRoll.isForceDuplicate) addr = 'R' + addr;
-            content = `${originalHtml}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${finalHtml}`;
+            let oHtml = s2Val ? `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${s2Val})">${originalName}</span>` : originalName;
+            let fHtml = s3Val ? `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${s3Val})">${charName}</span>` : charName;
+            content = `${oHtml}<br><span style="font-size:0.85em; color:#555;">${addr}</span>${fHtml}`;
         } else {
-            const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
-            if(slotSeedVal !== null) content = `<span class="char-link" style="cursor:pointer;" onclick="event.stopPropagation(); updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
+            content = `${fullRoll.originalChar.name}<br><span style="font-size:0.85em; color:#555;">${addr}</span>${charName}`;
         }
-    } else {
-        if (fullRoll.isRerolled) {
-            const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-            let addr = formatAddress(nextSeedIdx);
-            if (fullRoll.isForceDuplicate) addr = 'R' + addr;
-            content = `${fullRoll.originalChar.name}<br><span style="font-size:0.9em; color:#666;">${addr}</span>${fullRoll.finalChar.name}`;
+    } else if (!isSimulationMode) {
+        const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
+        if(slotSeedVal !== null) {
+            content = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
         }
     }
     

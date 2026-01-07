@@ -21,7 +21,15 @@ function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
         if (tempIdx >= seeds.length - 5) break;
         const rr = rollWithSeedConsumptionFixed(tempIdx, conf, seeds, tempLastDraw);
         if (rr.seedsConsumed === 0) break;
-        tempLastDraw = { rarity: rr.rarity, charId: rr.charId, isRerolled: rr.isRerolled };
+        
+        tempLastDraw = { 
+            rarity: rr.rarity, 
+            charId: rr.charId, 
+            originalCharId: rr.originalChar ? rr.originalChar.id : rr.charId,
+            isRerolled: rr.isRerolled,
+            lastRerollSlot: rr.lastRerollSlot,
+            fromRerollRoute: rr.isRerolled 
+        };
         tempIdx += rr.seedsConsumed;
     }
     
@@ -29,13 +37,78 @@ function simulateSingleSegment(sim, currentIdx, currentLastDraw, seeds) {
         if (typeof rollGuaranteedUber !== 'undefined') {
             const gr = rollGuaranteedUber(tempIdx, conf, seeds);
             tempIdx += gr.seedsConsumed;
-            tempLastDraw = { rarity: 'uber', charId: gr.charId, isRerolled: false };
+            tempLastDraw = { 
+                rarity: 'uber', 
+                charId: gr.charId, 
+                originalCharId: gr.charId,
+                isRerolled: false,
+                lastRerollSlot: null,
+                fromRerollRoute: false
+            };
         }
     }
     return { nextIndex: tempIdx, lastDraw: tempLastDraw };
 }
 
-/** 経路探索エントリポイント (階層的フォールバック版) */
+/** * 経路構成文字列の解析ヘルパー
+ * [形式修正] "ガチャID ロール数 ガチャID ロール数" というペア形式に対応
+ */
+function parseSimConfig(str) {
+    if (!str) return [];
+    // 全ての空白（スペース、タブ等）で分割
+    const tokens = str.trim().split(/\s+/);
+    const segments = [];
+    
+    // 2つ1組 (ID, Count) で読み込む
+    for (let i = 0; i < tokens.length; i += 2) {
+        if (i + 1 >= tokens.length) break;
+        
+        const fullId = tokens[i];
+        const rolls = parseInt(tokens[i + 1]);
+        if (isNaN(rolls)) continue;
+
+        const g = fullId.endsWith("g");
+        const baseId = g ? fullId.slice(0, -1) : fullId;
+        
+        segments.push({ 
+            id: baseId,       // 計算用のベースID
+            fullId: fullId,   // ハイライト判定用の完全ID (g等を含む)
+            rolls: rolls, 
+            g: g 
+        });
+    }
+    return segments;
+}
+
+/** * 経路構成オブジェクトの文字列化
+ * [形式修正] ガチャID スペース ロール数
+ */
+function stringifySimConfig(parts) {
+    return parts.map(p => `${p.fullId || (p.id + (p.g ? "g" : ""))} ${p.rolls}`).join(" ");
+}
+
+/** 経路の圧縮 */
+function compressRoute(route) {
+    if (route.length === 0) return "";
+    let compressed = [];
+    let current = { ...route[0] };
+    for (let i = 1; i < route.length; i++) {
+        // 同じガチャID（gの有無含む）ならロール数を加算
+        const currentFullId = current.fullId || (current.id + (current.g ? "g" : ""));
+        const targetFullId = route[i].id + (route[i].g ? "g" : "");
+        
+        if (targetFullId === currentFullId) {
+            current.rolls += route[i].rolls;
+        } else {
+            compressed.push(current);
+            current = { ...route[i], fullId: targetFullId };
+        }
+    }
+    compressed.push(current);
+    return stringifySimConfig(compressed);
+}
+
+/** 経路探索エントリポイント */
 function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null, primaryTargetId = null) {
     const getSeeds = () => {
         const seedEl = document.getElementById('seed');
@@ -47,81 +120,51 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         return tempSeeds;
     };
     const simSeeds = getSeeds();
-    let startIdx = 0;
-    let initialLastDraw = null;
-    let validConfigParts = [];
+    let startIdx = 0, initialLastDraw = null, validConfigParts = [];
 
     if (currentConfigStr && currentConfigStr.trim() !== "") {
         const existingConfigs = parseSimConfig(currentConfigStr);
-        let tempIdx = 0;
-        let tempLastDraw = null;
+        let tempIdx = 0, tempLastDraw = null;
         for (const segment of existingConfigs) {
             const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
             if (res.nextIndex > targetSeedIndex) break;
             validConfigParts.push(segment);
-            tempIdx = res.nextIndex;
-            tempLastDraw = res.lastDraw;
+            tempIdx = res.nextIndex; tempLastDraw = res.lastDraw;
             if (tempIdx === targetSeedIndex) break;
         }
-        startIdx = tempIdx;
-        initialLastDraw = tempLastDraw;
+        startIdx = tempIdx; initialLastDraw = tempLastDraw;
     }
     
     const baseConfigStr = stringifySimConfig(validConfigParts);
-
-    // 全ての表示中ガチャを検索対象にする
     const usableConfigs = visibleGachaIds.map(idStr => {
         const id = idStr.replace(/[gfs]$/, '');
-        return gachaMasterData.gachas[id] || null;
+        const config = gachaMasterData.gachas[id] || null;
+        if (config) config._fullId = idStr; // 探索用
+        return config;
     }).filter(c => c !== null);
 
     if (usableConfigs.length === 0) return null;
 
-    // UIから上限値を取得
-    const maxPlatInput = document.getElementById('sim-max-plat');
-    const maxGuarInput = document.getElementById('sim-max-guar');
-    const targetMaxPlat = maxPlatInput ? parseInt(maxPlatInput.value, 10) : 0;
-    const targetMaxGuar = maxGuarInput ? parseInt(maxGuarInput.value, 10) : 0;
+    const targetMaxPlat = parseInt(document.getElementById('sim-max-plat')?.value || 0, 10);
+    const targetMaxGuar = parseInt(document.getElementById('sim-max-guar')?.value || 0, 10);
 
-    let route = null;
-
-    // --- 階層的検索ロジック ---
-
-    // 1. まずはプラチナも確定ガチャも使わずに検索 (0, 0)
-    route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, 0);
-
-    // 2. 見つからない場合、設定された上限の範囲内で「確定ガチャ」を解禁して検索 (0, N)
-    if (!route && targetMaxGuar > 0) {
-        console.log("Searching with Guaranteed rolls enabled...");
-        route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, targetMaxGuar);
-    }
-
-    // 3. それでも見つからない場合、設定された上限の範囲内で「プラチナガチャ」も解禁して検索 (M, N)
-    if (!route && targetMaxPlat > 0) {
-        console.log("Searching with Platinum tickets enabled...");
-        route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, targetMaxPlat, targetMaxGuar);
-    }
+    let route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, 0);
+    if (!route && targetMaxGuar > 0) route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, targetMaxGuar);
+    if (!route && targetMaxPlat > 0) route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, targetMaxPlat, targetMaxGuar);
     
     if (route) {
         if (finalActionOverride) route.push(finalActionOverride);
-        else route.push({ id: targetGachaId, rolls: 1 });
-        const newRouteStr = compressRoute(route);
-        return baseConfigStr ? baseConfigStr + " " + newRouteStr : newRouteStr;
+        else route.push({ id: targetGachaId.replace(/[gfs]$/, ""), rolls: 1, fullId: targetGachaId });
+        const compressed = compressRoute(route);
+        return (baseConfigStr ? baseConfigStr + " " : "") + compressed;
     }
     return null;
 }
 
-/** ビームサーチによる経路探索 */
+/** ビームサーチ */
 function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
-    const BEAM_WIDTH = 25;
-    const MAX_STEPS = 2500;
-
-    const sortedConfigs = [...configs].sort((a, b) => {
-        if (a.id == targetGachaId) return -1;
-        if (b.id == targetGachaId) return 1;
-        return 0;
-    });
-
+    const BEAM_WIDTH = 25, MAX_STEPS = 2500;
+    const sortedConfigs = [...configs].sort((a, b) => (a._fullId == targetGachaId ? -1 : 1));
     let candidates = [{ idx: startIdx, path: [], lastDraw: initialLastDraw, score: 0, platUsed: 0, guarUsed: 0 }];
     let loopCount = 0;
 
@@ -135,77 +178,47 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
 
             for (const conf of sortedConfigs) {
                 const isPlat = conf.name.includes('プラチナ') || conf.name.includes('レジェンド');
+                const isG = conf._fullId.endsWith("g");
                 
-                // 1. 通常の1ロール（プラチナは上限チェック）
                 if (!isPlat || current.platUsed < maxPlat) {
                     const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, current.lastDraw);
                     if (current.idx + res.seedsConsumed <= targetIdx) {
-                        const newPath = [...current.path, { id: conf.id, rolls: 1 }];
-                        const newLastDraw = { rarity: res.rarity, charId: res.charId, isRerolled: res.isRerolled };
-                        const newPlatCount = isPlat ? current.platUsed + 1 : current.platUsed;
-                        
-                        let score = calculateScore(current.score, res, dist, targetIdx, primaryTargetId, conf.id, current.path);
-                        if (isPlat) score -= 1000; // 使用にはペナルティ
-
+                        const newPath = [...current.path, { id: conf.id, rolls: 1, g: isG, fullId: conf._fullId }];
+                        const newDraw = { 
+                            rarity: res.rarity, charId: res.charId, 
+                            originalCharId: res.originalChar ? res.originalChar.id : res.charId,
+                            isRerolled: res.isRerolled, lastRerollSlot: res.lastRerollSlot, fromRerollRoute: res.isRerolled
+                        };
                         if (current.idx + res.seedsConsumed === targetIdx) return newPath;
-                        nextCandidates.push({ idx: current.idx + res.seedsConsumed, path: newPath, lastDraw: newLastDraw, score: score, platUsed: newPlatCount, guarUsed: current.guarUsed });
+                        nextCandidates.push({ idx: current.idx + res.seedsConsumed, path: newPath, lastDraw: newDraw, score: calculateScore(current.score, res, dist, targetIdx, primaryTargetId, conf.id, current.path), platUsed: isPlat ? current.platUsed + 1 : current.platUsed, guarUsed: current.guarUsed });
                     }
                 }
-
-                // 2. 確定11連（通常のガチャかつ上限チェック）
-                if (!isPlat && current.guarUsed < maxGuar) {
+                if (!isPlat && current.guarUsed < maxGuar && isG) {
                     const res = simulateSingleSegment({id: conf.id, rolls: 11, g: true}, current.idx, current.lastDraw, simSeeds);
                     if (res.nextIndex <= targetIdx) {
-                        const newPath = [...current.path, { id: conf.id, rolls: 11, g: true }];
-                        let score = current.score + 100 - 500; // 使用にはペナルティ
-
+                        const newPath = [...current.path, { id: conf.id, rolls: 11, g: true, fullId: conf._fullId }];
                         if (res.nextIndex === targetIdx) return newPath;
-                        nextCandidates.push({ idx: res.nextIndex, path: newPath, lastDraw: res.lastDraw, score: score, platUsed: current.platUsed, guarUsed: current.guarUsed + 1 });
+                        nextCandidates.push({ idx: res.nextIndex, path: newPath, lastDraw: res.lastDraw, score: current.score - 500, platUsed: current.platUsed, guarUsed: current.guarUsed + 1 });
                     }
                 }
             }
         }
         if (nextCandidates.length === 0) break;
-
         nextCandidates.sort((a, b) => b.score - a.score);
-        const uniqueCandidates = [];
-        const seenState = new Set();
-        for (const cand of nextCandidates) {
-            const stateKey = `${cand.idx}-${cand.lastDraw.charId}-${cand.platUsed}-${cand.guarUsed}`;
-            if (!seenState.has(stateKey)) {
-                seenState.add(stateKey);
-                uniqueCandidates.push(cand);
-            }
+        const unique = []; const seen = new Set();
+        for (const c of nextCandidates) {
+            const key = `${c.idx}-${c.lastDraw?.charId}-${c.platUsed}-${c.guarUsed}`;
+            if (!seen.has(key)) { seen.add(key); unique.push(c); }
         }
-        candidates = uniqueCandidates.slice(0, BEAM_WIDTH);
+        candidates = unique.slice(0, BEAM_WIDTH);
     }
     return null;
 }
 
-/** スコア計算ヘルパー */
 function calculateScore(currentScore, res, dist, targetIdx, primaryTargetId, confId, currentPath) {
-    let score = currentScore;
-    const distIsOdd = (dist % 2 !== 0);
-    const moveIsOdd = (res.seedsConsumed % 2 !== 0);
-    
-    if (distIsOdd === moveIsOdd) score += 500;
-    else score -= 50;
-
-    const cid = res.charId;
-    if (primaryTargetId !== null && String(cid) === String(primaryTargetId)) score += 1000;
-
-    let rarityScore = 0;
-    const isLimited = (typeof limitedCats !== 'undefined' && limitedCats.includes(parseInt(cid)));
-    const isUserTarget = (typeof userTargetIds !== 'undefined' && (userTargetIds.has(cid) || userTargetIds.has(parseInt(cid))));
-    
-    if (res.rarity === 'legend') rarityScore = isUserTarget ? 300 : 250;
-    else if (isLimited) rarityScore = isUserTarget ? 200 : 150;
-    else if (res.rarity === 'uber') rarityScore = isUserTarget ? 100 : 80;
-    else if (isUserTarget) rarityScore = 50;
-    
-    score += rarityScore;
-    const prevId = currentPath.length > 0 ? currentPath[currentPath.length - 1].id : null;
-    if (confId == prevId) score += 40;
-    score += res.seedsConsumed;
-    return score;
+    let s = currentScore;
+    if ((dist % 2 !== 0) === (res.seedsConsumed % 2 !== 0)) s += 500; else s -= 50;
+    if (primaryTargetId && String(res.charId) === String(primaryTargetId)) s += 1000;
+    if (res.rarity === 'legend') s += 300; else if (res.rarity === 'uber') s += 100;
+    return s + res.seedsConsumed;
 }

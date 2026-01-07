@@ -9,24 +9,14 @@ Get-ChildItem -Include *.html,*.css,*.js -Exclude cats.js -Recurse | ForEach-Obj
 
 そのままVSCODEに全文を貼り付けて上書きし、ご回答の内容を反映したいので以下のファイルのコード全文（省略なし）を記述してください
 エラーが出るので、出典引用タグ()なしで記述してください
-view_schedule_utils.js
-view_schedule_gantt.js
+view_table_data.js と sim_engine.js
+logic.js
 
-ui_globals.js
-ui_target_handler.js
-view_forecast.js
-
-view_schedule_utils.js
-index.html
-
-
-view_schedule_table.js
-ui_schedule_handler.js
-view_schedule_editor.js
-schedule_logic.js
-ui_schedule_editor_handler.js
-style.css
-
+---
+もし複数のデータの変更が必要な場合は、複雑な処理を多大な分量で一気にお答えいただくとご負担が過大になるかと思いますので、
+修正が必要なデータをまず列挙し、1回のご回答につき、データ1つずつに対するご回答を示していただければと思います
+そのままVSCODEに全文を貼り付けて上書きし、ご回答の内容を反映したいので各ファイルのコード全文（省略なし）を記述してください
+エラーが出るので、出典引用タグ()なしで記述してください
 
 
 ---
