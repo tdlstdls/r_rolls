@@ -23,8 +23,8 @@ function generateRollsTable() {
         const numRolls = currentRolls;
         const seeds = [];
         const rngForSeeds = new Xorshift32(initialSeed);
-        // テーブル表示に必要な十分な数のシードを生成（1ロール最大15消費と想定）
-        for (let i = 0; i < numRolls * 15 + 100; i++) seeds.push(rngForSeeds.next());
+        // テーブル表示に必要な十分な数のシードを生成
+        for (let i = 0; i < numRolls * 25 + 500; i++) seeds.push(rngForSeeds.next());
 
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);

@@ -76,15 +76,21 @@ function backSimConfig() {
  * ガチャのマスター詳細情報（キャラリスト）表示を更新する
  */
 function updateMasterInfoView() {
-    // 表示先のコンテナを取得 (view_table.js内で生成されるID)
+    // view_table.js側で生成されるコンテナIDを指定
     const el = document.getElementById('master-info-area');
     
     // 関数名のタイポ修正：generateMasterInfoHTML -> generateMasterInfoHtml
-    // 存在チェックを行い、関数が利用可能な場合のみ実行
-    if (!el || typeof generateMasterInfoHtml !== 'function') {
-        return;
-    }
-    
-    // view_master.js の generateMasterInfoHtml は内部で tableGachaIds を参照するため引数不要
-    el.innerHTML = generateMasterInfoHtml();
+    if (!el || typeof generateMasterInfoHtml !== 'function') return;
+
+    // 現在テーブルに表示されているガチャ情報を収集
+    const configs = [];
+    tableGachaIds.forEach(idStr => {
+        let gachaId = idStr.replace(/[gfs]$/, '');
+        if (gachaMasterData.gachas[gachaId]) {
+            configs.push(gachaMasterData.gachas[gachaId]);
+        }
+    });
+
+    // 収集した情報を元にHTMLを生成して流し込む
+    el.innerHTML = generateMasterInfoHtml(configs);
 }
