@@ -1,117 +1,144 @@
-/** @file view_table_data.js @description 経路依存シミュレーションによるテーブルデータ生成 */
+/** @file view_table_data.js @description シミュレーションデータ生成（将来のキャラ追加・消費SEED・二系統ID管理） */
 
-/** 各列のガチャ設定を構築 */
+/**
+ * 各列のガチャ設定を構築する
+ * 将来の超激レア追加シミュレーション(add)をここで反映する
+ */
 function prepareColumnConfigs() {
     return tableGachaIds.map((idWithSuffix, colIndex) => {
-        let suffix = '';
-        let baseId = idWithSuffix;
+        let suffix = idWithSuffix.match(/[gfs]$/)?.[0] || '';
+        let baseId = suffix ? idWithSuffix.slice(0, -1) : idWithSuffix;
         
-        // 接尾辞の解析 (g:確定11連, f:確定15連, s:確定7連)
-        if (idWithSuffix.endsWith('f')) { suffix = 'f'; baseId = idWithSuffix.slice(0, -1); }
-        else if (idWithSuffix.endsWith('s')) { suffix = 's'; baseId = idWithSuffix.slice(0, -1); }
-        else if (idWithSuffix.endsWith('g')) { suffix = 'g'; baseId = idWithSuffix.slice(0, -1); }
+        // 確定枠の通常ロール回数設定
+        let normalRolls = 0;
+        if (suffix === 'g') normalRolls = 10;
+        else if (suffix === 'f') normalRolls = 14;
+        else if (suffix === 's') normalRolls = 6;
 
-        let guaranteedNormalRolls = 0;
-        if (suffix === 'g') guaranteedNormalRolls = 10;
-        else if (suffix === 'f') guaranteedNormalRolls = 14;
-        else if (suffix === 's') guaranteedNormalRolls = 6;
-
-        // マスタデータから設定を取得
         const configSource = gachaMasterData.gachas[idWithSuffix] || gachaMasterData.gachas[baseId];
         if (!configSource) return null;
 
+        // 設定をコピーしてカスタマイズ
         const config = JSON.parse(JSON.stringify(configSource));
-        config._guaranteedNormalRolls = guaranteedNormalRolls;
+        config._guaranteedNormalRolls = normalRolls;
         config._suffix = suffix;
         
-        // 超激レア追加設定
+        // --- 将来の超激追加（add機能）の実装 ---
         const addCount = uberAdditionCounts[colIndex] || 0;
         if (addCount > 0 && config.pool.uber) {
+            // 先頭に新規キャラを追加していく
             for (let k = 1; k <= addCount; k++) {
-                config.pool.uber.unshift({ id: `sim-new-${k}`, name: `新規超激${k}`, rarity: 'uber' });
+                config.pool.uber.unshift({ 
+                    id: `sim-new-${k}`, 
+                    name: `新規超激${k}`, 
+                    rarity: 'uber' 
+                });
             }
         }
         return config;
     });
 }
 
-/** * 全ガチャ列のシミュレーションを実行 
- * 各セルの計算結果を「着地地点」に保存し、連続性を担保する
+/**
+ * 全ガチャ列のテーブルデータをシミュレートする
  */
 function executeTableSimulation(numRolls, columnConfigs, seeds) {
     const tableData = Array(numRolls * 2).fill(null).map(() => []);
-    
     columnConfigs.forEach((config, colIndex) => {
         if (!config) return;
 
-        // 列ごとに状態を管理するための一時保存用Map
-        // Key: startIndex(着地先), Value: DrawInfo
         const landingMap = new Map(); 
+        let lastDrawA = null; 
+        let lastDrawB = null; 
         
-        // 通常の縦移動（2つ下のセルへの通常遷移）用の前回結果保持
-        let lastDrawA = null; // A列の前回結果保持用
-        let lastDrawB = null; // B列の前回結果保持用
+        // 各トラックの「直前のセルの実行有無（ジャンプで立ち去ったか）」を管理
+        let trackA_active = true;
+        let trackB_active = true;
 
-        // 全インデックスを 0 から順番に計算することで、リロールによるトラック移動を再現する
         for (let i = 0; i < numRolls * 2; i++) {
             if (i >= seeds.length) break;
 
             const isTrackB = (i % 2 !== 0);
-            let verticalInfo = isTrackB ? lastDrawB : lastDrawA;
             
-            // ベースとなる抽選コンテキストの作成
-            let drawContext = null;
-            if (verticalInfo) {
-                // 通常遷移の情報をコピー（デフォルトは連続被り判定なし）
-                drawContext = { ...verticalInfo, fromRerollRoute: false };
-            }
-
-            // 1. このインデックスへの「ジャンプ着地」が予約されているかチェック
+            // 物理的な直上セルの情報を取得（レア被り判定用：常に参照）
+            const drawAbove = (isTrackB ? lastDrawB : lastDrawA);
+            
+            // 実際にそのセルに「着地」した移動元の情報を取得
+            let sourceDraw = null;
             if (landingMap.has(i)) {
-                const jumpSource = landingMap.get(i);
-                if (!drawContext) {
-                    // 垂直方向の情報がない（開始直後のジャンプ等）場合
-                    drawContext = { ...jumpSource, fromRerollRoute: true };
-                } else {
-                    // 【修正】垂直方向の情報（通常被り判定用）を維持しつつ、
-                    // ジャンプ元の確定ID（連続被り判定用）を上書きしてマージする
-                    drawContext.charId = jumpSource.charId; 
-                    drawContext.fromRerollRoute = true;
+                // 他のセルからのジャンプ着地がある場合
+                sourceDraw = landingMap.get(i);
+                if (isTrackB) trackB_active = true; else trackA_active = true;
+            } else {
+                // 直前セルから垂直移動してきた場合（直前セルがジャンプで立ち去っていないことが条件）
+                const isActive = isTrackB ? trackB_active : trackA_active;
+                if (isActive) {
+                    sourceDraw = drawAbove;
                 }
             }
 
-            // 2. 抽選実行 (logic.js の rollWithSeedConsumptionFixed を呼び出し)
+            // コンテキストの構築
+            // sourceDrawがnull（ジャンプで飛ばされたセル）でも、drawAboveがあればレア被り判定は行う
+            const drawContext = (sourceDraw || drawAbove) ? {
+                originalIdAbove: drawAbove ? drawAbove.originalCharId : null,
+                finalIdSource: sourceDraw ? sourceDraw.charId : null, // 着地していない場合はnull
+                rarity: sourceDraw ? sourceDraw.rarity : (drawAbove ? drawAbove.rarity : 'rare'),
+                charId: sourceDraw ? sourceDraw.charId : null
+            } : null;
+
+            // 通常ロールのシミュレーション
             const rollResult = rollWithSeedConsumptionFixed(i, config, seeds, drawContext);
-            
-            // 3. 結果をテーブルデータに保存
-            tableData[i][colIndex] = { 
-                gachaId: config.id, 
-                roll: rollResult 
-            };
 
-            // 4. 次回計算用に引き継ぐ「現在の状態」を構築
-            const currentDrawState = {
-                rarity: rollResult.rarity,
-                charId: rollResult.charId, // 再抽選後の最終的な確定ID
-                originalCharId: rollResult.originalChar ? rollResult.originalChar.id : rollResult.charId,
-                isRerolled: rollResult.isRerolled,
-                lastRerollSlot: rollResult.lastRerollSlot
-            };
+            // 確定枠（11G等）の計算
+            let guaranteedResult = null;
+            let alternativeGuaranteed = null;
 
-            // 5. 今回リロールが発生した場合、将来の着地地点インデックスにこの状態を予約保存
-            if (rollResult.isRerolled) {
-                const targetIdx = i + rollResult.seedsConsumed;
-                // 到着先のインデックスに情報をセット。ここでの情報が次回の「連続被り判定」に使用される
-                landingMap.set(targetIdx, currentDrawState);
+            if (config._suffix !== '') {
+                const normalCount = config._guaranteedNormalRolls;
+                guaranteedResult = calculateSequentialGuaranteed(i, config, seeds, drawContext, normalCount, false);
+                
+                if (guaranteedResult.normalRollsResults && guaranteedResult.normalRollsResults.length > 0) {
+                    const firstIdInG = String(guaranteedResult.normalRollsResults[0].finalChar.id);
+                    const currentRollId = String(rollResult.finalChar.id);
+                    guaranteedResult.isVerified = (firstIdInG === currentRollId);
+                }
+
+                if (rollResult.isRerolled) {
+                    alternativeGuaranteed = calculateSequentialGuaranteed(i, config, seeds, drawContext, normalCount, true);
+                }
             }
 
-            // 6. 通常遷移（2つ下のセル）への基本情報を継承
-            // 縦移動自体は「リロールによる着地」ではないため、fromRerollRoute を false として引き継ぐ
-            const nextBaseDraw = { ...currentDrawState, isRerolled: false, lastRerollSlot: null };
-            if (isTrackB) {
-                lastDrawB = nextBaseDraw;
+            // セルデータを保存
+            tableData[i][colIndex] = { 
+                gachaId: config.id, 
+                roll: rollResult, 
+                guaranteed: guaranteedResult, 
+                alternativeGuaranteed 
+            };
+
+            // 次回への状態の準備
+            const nextState = { 
+                rarity: rollResult.rarity, 
+                charId: rollResult.charId, 
+                originalCharId: rollResult.originalChar?.id || rollResult.charId 
+            };
+
+            // ジャンプ・移動フラグの更新
+            if (rollResult.isRerolled) {
+                // ジャンプ先を予約
+                landingMap.set(i + rollResult.seedsConsumed, nextState);
+                // 現在のトラックはジャンプにより「空き」になる
+                if (isTrackB) trackB_active = false; else trackA_active = false;
             } else {
-                lastDrawA = nextBaseDraw;
+                // 通常移動
+                if (isTrackB) trackB_active = true; else trackA_active = true;
+            }
+
+            // 垂直履歴は「物理的な直上」として常に更新
+            if (isTrackB) {
+                lastDrawB = nextState;
+            } else {
+                lastDrawA = nextState;
             }
         }
     });

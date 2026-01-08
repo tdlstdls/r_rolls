@@ -658,7 +658,7 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
     let uniqueTotalAtCurrent = totalChars;
 
     // --- 【判定1】連続レア被り(Consecutive Duplicate) ---
-    // 条件: 直前が「再抽選を経て着地したマス」であり、その着地先の初期キャラIDが、直前の最終確定IDと一致した場合
+    // 条件: ジャンプ着地ルートであり、かつ移動元の「最終確定キャラID」と今回が一致
     let isConsecutiveRerollTarget = false;
     if (currentRarity === 'rare' && lastDrawInfo && lastDrawInfo.fromRerollRoute) {
         if (lastDrawInfo.charId !== null && lastDrawInfo.charId === character.id) {
@@ -667,9 +667,11 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
     }
 
     // --- 【判定2】通常レア被り(Standard Duplicate) ---
+    // 条件: 連続被りでない場合で、垂直方向の「初期キャラID」と今回が一致
+    // 修正: ジャンプ着地時であっても垂直方向の比較(originalCharId)を行う
     let isStandardDuplicate = false;
     if (!isConsecutiveRerollTarget && currentRarity === 'rare' && lastDrawInfo && lastDrawInfo.rarity === 'rare') {
-        if (lastDrawInfo.originalCharId === character.id) {
+        if (lastDrawInfo.originalCharId !== null && lastDrawInfo.originalCharId === character.id) {
             isStandardDuplicate = true;
         }
     }
@@ -680,7 +682,9 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
         let removeIndex = charIndex;
         isRerolled = true;
 
-        let checkConsecutiveFirst = isConsecutiveRerollTarget;
+        // 何を回避するためのリロールかを決定
+        const targetIdToAvoid = isConsecutiveRerollTarget ? lastDrawInfo.charId : lastDrawInfo.originalCharId;
+
         while (true) {
             currentPool.splice(removeIndex, 1);
             uniqueTotalAtCurrent = currentPool.length;
@@ -693,15 +697,9 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
             lastRerollSlotAtCurrent = reRollIndex;
             character = currentPool[reRollIndex];
             
-            if (checkConsecutiveFirst) {
-                if (character.id !== lastDrawInfo.charId) {
-                    break;
-                }
-                checkConsecutiveFirst = false;
-            } else {
-                if (character.id !== lastDrawInfo.charId) {
-                    break;
-                }
+            // 回避対象（移動元キャラ or 垂直隣接キャラ）と異なるキャラが出るまでループ
+            if (character.id !== targetIdToAvoid) {
+                break;
             }
             
             removeIndex = reRollIndex;
@@ -3133,14 +3131,12 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
     if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
     
-    // 表示の基準として最初のガチャ列の設定を使用
     const firstGachaIdWithSuffix = tableGachaIds[0];
     if (!firstGachaIdWithSuffix) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
     let firstId = firstGachaIdWithSuffix.replace(/[gfs]$/, '');
     const originalConfig = gachaMasterData.gachas[firstId];
     if(!originalConfig) return `<td class="${calcColClass}">N/A</td>`.repeat(5);
     
-    // 計算用設定の構築
     const config = { ...originalConfig };
     config.pool = { ...originalConfig.pool };
     if (config.pool.uber) {
@@ -3155,9 +3151,7 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     const sVal_0 = seeds[seedIndex];
     const sVal_1 = seeds[seedIndex+1];
     
-    // 1. Seed
     const colSeed = `<td>(S${seedIndex+1})<br>${sVal_0}</td>`;
-    // 2. Rarity
     const rVal = sVal_0 % 10000;
     const rates = config.rarity_rates || {};
     const rareRate = rates.rare || 0, superRate = rates.super || 0, uberRate = rates.uber || 0, legendRate = rates.legend || 0;
@@ -3167,7 +3161,7 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     else if (rVal < rareRate + superRate + uberRate) rType = 'uber';
     else if (rVal < rareRate + superRate + uberRate + legendRate) rType = 'legend';
     const colRarity = `<td>(S${seedIndex+1})<br>${rVal}<br>(${rType})</td>`;
-    // 3 & 4. Slot & ReRoll
+
     let colSlot = '<td>-</td>';
     let colReRoll = '<td>-</td>';
     if (tableData[seedIndex] && tableData[seedIndex][0] && tableData[seedIndex][0].roll) {
@@ -3181,7 +3175,6 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
         }
     }
 
-    // 5. Guaranteed
     let colGuar = '<td>-</td>';
     const uberPool = config.pool['uber'] || [];
     if (seedIndex < seeds.length - 20 && uberPool.length > 0) {
@@ -3216,7 +3209,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     
     const gConfig = gachaMasterData.gachas[id];
     const isPlatOrLegend = gConfig?.name.includes("プラチナ") || gConfig?.name.includes("レジェンド");
-    // --- 判定ロジック ---
     const charId = String(fullRoll.finalChar.id);
     let isLimited = (typeof limitedCats !== 'undefined') && (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charId));
     const isAuto = isAutomaticTarget(charId);
@@ -3225,7 +3217,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     const isFindTarget = (isAuto && !isHidden) || isManual;
 
     let hlClass = '', isSimRoute = false, style = '';
-    // ハイライト判定 (Simルート)
     if (isSimulationMode && highlightMap.get(seedIndex) === id) {
         isSimRoute = true;
         if (isLimited || fullRoll.rarity === 'uber' || fullRoll.rarity === 'legend' || isFindTarget) {
@@ -3237,7 +3228,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         }
     }
 
-    // 通常時の背景色
     if (!isSimRoute) {
         if (isFindTarget) {
             style = 'background-color: #adff2f; font-weight: bold;';
@@ -3258,17 +3248,16 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     style += ' cursor: pointer;';
 
     let content = charName;
-    
-    // --- 【修正箇所】連続レア被り表示 (結果側のセルにRを表示) ---
-    if (fullRoll.isConsecutiveRerollTarget) {
-        content = `<span style="font-weight:bold;">R</span> ` + content;
-    }
 
     // リロール（被り遷移）表示
     if (fullRoll.isRerolled) {
         const nextSeedIdx = seedIndex + fullRoll.seedsConsumed;
-        // 修正: 遷移元のアドレスからは「R」を削除
         let addr = formatAddress(nextSeedIdx);
+        
+        // 【修正箇所】連続レア被りが発生している場合のみ、アドレスの前にRを付与
+        if (fullRoll.isConsecutiveRerollTarget) {
+            addr = 'R' + addr;
+        }
 
         if (!isSimulationMode) {
             const s2Val = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
@@ -3281,7 +3270,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             content = `${fullRoll.originalChar.name}<br><span style="font-size:0.85em; color:#555;">${addr}</span>${charName}`;
         }
     } else if (!isSimulationMode) {
-        // 通常遷移：SEED更新リンク
         const slotSeedVal = (seedIndex + 1 < seeds.length) ? seeds[seedIndex + 1] : null;
         if(slotSeedVal !== null) {
             content = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${slotSeedVal})">${content}</span>`;
@@ -4743,44 +4731,68 @@ function executeTableSimulation(numRolls, columnConfigs, seeds) {
         if (!config) return;
 
         // 列ごとに状態を管理するための一時保存用Map
+        // Key: startIndex(着地先), Value: DrawInfo
         const landingMap = new Map(); 
         
-        // 通常の縦移動用の前回結果保持
-        let lastDrawA = null; 
-        let lastDrawB = null; 
+        // 通常の縦移動（2つ下のセルへの通常遷移）用の前回結果保持
+        let lastDrawA = null; // A列の前回結果保持用
+        let lastDrawB = null; // B列の前回結果保持用
 
+        // 全インデックスを 0 から順番に計算することで、リロールによるトラック移動を再現する
         for (let i = 0; i < numRolls * 2; i++) {
             if (i >= seeds.length) break;
 
             const isTrackB = (i % 2 !== 0);
-            let prevDraw = isTrackB ? lastDrawB : lastDrawA;
-
-            if (landingMap.has(i)) {
-                prevDraw = { ...landingMap.get(i), fromRerollRoute: true };
-            } else if (prevDraw) {
-                prevDraw = { ...prevDraw, fromRerollRoute: false };
+            let verticalInfo = isTrackB ? lastDrawB : lastDrawA;
+            
+            // ベースとなる抽選コンテキストの作成
+            let drawContext = null;
+            if (verticalInfo) {
+                // 通常遷移の情報をコピー（デフォルトは連続被り判定なし）
+                drawContext = { ...verticalInfo, fromRerollRoute: false };
             }
 
-            const rollResult = rollWithSeedConsumptionFixed(i, config, seeds, prevDraw);
+            // 1. このインデックスへの「ジャンプ着地」が予約されているかチェック
+            if (landingMap.has(i)) {
+                const jumpSource = landingMap.get(i);
+                if (!drawContext) {
+                    // 垂直方向の情報がない（開始直後のジャンプ等）場合
+                    drawContext = { ...jumpSource, fromRerollRoute: true };
+                } else {
+                    // 【修正】垂直方向の情報（通常被り判定用）を維持しつつ、
+                    // ジャンプ元の確定ID（連続被り判定用）を上書きしてマージする
+                    drawContext.charId = jumpSource.charId; 
+                    drawContext.fromRerollRoute = true;
+                }
+            }
+
+            // 2. 抽選実行 (logic.js の rollWithSeedConsumptionFixed を呼び出し)
+            const rollResult = rollWithSeedConsumptionFixed(i, config, seeds, drawContext);
             
+            // 3. 結果をテーブルデータに保存
             tableData[i][colIndex] = { 
                 gachaId: config.id, 
                 roll: rollResult 
             };
 
+            // 4. 次回計算用に引き継ぐ「現在の状態」を構築
             const currentDrawState = {
                 rarity: rollResult.rarity,
-                charId: rollResult.charId, 
+                charId: rollResult.charId, // 再抽選後の最終的な確定ID
                 originalCharId: rollResult.originalChar ? rollResult.originalChar.id : rollResult.charId,
                 isRerolled: rollResult.isRerolled,
                 lastRerollSlot: rollResult.lastRerollSlot
             };
 
+            // 5. 今回リロールが発生した場合、将来の着地地点インデックスにこの状態を予約保存
             if (rollResult.isRerolled) {
                 const targetIdx = i + rollResult.seedsConsumed;
+                // 到着先のインデックスに情報をセット。ここでの情報が次回の「連続被り判定」に使用される
                 landingMap.set(targetIdx, currentDrawState);
             }
 
+            // 6. 通常遷移（2つ下のセル）への基本情報を継承
+            // 縦移動自体は「リロールによる着地」ではないため、fromRerollRoute を false として引き継ぐ
             const nextBaseDraw = { ...currentDrawState, isRerolled: false, lastRerollSlot: null };
             if (isTrackB) {
                 lastDrawB = nextBaseDraw;
