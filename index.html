@@ -39,43 +39,7 @@
             </div>
         </div>
 
-        <div id="description-content" class="description-box hidden" style="font-size: 0.85em; line-height: 1.6;">
-            <h3 style="margin: 0 0 10px 0; color: #333; border-bottom: 2px solid #007bff; display: inline-block;">【R_Rolls 使い方ガイド】</h3>
-            <p style="margin-bottom: 15px;">このツールは、自分の「シード値（SEED）」を元に、<strong>どのガチャをどの順番で引けば狙いのキャラが手に入るか</strong>を予測・計画するためのシミュレーターです。</p>
-
-            <h4 style="margin: 10px 0 5px 0; color: #007bff;">1. まずはシード（SEED）を入力</h4>
-            <p style="margin-bottom: 10px;">
-                上部の<strong>「SEED」</strong>を押し、現在の実行前シード値を入力してOKを押してください。画面に予測テーブルが表示されます。
-            </p>
-
-            <h4 style="margin: 10px 0 5px 0; color: #007bff;">2. ガチャを選んで比較する</h4>
-            <p style="margin-bottom: 10px;">
-                テーブル上のプルダウンメニューからガチャを切り替えられます。<strong>「＋列を追加」</strong>で複数のガチャを並べて比較できます。
-            </p>
-
-            <h4 style="margin: 10px 0 5px 0; color: #007bff;">3. Find（キャラ別検索）で狙い目を探す</h4>
-            <p style="margin-bottom: 10px;">
-                <strong>「Find」</strong>を押すと、2000〜10000ロール先までの「伝説枠」や「限定キャラ」を自動で検索します。
-                <br>・<strong>リスト内のキャラ名</strong>をタップ：そのキャラをリストの一番上に表示します。
-                <br>・<strong>「other」</strong>をタップ：ロールズに表示しているガチャ以外の全ガチャシリーズでの出現位置をまとめて検索します。
-            </p>
-
-            <h4 style="margin: 10px 0 5px 0; color: #007bff;">4. Sim（シミュレーション）でルートを決める</h4>
-            <p style="margin-bottom: 10px;">
-                <strong>「Sim」</strong>をONにすると、複数のガチャを跨いで引く計画を立てられます。
-                <br>・<strong>テーブル上のキャラ名</strong>をタップ：現在地からそのキャラまでのルートを自動計算します。
-                <br>・<strong>MaxPlat / MaxG</strong>：自動計算時に、プラチナチケットや確定11連を最大何回まで使って良いか設定できます（デフォルトは0＝温存）。
-                <br>・<strong>「Txt」</strong>ボタン：作成したルートをテキスト形式で表示します。
-            </p>
-
-            <h4 style="margin: 10px 0 5px 0; color: #007bff;">5. skd（スケジュール）で開催予定をチェック</h4>
-            <p style="margin-bottom: 10px;">
-                <strong>「skd」</strong>を押すと、近日開催予定のガチャ一覧が表示されます。「skdで一括追加」ボタンを使うと、開催予定のガチャをすべてテーブルに並べて比較できます。
-            </p>
-            <p style="font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 5px;">
-                ※このツールは予測値を提供するものであり、実際のゲーム内での結果を100%保証するものではありません。
-            </p>
-        </div>
+        <div id="description-content" class="description-box hidden" style="font-size: 0.85em; line-height: 1.6;"></div>
 
         <div id="main-controls" class="controls" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 5px; margin-bottom: 5px;">
             <div id="seed-input-container" class="control-group hidden" style="margin-bottom: 0; display: flex; align-items: center; gap: 5px;">
@@ -97,8 +61,6 @@
                     <input type="number" id="sim-max-guar" value="0" min="0" max="5" style="width: 35px; font-size: 0.9em; padding: 1px 2px;">
                     <button id="toggle-txt-btn" onclick="toggleTxtMode()" style="font-size: 11px;">Txt</button>
                     <button id="copy-txt-btn" onclick="copyTxtToClipboard()" class="hidden" style="margin-left: 2px; font-size: 11px;">Copy</button>
-                    <span id="sim-notif-msg" style="color: #28a745; font-size: 0.8em; margin-left: 5px; font-weight: bold; display: none;"></span>
-                    <div id="sim-error-msg" style="color: #d9534f; font-size: 0.85em; margin-left: 5px; display: none;"></div>
                 </div>
             </div>
         </div>
@@ -106,34 +68,61 @@
         <div id="rolls-table-container"></div>
         <div id="schedule-container" class="hidden"></div>
     </div>
+    
     <script src="cats.js"></script>
     <script src="gacha_series.js"></script>
     <script src="limited_cats.js"></script>
-    <script src="logic.js"></script>
+
+    <script src="logic_xorshift.js"></script>
+    <script src="logic_rarity.js"></script>
+    <script src="logic_duplicate.js"></script>
+    <script src="logic_reroll.js"></script>
+    <script src="logic_roll_core.js"></script>
+    <script src="logic_uber.js"></script>
+    <script src="logic_sequential.js"></script>
+
     <script src="sim_config_helpers.js"></script>
     <script src="sim_utils.js"></script>
+    <script src="sim_engine_core.js"></script>
+    <script src="sim_engine_config.js"></script>
+    <script src="sim_engine_search.js"></script>
     <script src="sim_engine.js"></script>
     <script src="sim_ui_logic.js"></script>
     <script src="schedule_logic.js"></script>
     <script src="view_schedule_utils.js"></script>
     <script src="view_schedule_gantt.js"></script>
     <script src="view_schedule_table.js"></script>
+    <script src="view_schedule_editor.js"></script>
     <script src="data_loader.js"></script>
     <script src="url_manager.js"></script>
     <script src="gacha_selector.js"></script>
-    <script src="view_schedule_editor.js"></script>
-    <script src="ui_schedule_editor_handler.js"></script>
-    <script src="view_forecast.js"></script>
+    
+    <script src="view_forecast_logic.js"></script>
+    <script src="view_forecast_render.js"></script>
+    <script src="view_forecast_actions.js"></script>
+    <script src="view_forecast_core.js"></script>
+
     <script src="view_master.js"></script>
     <script src="view_analysis.js"></script>
     <script src="view_header.js"></script>
     <script src="view_cell_renderer.js"></script>
     <script src="view_table_data.js"></script>
     <script src="view_table_highlight.js"></script>
+    <script src="view_table_dom.js"></script>
+    <script src="view_table_headers.js"></script>
+    <script src="view_table_renderer.js"></script>
+    <script src="view_table_events.js"></script>
+    <script src="view_table_debug.js"></script>
     <script src="view_table.js"></script>
+    <script src="view_description.js"></script>
     <script src="ui_globals.js"></script>
     <script src="ui_schedule_handler.js"></script>
-    <script src="ui_target_handler.js"></script>
+    <script src="ui_schedule_editor_handler.js"></script>
+    <script src="ui_modal_service.js"></script>
+    <script src="ui_target_view.js"></script>
+    <script src="ui_target_search_view.js"></script>
+    <script src="ui_target_search_logic.js"></script>
+    <script src="ui_target_manager.js"></script>
     <script src="ui_table_handler.js"></script>
     <script src="ui_mode_logic.js"></script>
     <script src="ui_seed_logic.js"></script>
