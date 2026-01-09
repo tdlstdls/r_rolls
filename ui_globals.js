@@ -20,6 +20,8 @@ let hiddenFindIds = new Set();
 // 自動ターゲットのうち、非表示にするID
 let userTargetIds = new Set();
 let prioritizedFindIds = []; // クリックされたターゲットの履歴を保持する配列
+let prioritizedTargetId = null; // メインテーブルハイライト用の単一ターゲット
+let userPrioritizedTargets = []; // ユーザーが優先指定したターゲットリスト
 let isFindListCleared = false;
 let globalSearchResults = null; // 他ガチャでの検索結果を保持する
 

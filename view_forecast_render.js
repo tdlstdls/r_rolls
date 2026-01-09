@@ -23,6 +23,8 @@ function generateForecastHeader(slots, status) {
                 <span class="separator">|</span>
                 <span onclick="toggleLimitedTargets()" class="${status.isLimitedActive ? 'text-btn active' : 'text-btn'}">限定</span>
                 <span class="separator">|</span>
+                <span onclick="toggleUberTargets()" class="${status.isUberActive ? 'text-btn active' : 'text-btn'}">超激</span>
+                <span class="separator">|</span>
                 <span id="toggle-master-info-btn" onclick="toggleMasterInfo()" class="${status.isMasterActive ? 'text-btn active' : 'text-btn'}">マスター</span>
                 <span style="font-size: 0.8em; color: #666; margin-left: auto;">Target List</span>
             </div>
@@ -59,25 +61,60 @@ function processGachaForecast(config, seeds, scanRows, extendedScanRows) {
 
 function renderGachaForecastList(config, resultMap) {
     if (resultMap.size === 0) return '';
-    let listItems = Array.from(resultMap.entries()).map(([id, data]) => ({ id, ...data }));
+    let allItems = Array.from(resultMap.entries()).map(([id, data]) => ({ id, ...data }));
     
-    listItems.sort((a, b) => {
-        const idxA = prioritizedFindIds.indexOf(a.id);
-        const idxB = prioritizedFindIds.indexOf(b.id);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        const isNewA = String(a.id).startsWith('sim-new-'), isNewB = String(b.id).startsWith('sim-new-');
-        if (isNewA && !isNewB) return -1;
-        if (!isNewA && isNewB) return 1;
-        return 0;
+    // ユーザーが優先指定したターゲットとそれ以外を分離
+    const prioritizedItems = [];
+    const normalItems = [];
+    const prioritizedSet = new Set(userPrioritizedTargets.map(id => String(id)));
+
+    allItems.forEach(item => {
+        if (prioritizedSet.has(String(item.id))) {
+            prioritizedItems.push(item);
+        } else {
+            normalItems.push(item);
+        }
     });
 
-    const itemHtmls = listItems.map(data => renderTargetItem(data, config));
+    // 優先リストを userPrioritizedTargets の順に並び替え
+    prioritizedItems.sort((a, b) => {
+        return userPrioritizedTargets.indexOf(a.id) - userPrioritizedTargets.indexOf(b.id);
+    });
+
+    // 通常リストのソート（ユーザー指定の優先順位）
+    const rarityOrder = { 'legend': 1, 'uber': 3, 'super': 4, 'rare': 5 };
+    normalItems.sort((a, b) => {
+        const getPriority = (char) => {
+            if (char.isLimited) return 2; // 限定キャラ
+            return rarityOrder[char.rarity] || 99;
+        };
+        const priorityA = getPriority(a);
+        const priorityB = getPriority(b);
+        
+        if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+        }
+        // 同じ優先度内では名前順などでソート
+        return (a.name || '').localeCompare(b.name || '');
+    });
+
+    // HTMLを生成
+    let prioritizedHtml = prioritizedItems.map(data => renderTargetItem(data, config)).join('');
+    let normalHtml = normalItems.map(data => renderTargetItem(data, config)).join('');
+    
+    let separatorHtml = '';
+    if (prioritizedItems.length > 0 && normalItems.length > 0) {
+        separatorHtml = '<hr style="border: none; border-top: 1px dashed #ccc; margin: 4px 0;">';
+    }
+
     return `
         <div style="margin-bottom: 8px;">
             <div style="font-weight: bold; background: #eee; padding: 2px 5px; margin-bottom: 3px; font-size: 0.85em;">${config.name}</div>
-            <div style="font-family: monospace; font-size: 1em;">${itemHtmls.join('')}</div>
+            <div style="font-family: monospace; font-size: 1em;">
+                ${prioritizedHtml}
+                ${separatorHtml}
+                ${normalHtml}
+            </div>
         </div>
     `;
 }

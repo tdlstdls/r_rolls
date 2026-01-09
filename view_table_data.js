@@ -45,6 +45,29 @@ function prepareColumnConfigs() {
 function executeTableSimulation(numRolls, columnConfigs, seeds) {
     const tableData = Array(numRolls * 2).fill(null).map(() => ({ cells: [], rowInfo: {} }));
 
+    // --- 事前計算：No列の黄色・オレンジハイライト ---
+    // この処理はガチャ設定に依存しないため、最初に一括で計算する
+    for (let i = 2; i < numRolls * 2; i++) {
+        if (seeds[i + 1] === undefined) continue;
+
+        // レアリティチェック (固定値 6500)
+        const isPrevRare = seeds[i - 2] % 10000 < 6500;
+        const isCurrentRare = seeds[i] % 10000 < 6500;
+
+        if (isPrevRare && isCurrentRare) {
+            const divisor = 25; // 除数は25で固定
+            const prevSlot = seeds[i - 1] % divisor;
+            const currentSlot = seeds[i + 1] % divisor;
+
+            if (prevSlot === currentSlot) {
+                tableData[i].rowInfo.isNormalReroll = true; // 黄色
+            } else if (prevSlot + currentSlot === (divisor - 1)) {
+                tableData[i].rowInfo.isCrossReroll = true; // オレンジ
+            }
+        }
+    }
+    // --- 事前計算終了 ---
+
     columnConfigs.forEach((config, colIndex) => {
         if (!config) return;
 
@@ -57,25 +80,6 @@ function executeTableSimulation(numRolls, columnConfigs, seeds) {
 
         for (let i = 0; i < numRolls * 2; i++) {
             if (i >= seeds.length) break;
-
-            // --- No列着色判定 (黄色・オレンジ) ---
-            if (i >= 2 && seeds[i + 1] !== undefined) {
-                const rarePool = config.pool.rare || [];
-                if (rarePool.length > 0) {
-                    const rareRate = config.rarity_rates.rare;
-                    if ((seeds[i - 2] % 10000 < rareRate) && (seeds[i] % 10000 < rareRate)) {
-                        const prevSlot = seeds[i - 1] % rarePool.length;
-                        const currentSlot = seeds[i + 1] % rarePool.length;
-
-                        if (prevSlot === currentSlot) {
-                            tableData[i].rowInfo.isNormalReroll = true; // 黄色
-                        } else if (prevSlot + currentSlot === (rarePool.length - 1)) {
-                            tableData[i].rowInfo.isCrossReroll = true; // オレンジ
-                        }
-                    }
-                }
-            }
-            // --- 判定終了 ---
 
             const isTrackB = (i % 2 !== 0);
             const drawAbove = (isTrackB ? lastDrawB : lastDrawA);
@@ -99,6 +103,12 @@ function executeTableSimulation(numRolls, columnConfigs, seeds) {
             } : null;
 
             const rollResult = rollWithSeedConsumptionFixed(i, config, seeds, drawContext);
+
+            // --- 事後計算：No列の淡いオレンジハイライト ---
+            if (rollResult.isRerolled) {
+                tableData[i].rowInfo.isActualReroll = true;
+            }
+            // --- 判定終了 ---
 
             let guaranteedResult = null;
             let alternativeGuaranteed = null;

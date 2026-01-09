@@ -12,7 +12,7 @@ function generateSeedsForForecast(initialSeed, count) {
 function formatForecastAddress(n) {
     const track = (n % 2 === 0) ? 'A' : 'B';
     const row = Math.floor(n / 2) + 1;
-    return `${track}${row})`;
+    return `${track}${row}`;
 }
 
 function getSpecialSlotsInfo(seeds, limit) {
@@ -31,12 +31,24 @@ function getAvailableSpecialTargets(columnConfigs) {
     const processedGachaIds = new Set();
     let availableLegendIds = [];
     let availableLimitedIds = [];
+    let availableUberIds = []; // 超激レアIDリストを追加
     const limitedSet = getLimitedSet();
 
     columnConfigs.forEach((config) => {
         if (!config || processedGachaIds.has(config.id)) return;
         processedGachaIds.add(config.id);
+
+        // 各レアリティのIDを収集
         if (config.pool.legend) config.pool.legend.forEach(c => availableLegendIds.push(c.id));
+        if (config.pool.uber) {
+            config.pool.uber.forEach(c => {
+                // 限定キャラは超激リストから除外
+                if (!limitedSet.has(c.id) && !limitedSet.has(String(c.id))) {
+                    availableUberIds.push(c.id);
+                }
+            });
+        }
+        
         ['rare', 'super', 'uber'].forEach(r => {
             if (config.pool[r]) config.pool[r].forEach(c => {
                 if (limitedSet.has(c.id)) availableLimitedIds.push(c.id);
@@ -47,9 +59,11 @@ function getAvailableSpecialTargets(columnConfigs) {
     return {
         isLegendActive: availableLegendIds.length > 0 && availableLegendIds.some(id => !hiddenFindIds.has(id)),
         isLimitedActive: availableLimitedIds.length > 0 && availableLimitedIds.some(id => !hiddenFindIds.has(id)),
-        isMasterActive: (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : true,
+        isUberActive: availableUberIds.length > 0 && availableUberIds.some(id => userTargetIds.has(id)), // activeの判定をuserTargetIdsに変更
+        isMasterActive: (typeof isMasterInfoVisible !== 'undefined') ? isMasterInfoVisible : false,
         availableLegendIds,
-        availableLimitedIds
+        availableLimitedIds,
+        availableUberIds // 超激IDリストを返す
     };
 }
 
@@ -115,6 +129,7 @@ function updateResultMap(resultMap, char, rarity, n, limitedSet, missingTargets)
         resultMap.set(cid, {
             name: gachaMasterData.cats[cid]?.name || cid,
             hits: [],
+            rarity: rarity, // レアリティ情報を追加
             isLegend: (rarity === 'legend'),
             isNew: String(cid).startsWith('sim-new-'),
             isLimited: limitedSet.has(cid) || limitedSet.has(String(cid))

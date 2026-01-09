@@ -1,5 +1,19 @@
 /** @file view_master.js @description ガチャマスタ（キャラリスト）の詳細情報のHTML生成を担当 @dependency data_loader.js */
 
+function toggleMasterSection(gachaId) {
+    const section = document.getElementById(`master-section-${gachaId}`);
+    const toggle = document.getElementById(`master-toggle-${gachaId}`);
+    if (section && toggle) {
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            toggle.textContent = '[-]';
+        } else {
+            section.style.display = 'none';
+            toggle.textContent = '[+]';
+        }
+    }
+}
+
 function generateMasterInfoHtml() {
     if (!gachaMasterData || !gachaMasterData.gachas) return '<p>データがありません</p>';
     
@@ -46,10 +60,15 @@ function generateMasterInfoHtml() {
         }
 
         html += `<div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">`;
-        html += `<h4 style="margin: 0 0 5px 0;">${config.name} (ID: ${id})</h4>`;
+        html += `<h4 style="margin: 0 0 8px 0; font-size: 1em;">
+            <span id="master-toggle-${id}" style="cursor:pointer; font-family:monospace; display: inline-block; width: 20px;" onclick="toggleMasterSection('${id}')">[-]</span>
+            ${config.name} (ID: ${id})
+        </h4>`;
 
         const rates = configClone.rarity_rates || {};
         const pool = configClone.pool || {};
+        
+        html += `<div id="master-section-${id}" style="display: block; padding-left: 20px;">`;
 
         const rarities = [
             { key: 'legend', label: 'Legendary' },
@@ -71,32 +90,25 @@ function generateMasterInfoHtml() {
                 const cid = c.id;
                 const cStr = String(cid);
                 
-                // --- Findターゲット判定 (自動) ---
-                const isLegendRank = (r.key === 'legend');
-                const isLimited = limitedSet.has(cid) || limitedSet.has(cStr);
-                const isNew = cStr.startsWith('sim-new-');
-                const isAuto = isAutomaticTarget(cid);
-
                 // --- 状態チェック ---
                 const isHidden = hiddenFindIds.has(cid) || (typeof cid === 'number' && hiddenFindIds.has(cid));
                 const isManual = userTargetIds.has(cid) || (typeof cid === 'number' && userTargetIds.has(cid));
+                const isPrioritized = userPrioritizedTargets.includes(cid) || (typeof cid === 'number' && userPrioritizedTargets.includes(cid));
 
                 // ハイライト条件:
-                // 1. 自動ターゲット かつ 非表示でない
-                // 2. 手動ターゲットである
-                const shouldHighlight = (isAuto && !isHidden) || isManual;
+                const isFindTarget = ((isAutomaticTarget(cid) && !isHidden) || isManual);
 
                 let style = '';
-                if (shouldHighlight) {
+                let titleText = 'クリックで優先表示に登録/解除';
+
+                if (isPrioritized) {
+                    style = 'background-color: #6EFF72; border: 1px solid #28a745; padding: 1px 3px; border-radius: 3px; font-weight: bold;';
+                    titleText = '優先表示を解除';
+                } else if (isFindTarget) {
                     style = 'background-color: #ffffcc; border: 1px solid #ff9800; padding: 1px 3px; border-radius: 3px; font-weight: bold;';
                 }
-                // 修正: 非表示状態（自動ターゲットだがisHidden=true）の場合でも、特別なスタイル（グレーアウト・取り消し線）を適用しない
-                // else if (isAuto && isHidden) { ... } を削除
 
-                // タイトル属性でアクションを示唆
-                const titleText = shouldHighlight ? '非表示にする' : 'Findに追加する';
-
-                return `<span style="cursor:pointer; ${style}" onclick="toggleCharVisibility('${cid}')" title="${titleText}">${idx}&nbsp;${c.name}</span>`;
+                return `<span style="cursor:pointer; ${style}" onclick="prioritizeChar('${cid}')" title="${titleText}">${idx}&nbsp;${c.name}</span>`;
             }).join(', ');
 
             html += `<div style="margin-bottom: 3px;">`;
@@ -104,6 +116,8 @@ function generateMasterInfoHtml() {
             html += `<span style="color: #555; line-height: 1.6;">${listStr}</span>`;
             html += `</div>`;
         });
+
+        html += `</div>`; // master-section-${id} の閉じタグ
 
         html += `</div>`;
     });

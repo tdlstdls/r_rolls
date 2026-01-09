@@ -60,22 +60,20 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         }
     }
 
-    // --- Findターゲット判定 ---
-    const isAuto = typeof isAutomaticTarget !== 'undefined' && isAutomaticTarget(charId);
-    const isHidden = typeof hiddenFindIds !== 'undefined' && (hiddenFindIds.has(charId) || hiddenFindIds.has(charIdStr));
-    const isManual = typeof userTargetIds !== 'undefined' && (userTargetIds.has(charId) || userTargetIds.has(charIdStr));
-    const isFindTarget = (isAuto && !isHidden) || isManual;
+    // --- Findターゲット等のハイライト判定 ---
+    // userPrioritizedTargets に含まれるキャラを緑色でハイライト
+    const isPrioritized = userPrioritizedTargets.includes(charId) || userPrioritizedTargets.includes(charIdStr);
 
-    if (isSimulationMode && highlightMap.get(seedIndex) === id) {
-        if (isLimited || r.rarity === 'uber' || r.rarity === 'legend' || isFindTarget) {
+    if (isPrioritized) {
+        style = 'background-color: #6EFF72; font-weight: bold;'; // ユーザー指定の緑色ハイライト
+    } else if (isSimulationMode && highlightMap.get(seedIndex) === id) {
+        if (isLimited || r.rarity === 'uber' || r.rarity === 'legend') {
             style = 'background:#32CD32;';
         } else {
             style = 'background:#98FB98;';
         }
     } else {
-        if (isFindTarget) {
-            style = 'background-color: #adff2f; font-weight: bold;';
-        } else if (isLimited) {
+        if (isLimited) {
             style = 'background-color: #66FFFF;';
         } else if (isSpecialGacha) {
             style = '';

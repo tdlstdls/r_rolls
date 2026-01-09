@@ -14,6 +14,8 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         noColBgColor = '#FFFF00'; // 黄色
     } else if (rowInfo.isCrossReroll) {
         noColBgColor = '#FFA500'; // オレンジ
+    } else if (rowInfo.isActualReroll) {
+        noColBgColor = '#FFDAB9'; // 淡いオレンジ (PeachPuff)
     }
 
     let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;' : ''}">${rowIndex + 1}</td>`;

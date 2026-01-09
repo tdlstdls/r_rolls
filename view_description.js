@@ -40,6 +40,18 @@ function generateDescriptionHTML() {
             <p style="margin-bottom: 10px;">
                 <strong>「skd」</strong>を押すと、近日開催予定のガチャ一覧が表示されます。「skdで一括追加」ボタンを使うと、開催予定のガチャをすべてテーブルに並べて比較できます。
             </p>
+
+            <h4 style="margin: 10px 0 5px 0; color: #007bff;">6. テーブルの便利な見方</h4>
+            <ul style="margin: 0 0 15px 0; padding-left: 20px; font-size: 0.9em; line-height: 1.6;">
+                <li><strong>No.列の背景色:</strong>
+                    <ul style="padding-left: 15px; margin-top: 5px;">
+                        <li><span style="background:#FFFF00; padding: 1px 3px; border-radius: 2px;">黄色</span>: 常設ガチャでのレア被り発生が予測される位置</li>
+                        <li><span style="background:#FFA500; padding: 1px 3px; border-radius: 2px;">オレンジ</span>: 波動バスターズを利用し常設ガチャと組み合わせてレア被りが誘発できると予測される位置</li>
+                        <li><span style="background:#FFDAB9; padding: 1px 3px; border-radius: 2px;">淡いオレンジ</span>: 表示中ガチャで実際にレア被りが発生する位置</li>
+                    </ul>
+                </li>
+            </ul>
+
             <p style="font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 5px;">
                 ※このツールは予測値を提供するものであり、実際のゲーム内での結果を100%保証するものではありません。
             </p>

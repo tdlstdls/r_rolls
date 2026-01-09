@@ -22,9 +22,32 @@ function removeTarget(id) {
 }
 
 function clearAllTargets() {
+    // 1. 各種フィルタリング対象のIDリストを取得
+    const columnConfigs = prepareColumnConfigs();
+    const status = getAvailableSpecialTargets(columnConfigs);
+
+    // 2. 伝説・限定をOFFにする（hiddenFindIds に追加）
+    status.availableLegendIds.forEach(id => hiddenFindIds.add(id));
+    status.availableLimitedIds.forEach(id => hiddenFindIds.add(id));
+
+    // 3. 超激をOFFにし、その他手動追加されたターゲットもすべてクリア
+    userTargetIds.clear();
+
+    // 4. 優先表示リストをクリア
+    userPrioritizedTargets = [];
+    // レガシーな優先リストもクリア
+    prioritizedFindIds = [];
+
+    // 5. 元々の処理も念のため維持
     searchTargets = [];
-    updateTargetListUI();
-    generateRollsTable();
+    if (typeof updateTargetListUI === 'function') {
+        updateTargetListUI();
+    }
+    
+    // 6. テーブルを再描画してUIに反映
+    if (typeof generateRollsTable === 'function') {
+        generateRollsTable();
+    }
 }
 
 /**
