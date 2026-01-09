@@ -4,27 +4,45 @@
  * 行レンダリング (A/Bサイド別)
  */
 function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, isLeftSide) {
-    let sideHtml = `<td class="col-no" style="background: #f8f9fa; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;' : ''}">${rowIndex + 1}</td>`;
-    
+    const rowData = tableData[seedIndex];
+    if (!rowData) return ''; // データがなければ空の行を返す
+
+    // No列の背景色を決定
+    const rowInfo = rowData.rowInfo || {};
+    let noColBgColor = '#f8f9fa'; // デフォルト色
+    if (rowInfo.isNormalReroll) {
+        noColBgColor = '#FFFF00'; // 黄色
+    } else if (rowInfo.isCrossReroll) {
+        noColBgColor = '#FFA500'; // オレンジ
+    }
+
+    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;' : ''}">${rowIndex + 1}</td>`;
+
+    // 詳細計算セルの描画 (view_cell_renderer.js で tableData の新構造に対応する必要がある)
     if (typeof generateDetailedCalcCells === 'function') {
         sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
     } else {
         const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
         sideHtml += `<td class="${calcColClass}">-</td>`.repeat(5);
     }
-    
+
+    // 各ガチャ列のセルを描画
     tableGachaIds.forEach((idWithSuffix, colIndex) => {
         const id = idWithSuffix.replace(/[gfs]$/, '');
         const suffix = idWithSuffix.match(/[gfs]$/)?.[0] || '';
-        const data = tableData[seedIndex] ? tableData[seedIndex][colIndex] : null;
+        // ★データ取得元を変更
+        const data = rowData.cells ? rowData.cells[colIndex] : null;
 
+        // 通常セルの描画 (view_cell_renderer.js で tableData の新構造に対応する必要がある)
         if (typeof generateCell === 'function') {
             sideHtml += generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
         } else {
             sideHtml += `<td>-</td>`;
         }
 
+        // 確定枠セルの描画
         if (suffix) {
+            // data の参照は既に新しい構造に対応済み
             if (data && (data.guaranteed || (data.result && data.result.guaranteed))) {
                 sideHtml += renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guarHighlightMap);
             } else {
