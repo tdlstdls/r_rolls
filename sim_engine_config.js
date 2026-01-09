@@ -1,84 +1,86 @@
-/** @file sim_engine.js @description 経路探索の統合制御（ターゲット精度・トラック同期強化版） */
+/** @file sim_engine_config.js @description 経路探索の統合制御（ターゲットインデックス同期・末尾アクション自動付加版） */
 
 /**
  * 経路探索エントリポイント
- * 指定されたセル（targetSeedIndex）まで、トラック（A/B）を違えずに到達する最短経路を計算します。
+ * 指定されたセル（targetSeedIndex）まで正確に到達し、最後にそのセルを1回引くアクションを追加します [cite: 257, 265]。
  */
 function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null, primaryTargetId = null) {
-    // 探索に必要な乱数配列を生成
-    const simSeeds = generateSeedsForSim(targetSeedIndex);
-    
-    // 現在の入力（sim-config）から、ターゲットセルより手前までの有効なルートを抽出
-    const { startIdx, initialLastDraw, baseConfigStr } = calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds);
-    
-    // 現在表示されている有効なガチャ設定を取得
+    // 1. 必要な乱数シードを生成 [cite: 258]
+    const estimatedNeededSeeds = Math.max(targetSeedIndex, 1000) + 500;
+    const simSeeds = generateSeedsForSim(estimatedNeededSeeds);
+
+    // 2. 現在の入力値（sim-config）を解析し、開始地点の状態を算出 [cite: 258, 281]
+    const { startIdx, initialLastDraw, baseSegments } = calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds);
+
+    // 3. 利用可能なガチャ設定のリストを作成 [cite: 259]
     const usableConfigs = visibleGachaIds.map(idStr => {
         const id = idStr.replace(/[gfs]$/, '');
         const config = gachaMasterData.gachas[id] || null;
         if (config) config._fullId = idStr;
         return config;
     }).filter(c => c !== null);
-    
+
     if (usableConfigs.length === 0) return null;
 
-    // UIの上限設定（MaxPlat/MaxG）を取得
+    // UIから探索制限（プラチナ/確定使用数）を取得 [cite: 260, 261]
     const maxPlat = parseInt(document.getElementById('sim-max-plat')?.value || 0, 10);
     const maxGuar = parseInt(document.getElementById('sim-max-guar')?.value || 0, 10);
-    
-    // ターゲットに「ピッタリ」到達するための探索を実行
-    // 第1段階：確定・プラチナなしで探索
+
+    // 4. ビームサーチの実行 [cite: 262-264, 317]
+    // startIdx から targetSeedIndex に到達するまでの「過程」を探索します
     let route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, 0);
-    // 第2段階：確定枠を許可して探索
     if (!route && maxGuar > 0) {
         route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, maxGuar);
     }
-    // 第3段階：プラチナチケットも許可して探索
     if (!route && maxPlat > 0) {
         route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar);
     }
     
+    // 5. 経路の構築と最終アクションの付加
     if (route) {
-        // 見つかったルートをシミュレートし、最終的なインデックスがターゲットと一致するか再確認
-        let checkIdx = startIdx;
-        let checkLastDraw = initialLastDraw;
-        for (const seg of route) {
-            const res = simulateSingleSegment(seg, checkIdx, checkLastDraw, simSeeds);
-            checkIdx = res.nextIndex;
-            checkLastDraw = res.lastDraw;
+        if (finalActionOverride) {
+            // 確定枠（G列）をクリックした場合は、指定された確定アクションを付加 [cite: 265, 485]
+            route.push(finalActionOverride);
+        } else {
+            // 通常セルをクリックした場合は、そのセルのガチャIDで「1回引く」アクションを末尾に追加 [cite: 242-244]
+            // これにより、ルートの終端がクリックしたキャラと一致します
+            const baseId = targetGachaId.replace(/[gfs]$/, "");
+            route.push({ 
+                id: baseId, 
+                rolls: 1, 
+                g: false, 
+                fullId: targetGachaId 
+            });
         }
 
-        // トラックの左右（A/B）がターゲットと一致している場合のみ、最後のアクションを結合
-        if (checkIdx === targetSeedIndex) {
-            if (finalActionOverride) {
-                route.push(finalActionOverride);
-            } else {
-                const baseId = targetGachaId.replace(/[gfs]$/, "");
-                route.push({ id: baseId, rolls: 1, fullId: targetGachaId, g: false });
-            }
-            // 既存の固定ルートと新しい探索ルートを結合して圧縮
-            return (baseConfigStr ? baseConfigStr + " " : "") + compressRoute(route);
-        }
+        // 固定済みルート（既設分）と新規探索ルートを結合 [cite: 266, 286]
+        const fullRoute = [...baseSegments, ...route];
+
+        // 重複セグメントを圧縮して文字列で返す [cite: 275, 403]
+        return compressRoute(fullRoute);
     }
     
-    // 到達ルートが見つからない、またはトラックが一致しない場合
     return null;
 }
 
 /**
- * 探索用の乱数シード配列を十分に長い範囲で生成
+ * 探索用の乱数シード配列を生成 [cite: 277-280]
  */
 function generateSeedsForSim(targetSeedIndex) {
     const seedEl = document.getElementById('seed');
     const initialSeed = parseInt(seedEl ? seedEl.value : 12345, 10);
     const rng = new Xorshift32(initialSeed);
     const tempSeeds = [];
+    
     const limit = Math.max(targetSeedIndex, 1000) + 500;
-    for (let i = 0; i < limit; i++) tempSeeds.push(rng.next());
+    for (let i = 0; i < limit; i++) {
+        tempSeeds.push(rng.next());
+    }
     return tempSeeds;
 }
 
 /**
- * 現在のルート文字列を解析し、ターゲットセルより手前で停止する「有効な前段ルート」を計算
+ * 現在のルート入力値（sim-config）を解析し、探索を開始すべき地点の状態を算出 [cite: 281-287]
  */
 function calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds) {
     let startIdx = 0;
@@ -93,24 +95,22 @@ function calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds) {
         for (const segment of existingConfigs) {
             const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
             
-            // 重要：ターゲットインデックスを「超える」設定、またはターゲット「そのもの」の設定は、
-            // 新規クリックによる再計算のために除外する
+            // ターゲット（クリック箇所）を追い越す設定は除外 [cite: 283]
             if (res.nextIndex > targetSeedIndex) break;
-            if (res.nextIndex === targetSeedIndex) {
-                // ターゲットにぴったり重なる場合も、一度外して再計算（finalActionの重複防止）
-                break;
-            }
-            
+
             validConfigParts.push(segment);
             tempIdx = res.nextIndex; 
-            tempLastDraw = res.lastDraw;
+            tempLastDraw = res.trackStates; // トラックの状態を継承 [cite: 289]
+            
+            if (tempIdx === targetSeedIndex) break;
         }
-        startIdx = tempIdx; 
+        startIdx = tempIdx;
         initialLastDraw = tempLastDraw;
     }
+    
     return { 
         startIdx, 
         initialLastDraw, 
-        baseConfigStr: stringifySimConfig(validConfigParts) 
+        baseSegments: validConfigParts 
     };
 }

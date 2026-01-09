@@ -62,6 +62,7 @@
                     <button id="toggle-txt-btn" onclick="toggleTxtMode()" style="font-size: 11px;">Txt</button>
                     <button id="copy-txt-btn" onclick="copyTxtToClipboard()" class="hidden" style="margin-left: 2px; font-size: 11px;">Copy</button>
                 </div>
+                <div id="sim-error-msg" style="width: 100%; text-align: left; margin-top: 3px; margin-left: 45px; min-height: 1em;"></div>
             </div>
         </div>
         <div id="result" class="result-box hidden" style="font-size: 10px; margin-bottom: 2px;"></div>
@@ -83,10 +84,10 @@
 
     <script src="sim_config_helpers.js"></script>
     <script src="sim_utils.js"></script>
-    <script src="sim_engine_core.js"></script>
+    <script src="sim_engine_core.js?v=2"></script>
     <script src="sim_engine_config.js"></script>
     <script src="sim_engine_search.js"></script>
-    <script src="sim_engine.js"></script>
+    <!-- <script src="sim_engine.js"></script> -->
     <script src="sim_ui_logic.js"></script>
     <script src="schedule_logic.js"></script>
     <script src="view_schedule_utils.js"></script>

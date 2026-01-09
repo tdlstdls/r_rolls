@@ -1,25 +1,50 @@
 /** @file sim_config_helpers.js @description Config文字列の解析・生成ヘルパー */
 
-/** Config文字列をオブジェクト配列に変換 [cite: 230-233] */
+/** Config文字列をオブジェクト配列に変換 */
 function parseSimConfig(configStr) {
-    if (!configStr) return [];
-    const parts = configStr.split(/[\s\-]+/).filter(Boolean);
-    const configs = [];
+    if (!configStr || configStr.trim() === "") return [];
+    
+    const parts = configStr.split("-");
+    const segments = [];
+
+    // Process in pairs
     for (let i = 0; i < parts.length; i += 2) {
-        const id = parts[i];
-        const rollStr = parts[i+1];
-        if (id && rollStr) {
-            const isGuaranteed = rollStr.endsWith('g');
-            const rolls = parseInt(rollStr.replace('g', ''), 10);
-            configs.push({ id, rolls, g: isGuaranteed });
+        if (i + 1 < parts.length) {
+            const id = parts[i];
+            const val = parts[i+1];
+
+            if (!id || !val) continue;
+
+            const gMatch = val.match(/[gfs]$/);
+            const rolls = parseInt(val, 10);
+
+            if (isNaN(rolls)) continue;
+
+            segments.push({
+                id: id,
+                rolls: rolls,
+                g: !!gMatch,
+                suffix: gMatch ? gMatch[0] : ""
+            });
         }
     }
-    return configs;
+    return segments;
 }
 
-/** オブジェクト配列をConfig文字列に変換 [cite: 235] */
-function stringifySimConfig(configArr) {
-    return configArr.map(c => `${c.id} ${c.rolls}${c.g ? 'g' : ''}`).join(' ');
+/** オブジェクト配列をConfig文字列に変換 */
+function stringifySimConfig(segments) {
+    if (!segments || segments.length === 0) return "";
+    
+    const parts = segments.flatMap(s => {
+        const id = String(s.id).replace(/[gfs]$/, '');
+        let rollStr = String(s.rolls);
+        if (s.g) {
+            rollStr += (s.suffix || 'g');
+        }
+        return [id, rollStr];
+    });
+
+    return parts.join("-");
 }
 
 /** 最後のロール回数を1増やす [cite: 236-239] */

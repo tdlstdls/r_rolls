@@ -1,15 +1,22 @@
-/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性強化版） */
+/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・物理配置同期強化版） */
 
 /**
  * 単一のガチャセグメント（例：ガチャID:123で5回回す）をシミュレートする
  * トラック遷移（レア被り）を考慮し、最終的なインデックスと直前の状態を返します。
  */
-function simulateSingleSegment(segment, startIdx, initialLastDraw, seeds) {
+function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
     let currentIdx = startIdx;
-    let lastRoll = initialLastDraw;
     const config = gachaMasterData.gachas[segment.id];
     
-    if (!config) return { nextIndex: currentIdx, lastDraw: lastRoll };
+    // 状態管理オブジェクトの初期化
+    // initialStates が A/B 両方の状態を持っていることを想定
+    let trackStates = initialStates ? { ...initialStates } : {
+        lastA: null,
+        lastB: null,
+        lastAction: null // 最後に実行されたロールの結果
+    };
+
+    if (!config) return { nextIndex: currentIdx, trackStates: trackStates };
 
     let rollsToPerform = segment.rolls;
     let isGuaranteed = false;
@@ -19,54 +26,78 @@ function simulateSingleSegment(segment, startIdx, initialLastDraw, seeds) {
         if (segment.rolls === 15) { rollsToPerform = 14; isGuaranteed = true; }
         else if (segment.rolls === 7) { rollsToPerform = 6; isGuaranteed = true; }
         else if (segment.rolls === 11) { rollsToPerform = 10; isGuaranteed = true; }
-        else { rollsToPerform = segment.rolls - 1; isGuaranteed = true; }
+        else { rollsToPerform = Math.max(0, segment.rolls - 1); isGuaranteed = true; }
     }
 
     // 通常枠のシミュレーション実行
     for (let i = 0; i < rollsToPerform; i++) {
-        // トラック（A=偶数, B=奇数）に応じた物理情報のコンテキストを構築
+        if (currentIdx >= seeds.length) break;
+        
         const isTrackB = (currentIdx % 2 !== 0);
         
-        // 探索中のレア被り判定において、直前の結果が「現在と同じトラック」から来たものかを検証
-        // （テーブル上の直上のキャラIDと比較するため）
+        // 物理的な「直上のセル」の情報を取得
+        // そのトラック（A or B）で最後に排出されたキャラが、テーブル上の物理的な直上となる
+        const drawAbove = isTrackB ? trackStates.lastB : trackStates.lastA;
+
+        // 判定コンテキストの構築
+        // originalIdAbove: テーブル上の物理的な直上ID（物理チェック用）
+        // finalIdSource: 直前のロール（遷移元）で実際に排出されたID（遷移チェック用）
         const drawContext = {
-            originalIdAbove: (lastRoll && lastRoll.trackB === isTrackB) ? lastRoll.originalCharId : null,
-            finalIdSource: lastRoll ? lastRoll.charId : null
+            originalIdAbove: drawAbove ? String(drawAbove.charId) : null,
+            finalIdSource: trackStates.lastAction ? String(trackStates.lastAction.charId) : null
         };
 
+        // ロールの実行（ロジック層の rollWithSeedConsumptionFixed を使用）
         const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
         if (rr.seedsConsumed === 0) break;
 
-        lastRoll = {
+        // 状態の更新
+        const result = {
             rarity: rr.rarity,
             charId: rr.charId,
-            originalCharId: rr.originalChar ? rr.originalChar.id : rr.charId,
-            trackB: isTrackB // どのトラックでの結果かを保持
+            originalCharId: rr.originalChar ? String(rr.originalChar.id) : String(rr.charId),
+            trackB: isTrackB
         };
-        
-        // インデックスを更新（通常+2、レア被り時+3または+1）
+
+        // 物理トラック履歴と最後のアクションを更新
+        if (isTrackB) {
+            trackStates.lastB = result;
+        } else {
+            trackStates.lastA = result;
+        }
+        trackStates.lastAction = result;
+
         currentIdx += rr.seedsConsumed;
     }
 
     // 確定枠がある場合の最後の1枠の処理
-    if (isGuaranteed) {
+    if (isGuaranteed && currentIdx < seeds.length) {
         const isTrackB = (currentIdx % 2 !== 0);
         const gr = rollGuaranteedUber(currentIdx, config, seeds);
         
-        lastRoll = { 
+        const result = { 
             rarity: 'uber', 
             charId: gr.charId, 
             originalCharId: gr.charId,
             trackB: isTrackB
         };
+
+        if (isTrackB) {
+            trackStates.lastB = result;
+        } else {
+            trackStates.lastA = result;
+        }
+        trackStates.lastAction = result;
+
         currentIdx += gr.seedsConsumed;
     }
 
-    return { nextIndex: currentIdx, lastDraw: lastRoll };
+    return { nextIndex: currentIdx, trackStates: trackStates };
 }
 
 /**
- * ルート配列を文字列（sim-config形式、例 "123:5 456:11g"）に圧縮・変換する
+ * ルート配列を文字列（sim-config形式）に圧縮・変換する
+ * （連続した同一ガチャのロールをまとめる）
  */
 function compressRoute(route) {
     if (!route || route.length === 0) return "";
@@ -75,7 +106,8 @@ function compressRoute(route) {
 
     for (const step of route) {
         // 同じガチャID、かつ確定枠フラグが一致する場合は回数を合算
-        if (current && current.id === step.id && current.g === step.g) {
+        // ただし、確定枠(g)の場合は合算せず個別のセグメントとして保持
+        if (current && current.id === step.id && current.g === step.g && !step.g) {
             current.rolls += step.rolls;
         } else {
             if (current) segments.push(current);
@@ -85,48 +117,4 @@ function compressRoute(route) {
     if (current) segments.push(current);
 
     return stringifySimConfig(segments);
-}
-
-/**
- * セグメントオブジェクトの配列を sim-config 用の文字列にシリアライズする
- */
-function stringifySimConfig(segments) {
-    return segments.map(s => {
-        let suffix = "";
-        if (s.g) {
-            // 回数から適切なサフィックス（g/f/s）を決定
-            if (s.rolls >= 10) suffix = "g";
-            else if (s.rolls >= 14) suffix = "f";
-            else if (s.rolls >= 6) suffix = "s";
-            else suffix = "g"; // デフォルト
-        }
-        // 表示上の回数は、内部の計算回数+確定枠の1回分
-        const displayRolls = s.g ? (s.rolls + (s.rolls >= 10 ? 1 : 0)) : s.rolls;
-        // 11g等の特殊表記の場合、入力値を維持するために調整
-        let finalRolls = s.rolls;
-        if (s.g) {
-            if (s.rolls === 10) finalRolls = 11;
-            else if (s.rolls === 14) finalRolls = 15;
-            else if (s.rolls === 6) finalRolls = 7;
-        }
-        return `${s.id}:${finalRolls}${suffix}`;
-    }).join(" ");
-}
-
-/**
- * sim-config 文字列をセグメントオブジェクトの配列に逆シリアル化する
- */
-function parseSimConfig(configStr) {
-    if (!configStr) return [];
-    return configStr.split(/\s+/).filter(s => s.includes(":")).map(s => {
-        const [id, val] = s.split(":");
-        const gMatch = val.match(/[gfs]$/);
-        const rolls = parseInt(val, 10);
-        return {
-            id: id,
-            rolls: rolls,
-            g: !!gMatch,
-            suffix: gMatch ? gMatch[0] : ""
-        };
-    });
 }

@@ -29,7 +29,7 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
         if (status.targetToAvoid !== null) {
             isRerolled = true;
             isConsecutiveRerollTarget = status.isConsecutiveRerollTarget;
-            const res = executeReroll(startIndex, status.targetToAvoid, characterPool, seeds);
+            const res = executeReroll(startIndex, charIndex, characterPool, seeds, status.targetToAvoid);
             if (res.character) {
                 character = res.character;
                 seedsConsumed = res.seedsConsumed;
