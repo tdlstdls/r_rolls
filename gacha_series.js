@@ -1,0 +1,95 @@
+/** @file gacha_series.js @description 各ガチャシリーズのメタデータ（名称、デフォルトレート、ソート順）の定義 @dependency なし */
+
+/**
+ * Sortの区分について
+ * 100～199：ネコ祭
+ * 200～299：バスターズ
+ * 300～399：常設
+ * 400～499：季節
+ * 500～599：４セレクション
+ * 600～699：コラボ
+ * 700～799：新年その他
+ * 800～899：過去分
+ */
+
+const gacha_series = [
+    {"series_id":0,"name":"ネコルガ族", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":300},
+    {"series_id":1,"name":"ダイナマイツ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":301},
+    {"series_id":2,"name":"バサラーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":302},
+    {"series_id":3,"name":"ギャラクシーギャルズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":303},
+    {"series_id":4,"name":"ドラゴンエンペラーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":304},
+    {"series_id":5,"name":"レッドバスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":200},
+    {"series_id":6,"name":"ウルトラソウルズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":305},
+    {"series_id":7,"name":"ダークヒーローズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":306},
+    {"series_id":8,"name":"ハロウィン", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":400},
+    {"series_id":9,"name":"クリスマスギャルズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":401},
+    {"series_id":10,"name":"忘年会", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":801},
+    {"series_id":11,"name":"ゆるドラシル", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":802},
+    {"series_id":12,"name":"メタルスラッグディフェンス", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":803},
+    {"series_id":13,"name":"メルクストーリア", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":600},
+    {"series_id":14,"name":"生きろ！マンボウ！", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":601},
+    {"series_id":15,"name":"消滅都市", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":602},
+    {"series_id":16,"name":"新年", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":700},
+    {"series_id":17,"name":"ケリ姫スイーツ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":603},
+    {"series_id":18,"name":"ギガントゼウス", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":307},
+    {"series_id":19,"name":"超ネコ祭", "rare":6470, "supa":2600, "uber":900, "legend":30,"sort":100},
+    {"series_id":20,"name":"サマーガールズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":804},
+    {"series_id":21,"name":"プラチナガチャ", "rare":0, "supa":0, "uber":10000, "legend":0,"sort":102},
+    {"series_id":22,"name":"エアバスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":201},
+    {"series_id":23,"name":"魔法少女まどか☆マギカ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":604},
+    {"series_id":24,"name":"アイアンウォーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":308},
+    {"series_id":25,"name":"クラッシュフィーバー", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":805},
+    {"series_id":26,"name":"イースターカーニバル", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":402},
+    {"series_id":27,"name":"極ネコ祭", "rare":6470, "supa":2600, "uber":900, "legend":30,"sort":101},
+    {"series_id":28,"name":"ギャルズモンスターズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":309},
+    {"series_id":29,"name":"ぐでたま", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":806},
+    {"series_id":30,"name":"ウルトラセレクション", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":807},
+    {"series_id":31,"name":"ミラクルセレクション", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":808},
+    {"series_id":32,"name":"メタルバスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":202},
+    {"series_id":33,"name":"エレメンタルピクシーズ", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":310},
+    {"series_id":34,"name":"劇場版 Fate stay night", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":605},
+    {"series_id":35,"name":"超選抜祭", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":701},
+    {"series_id":36,"name":"実況パワフルプロ野球", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":809},
+    {"series_id":37,"name":"エヴァンゲリオン", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":606},
+    {"series_id":38,"name":"ビックリマン", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":607},
+    {"series_id":39,"name":"極選抜祭", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":702},
+    {"series_id":40,"name":"ストリートファイターV", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":810},
+    {"series_id":41,"name":"エクセレントセレクション", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":811},
+    {"series_id":42,"name":"超極ネコ祭", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":104},
+    {"series_id":43,"name":"初音ミク", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":608},
+    {"series_id":44,"name":"エヴァンゲリオン2nd", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":609},
+    {"series_id":45,"name":"波動バスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":203},
+    {"series_id":46,"name":"レジェンドガチャ", "rare":0, "supa":0, "uber":9500, "legend":500,"sort":103},
+    {"series_id":47,"name":"超国王祭", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":105},
+    {"series_id":48,"name":"バレンタインギャルズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":403},
+    {"series_id":49,"name":"らんま1/2", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":610},
+    {"series_id":50,"name":"女王祭", "rare":6940, "supa":2500, "uber":500, "legend":60,"sort":106},
+    {"series_id":51,"name":"くにおくん熱血大運動会", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":812},
+    {"series_id":52,"name":"ホワイトデー", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":404},
+    {"series_id":53,"name":"ジューンブライド", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":405},
+    {"series_id":54,"name":"ストリートファイター BLUE TEAM", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":611},
+    {"series_id":55,"name":"ストリートファイター RED TEAM", "rare":6970, "supa":2500, "uber":500, "legend":30,"sort":612},
+    {"series_id":56,"name":"超生命体バスターズ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":204},
+    {"series_id":57,"name":"くにお熱血大運動会 赤組", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":703},
+    {"series_id":58,"name":"りき熱血大運動会 白組", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":704},
+    {"series_id":59,"name":"バスターズ祭", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":107},
+    {"series_id":60,"name":"メタルスラッグアタック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":613},
+    {"series_id":61,"name":"9000万DL記念選抜", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":813},
+    {"series_id":62,"name":"神魔之塔", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":814},
+    {"series_id":63,"name":"るろうに剣心", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":614},
+    {"series_id":64,"name":"サマーガールズ サンシャイン", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":406},
+    {"series_id":65,"name":"サマーガールズ ブルーオーシャン", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":407},
+    {"series_id":66,"name":"ウルトラ4セレクション", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":500},
+    {"series_id":67,"name":"ミラクル4セレクション", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":501},
+    {"series_id":68,"name":"エクセレント4セレクション", "rare":6770, "supa":2500, "uber":700, "legend":30,"sort":502},
+    {"series_id":69,"name":"1億チケットガチャ", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":815},
+    {"series_id":70,"name":"億DL記念選抜", "rare":6930, "supa":2500, "uber":500, "legend":70,"sort":108},
+    {"series_id":71,"name":"アウトレット", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":705},
+    {"series_id":72,"name":"範馬刃牙", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":615},
+    {"series_id":73,"name":"ソニック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":616},
+    {"series_id":75,"name":"仮2026新年超極1(956add8)", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
+    {"series_id":76,"name":"仮2026新年超極2", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
+    {"series_id":77,"name":"仮2026新年超極3", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
+    {"series_id":78,"name":"仮2026新年超極4", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101}
+
+];
