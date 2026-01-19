@@ -1,19 +1,23 @@
-/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・物理配置同期強化版） */
+/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・インデックス線形同期強化版） */
 
 /**
- * 単一のガチャセグメント（例：ガチャID:123で5回回す）をシミュレートする
- * トラック遷移（レア被り）を考慮し、最終的なインデックスと直前の状態を返します。
+ * 単一のガチャセグメント（例：ガチャID:1006で11回回す）をシミュレートする
+ * @param {Object} segment - {id, rolls, g} の形式のセグメント情報
+ * @param {number} startIdx - 開始SEEDインデックス
+ * @param {Object} initialStates - 前のセグメントから引き継いだ状態
+ * @param {Array} seeds - 乱数シード配列
+ * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終状態
  */
 function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
     let currentIdx = startIdx;
     const config = gachaMasterData.gachas[segment.id];
     
     // 状態管理オブジェクトの初期化
-    // initialStates が A/B 両方の状態を持っていることを想定
+    // 前のセグメントの結果（initialStates）があれば継承し、なければ新規作成
     let trackStates = initialStates ? { ...initialStates } : {
-        lastA: null,
-        lastB: null,
-        lastAction: null // 最後に実行されたロールの結果
+        lastA: null,      // トラックAの物理的直上
+        lastB: null,      // トラックBの物理的直上
+        lastAction: null  // 全トラックを通じて「直前に実行されたロール」の最終結果
     };
 
     if (!config) return { nextIndex: currentIdx, trackStates: trackStates };
@@ -21,7 +25,7 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
     let rollsToPerform = segment.rolls;
     let isGuaranteed = false;
 
-    // 確定枠（11G/15G/7G等）の判定と、通常枠としての計算回数の調整
+    // 確定枠（11G/15G/7G等）がある場合の、通常枠としての計算回数を算出
     if (segment.g) {
         if (segment.rolls === 15) { rollsToPerform = 14; isGuaranteed = true; }
         else if (segment.rolls === 7) { rollsToPerform = 6; isGuaranteed = true; }
@@ -29,48 +33,51 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         else { rollsToPerform = Math.max(0, segment.rolls - 1); isGuaranteed = true; }
     }
 
-    // 通常枠のシミュレーション実行
+    // --- 1. 通常枠（または確定枠の前のロール）のシミュレーション ---
     for (let i = 0; i < rollsToPerform; i++) {
         if (currentIdx >= seeds.length) break;
-        
+
         const isTrackB = (currentIdx % 2 !== 0);
         
-        // 物理的な「直上のセル」の情報を取得
-        // そのトラック（A or B）で最後に排出されたキャラが、テーブル上の物理的な直上となる
+        // 物理的な「直上のセル」の情報を取得（レア被り判定の物理チェック用）
         const drawAbove = isTrackB ? trackStates.lastB : trackStates.lastA;
 
         // 判定コンテキストの構築
-        // originalIdAbove: テーブル上の物理的な直上ID（物理チェック用）
-        // finalIdSource: 直前のロール（遷移元）で実際に排出されたID（遷移チェック用）
+        // originalIdAbove: テーブル上の物理的な直上ID（物理的な重なりチェック用）
+        // finalIdSource: 直前のロールで「最終的に確定した」ID（インデックス線形遷移のチェック用）
         const drawContext = {
             originalIdAbove: drawAbove ? String(drawAbove.charId) : null,
             finalIdSource: trackStates.lastAction ? String(trackStates.lastAction.charId) : null
         };
 
-        // ロールの実行（ロジック層の rollWithSeedConsumptionFixed を使用）
+        // ロールの実行
         const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
         if (rr.seedsConsumed === 0) break;
 
-        // 状態の更新
+        // 実行結果を整理
         const result = {
             rarity: rr.rarity,
-            charId: rr.charId,
+            charId: rr.charId, // 再抽選後のIDがここに入る
             originalCharId: rr.originalChar ? String(rr.originalChar.id) : String(rr.charId),
             trackB: isTrackB
         };
 
-        // 物理トラック履歴と最後のアクションを更新
+        // 物理トラック履歴の更新
         if (isTrackB) {
             trackStates.lastB = result;
         } else {
             trackStates.lastA = result;
         }
+        
+        // 「直前に行われたアクション」として、再抽選後を含む結果を保存
+        // これが次のループの drawContext.finalIdSource に受け渡される
         trackStates.lastAction = result;
 
+        // インデックスを線形に加算（再抽選があれば3以上、なければ2加算される）
         currentIdx += rr.seedsConsumed;
     }
 
-    // 確定枠がある場合の最後の1枠の処理
+    // --- 2. 確定枠（11連の最後など）がある場合の処理 ---
     if (isGuaranteed && currentIdx < seeds.length) {
         const isTrackB = (currentIdx % 2 !== 0);
         const gr = rollGuaranteedUber(currentIdx, config, seeds);
@@ -87,8 +94,10 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         } else {
             trackStates.lastA = result;
         }
+        
         trackStates.lastAction = result;
 
+        // 確定枠は常に1つのSEEDを消費する
         currentIdx += gr.seedsConsumed;
     }
 
@@ -96,8 +105,8 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
 }
 
 /**
- * ルート配列を文字列（sim-config形式）に圧縮・変換する
- * （連続した同一ガチャのロールをまとめる）
+ * ルート配列をシミュレーション用Config形式の文字列に圧縮する
+ * （連続する同一ガチャのロールをまとめるが、確定枠は個別に扱う）
  */
 function compressRoute(route) {
     if (!route || route.length === 0) return "";
@@ -105,8 +114,7 @@ function compressRoute(route) {
     let current = null;
 
     for (const step of route) {
-        // 同じガチャID、かつ確定枠フラグが一致する場合は回数を合算
-        // ただし、確定枠(g)の場合は合算せず個別のセグメントとして保持
+        // 同じガチャID、かつ確定枠でない場合は回数を合算可能
         if (current && current.id === step.id && current.g === step.g && !step.g) {
             current.rolls += step.rolls;
         } else {
@@ -116,5 +124,6 @@ function compressRoute(route) {
     }
     if (current) segments.push(current);
 
+    // sim_config_helpers.js の関数を使用して文字列化
     return stringifySimConfig(segments);
 }
