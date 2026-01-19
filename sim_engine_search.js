@@ -1,18 +1,19 @@
-/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（ターゲットSEEDインデックス・トラック同期完全版） */
+/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（インデックス線形同期・状態遷移完全整合版） */
 
 /**
  * ビームサーチ本体
- * 各ステップで上位候補を保持しつつ、ターゲットのインデックス（A/Bトラック含む）に正確に一致する経路を探します。
+ * インデックスの線形的な進展とレア被りによるトラック遷移を考慮し、ターゲットへ正確に到達する経路を探索します。
  */
 function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
     const BEAM_WIDTH = 25;
-    const MAX_STEPS = 1500; 
+    const MAX_STEPS = 2000; // 探索の最大ステップ数
     
-    // ターゲットガチャを優先的に評価するためソート
+    // ターゲットガチャを評価の優先順位に反映するためソート
     const sortedConfigs = [...configs].sort((a, b) => (a._fullId == targetGachaId ? -1 : 1));
 
     // 探索候補の初期化
-    // idx: 現在のSEEDインデックス（これが奇数ならB、偶数ならAトラック）
+    // idx: 現在のSEEDインデックス
+    // lastDraw: 前のステップからのトラック状態（lastA, lastB, lastAction）を保持
     let candidates = [{ 
         idx: startIdx, 
         path: [], 
@@ -29,27 +30,27 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
         let nextCandidates = [];
 
         for (const current of candidates) {
-            // 【重要】ターゲットインデックスに「ピッタリ」到達したかチェック
-            // インデックスが一致していれば、トラック(A/B)も物理行も一致しています
+            // ターゲットインデックスにピッタリ到達したかチェック
+            // インデックスが一致すれば、SEEDの消費履歴とトラック状態が物理テーブルと完全に同期していることを意味します
             if (current.idx === targetIdx) {
                 return current.path;
             }
 
-            // 次の候補を展開
+            // 次の候補を展開（1回引く、または確定11連を試行）
             const expanded = expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId);
             nextCandidates.push(...expanded);
         }
 
         if (nextCandidates.length === 0) break;
 
-        // スコア順にソート（目標に近い、かつ加点要素が多いものを優先）
+        // スコア順にソート（目標への近さ、レアキャラ発見、ガチャの継続性などを評価）
         nextCandidates.sort((a, b) => b.score - a.score);
 
-        // 同一状態の重複を除去（効率化）
+        // 同一インデックスかつ同一状態の重複を除去して効率化
         const uniqueCandidates = filterUniqueCandidates(nextCandidates);
 
-        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残す（ビーム幅の半分ずつ）
-        // これにより「特定のトラックに偏って探索が詰まる」現象を防ぎます
+        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残すことで、
+        // 片方のトラックで探索が詰まる（デッドエンド）を防止します
         const trackA = uniqueCandidates.filter(c => c.idx % 2 === 0);
         const trackB = uniqueCandidates.filter(c => c.idx % 2 !== 0);
         
@@ -60,78 +61,68 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
         candidates = [...bestA, ...bestB].sort((a, b) => b.score - a.score).slice(0, BEAM_WIDTH);
     }
     
-    return null;
+    return null; // 経路が見つからなかった場合
 }
 
 /**
- * 候補展開処理
+ * 現時点からの可能なアクション（通常ロール/確定ロール）を展開
  */
 function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId) {
     const results = [];
-    const dist = targetIdx - current.idx;
+    const distToTarget = targetIdx - current.idx;
     
-    // ターゲットを既に追い越している場合はこれ以上展開しない
-    if (dist < 0) return results;
+    if (distToTarget < 0) return results;
 
     const lastGachaId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
 
     for (const conf of sortedConfigs) {
         const isPlat = conf.name.includes('プラチナ') || conf.name.includes('レジェンド');
-        const isG = conf._fullId.endsWith("g");
+        const isGuaranteedGacha = conf._fullId.endsWith("g");
 
-        // 1. 通常ロール（1回分）を試行
+        // --- 1. 通常ロール（1回分）の試行 ---
         if (!isPlat || current.platUsed < maxPlat) {
-            // 物理的な「直上のセル（2つ前のインデックス）」から排出されるキャラを算出
-            // レア被り判定（logic_duplicate.js）において、テーブル上の物理配置との一致を確認するために必要
-            let originalIdAbove = null;
-            if (current.idx >= 2) {
-                const s0_above = simSeeds[current.idx - 2];
-                const s1_above = simSeeds[current.idx - 1];
-                const rarityAbove = determineRarity(s0_above, conf.rarity_rates);
-                const poolAbove = conf.pool[rarityAbove] || [];
-                if (poolAbove.length > 0) {
-                    originalIdAbove = String(poolAbove[s1_above % poolAbove.length].id);
-                }
-            }
-
-            const drawContext = {
-                originalIdAbove: originalIdAbove,
-                finalIdSource: current.lastDraw ? String(current.lastDraw.charId) : null
-            };
-
-            // ロジック層の共通関数で実際の消費SEED数（rr.seedsConsumed）を算出
-            const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, drawContext);
+            // 単一ロールのシミュレーション
+            // simulateSingleSegment を利用することで、レア被り判定と状態更新を logic_roll_core と同期させる
+            const segResult = simulateSingleSegment(
+                { id: conf.id, rolls: 1, g: false }, 
+                current.idx, 
+                current.lastDraw, 
+                simSeeds
+            );
 
             // 到達先がターゲットを超えない場合に候補として採用
-            if (current.idx + res.seedsConsumed <= targetIdx) {
-                const newDraw = { 
-                    rarity: res.rarity, 
-                    charId: res.charId, 
-                    originalCharId: res.originalChar ? String(res.originalChar.id) : String(res.charId)
-                };
-
+            if (segResult.nextIndex <= targetIdx) {
+                // 今回のロール結果（lastAction）を取得
+                const rollInfo = segResult.trackStates.lastAction;
+                
                 results.push({ 
-                    idx: current.idx + res.seedsConsumed, 
+                    idx: segResult.nextIndex, 
                     path: [...current.path, { id: conf.id, rolls: 1, g: false, fullId: conf._fullId }], 
-                    lastDraw: newDraw, 
-                    score: calculateScore(current.score, res, dist, targetIdx, primaryTargetId, conf.id, lastGachaId, targetGachaId, current.lastDraw), 
+                    lastDraw: segResult.trackStates, 
+                    score: calculateScore(current.score, rollInfo, segResult.nextIndex - current.idx, targetIdx, primaryTargetId, conf.id, lastGachaId, targetGachaId), 
                     platUsed: isPlat ? current.platUsed + 1 : current.platUsed, 
                     guarUsed: current.guarUsed 
                 });
             }
         }
 
-        // 2. 確定ロール（11連等）を試行
-        if (!isPlat && current.guarUsed < maxGuar && isG) {
-            // 確定枠シミュレーション（内部でレア被りを考慮しながら11回分回す）
-            const res = simulateSingleSegment({id: conf.id, rolls: 11, g: true}, current.idx, current.lastDraw, simSeeds);
-            
-            if (res.nextIndex <= targetIdx) {
+        // --- 2. 確定ロール（11連等）の試行 ---
+        // ターゲットガチャが確定設定（g）かつ、リソースに余裕がある場合
+        if (!isPlat && current.guarUsed < maxGuar && isGuaranteedGacha) {
+            // 確定枠シミュレーション
+            const segResult = simulateSingleSegment(
+                { id: conf.id, rolls: 11, g: true }, 
+                current.idx, 
+                current.lastDraw, 
+                simSeeds
+            );
+
+            if (segResult.nextIndex <= targetIdx) {
                 results.push({ 
-                    idx: res.nextIndex, 
+                    idx: segResult.nextIndex, 
                     path: [...current.path, { id: conf.id, rolls: 11, g: true, fullId: conf._fullId }], 
-                    lastDraw: res.trackStates.lastAction, // 確定枠最後のキャラ情報を継承
-                    score: current.score - 800, // 確定枠は貴重なため、極力温存するルートを優先
+                    lastDraw: segResult.trackStates, 
+                    score: current.score - 1000, // 確定枠消費のペナルティ（温存を優先）
                     platUsed: current.platUsed, 
                     guarUsed: current.guarUsed + 1 
                 });
@@ -142,14 +133,15 @@ function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simS
 }
 
 /**
- * 同一状態の候補をフィルタリング
+ * 状態の同一性チェックによる重複排除
  */
 function filterUniqueCandidates(candidates) {
     const unique = [];
     const seen = new Set();
     for (const c of candidates) {
-        // インデックス、直前のキャラID、リソース使用状況が同じなら同一状態とみなす
-        const key = `${c.idx}-${c.lastDraw?.charId}-${c.platUsed}-${c.guarUsed}`;
+        // インデックス、直近のキャラID、リソース使用状況をキーにする
+        const charId = c.lastDraw?.lastAction?.charId || 'none';
+        const key = `${c.idx}-${charId}-${c.platUsed}-${c.guarUsed}`;
         if (!seen.has(key)) { 
             seen.add(key); 
             unique.push(c);
@@ -160,38 +152,36 @@ function filterUniqueCandidates(candidates) {
 
 /**
  * 探索スコア計算
+ * ガチャの切り替え回数や、目的のキャラの発見、レアリティを評価します。
  */
-function calculateScore(currentScore, res, dist, targetIdx, primaryTargetId, confId, lastGachaId, targetGachaId, lastDraw) {
+function calculateScore(currentScore, rollInfo, consumed, targetIdx, primaryTargetId, confId, lastGachaId, targetGachaId) {
     let s = currentScore;
-
-    // 1. 同一ガチャ継続ボーナス（頻繁なガチャ切り替えを抑止）
+    
+    // ガチャの継続性ボーナス（頻繁な切り替えを抑制）
     if (lastGachaId && confId === lastGachaId) {
-        s += 150;
-    } 
-    // ターゲットガチャ（クリックした列）を優先
-    else if (confId === targetGachaId.replace(/[gfs]$/, '')) {
+        s += 100;
+    } else if (confId === targetGachaId.replace(/[gfs]$/, '')) {
         s += 50;
     }
 
-    // 2. ターゲットキャラ発見ボーナス
-    if (primaryTargetId && String(res.charId) === String(primaryTargetId)) {
-        s += 5000;
+    // ターゲットキャラ発見ボーナス
+    if (primaryTargetId && String(rollInfo.charId) === String(primaryTargetId)) {
+        s += 10000; // 最優先
     }
 
-    // 3. 限定・伝説レアリティ加点
-    const charId = String(res.charId);
-    if (typeof limitedCats !== 'undefined' && limitedCats.includes(parseInt(charId))) {
+    // レアリティ加点
+    const charId = parseInt(rollInfo.charId);
+    if (typeof limitedCats !== 'undefined' && limitedCats.includes(charId)) {
+        s += 500;
+    }
+    
+    if (rollInfo.rarity === 'legend') {
+        s += 2000;
+    } else if (rollInfo.rarity === 'uber') {
         s += 300;
     }
-    if (res.rarity === 'legend') {
-        s += 1000;
-    } else if (res.rarity === 'uber') {
-        s += 200;
-    }
     
-    // 4. 到達度ボーナス（ターゲットに近いほど高得点）
-    const progress = (res.startIndex || 0) / targetIdx;
-    
-    // 消費したSEED分を加算しつつ、進行状況を重視
-    return s + res.seedsConsumed + (progress * 100);
+    // 到達度ボーナス（ターゲットに近いほど高得点）
+    const progress = (rollInfo.startIndex || 0) / targetIdx;
+    return s + consumed + (progress * 200);
 }
