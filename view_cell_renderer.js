@@ -82,6 +82,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             if(sv >= 9970) style = 'background-color: #DDA0DD;';
             else if(sv >= 9940) style = 'background-color: #de59de;';
             else if(sv >= 9500) style = 'background-color: #FF4C4C;';
+            else if(sv >= 9070) style = 'background-color: #fda34e;';
             else if(sv >= 6970) style = 'background-color: #ffff33;';
         }
     }
@@ -117,4 +118,5 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     }
     
     return `<td class="gacha-cell" style="${style} cursor:pointer;" ${clickHandler}>${content}</td>`;
+
 }
