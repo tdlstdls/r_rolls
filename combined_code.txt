@@ -696,53 +696,96 @@ function executeReroll(startIndex, duplicateSlotIndex, characterPool, seeds, cha
 ====================
 FILE: logic_roll_core.js
 ====================
-/** @file logic_roll_core.js @description ガチャ抽選メイン統合ロジック */
+/** @file logic_roll_core.js @description ガチャ抽選メイン統合ロジック（インデックス線形制御・状態継承強化版） */
+
+/**
+ * 指定されたインデックスからガチャを1回実行する
+ * @param {number} startIndex - 抽選を開始するSEED配列のインデックス
+ * @param {Object} gachaConfig - ガチャのマスタデータ
+ * @param {Array} seeds - 乱数シード配列
+ * @param {Object} lastDrawInfo - 直前の抽選結果（レア被り判定用）
+ * @returns {Object} 抽選結果と消費SEED数
+ */
 function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo) {
+    // 境界チェック：レアリティ判定(s0)とキャラ判定(s1)に最低2つのSEEDが必要
     if (startIndex + 1 >= seeds.length) {
-        return { seedsConsumed: 0, finalChar: { name: "データ不足", id: null } };
+        return { 
+            seedsConsumed: 0, 
+            finalChar: { name: "データ不足", id: null }, 
+            rarity: null,
+            charId: null
+        };
     }
 
-    const s0_seed = seeds[startIndex];
-    const s1_seed = seeds[startIndex + 1];
+    const s0_seed = seeds[startIndex];     // レアリティ決定用
+    const s1_seed = seeds[startIndex + 1]; // キャラクター決定用
 
+    // 1. レアリティの決定
     const currentRarity = determineRarity(s0_seed, gachaConfig.rarity_rates);
     const characterPool = gachaConfig.pool[currentRarity] || [];
 
     if (characterPool.length === 0) {
-        return { seedsConsumed: 2, finalChar: { name: "該当なし", id: null }, rarity: currentRarity };
+        return { 
+            seedsConsumed: 2, 
+            finalChar: { name: "該当なし", id: null }, 
+            rarity: currentRarity,
+            charId: null 
+        };
     }
 
+    // 2. キャラクターの決定（最初の候補）
     const totalChars = characterPool.length;
     const charIndex = s1_seed % totalChars;
     const originalChar = characterPool[charIndex];
-    
+
     let character = originalChar;
-    let seedsConsumed = 2;
+    let seedsConsumed = 2; // 基本消費量(s0, s1)
     let isRerolled = false;
     let isConsecutiveRerollTarget = false;
     let rerollProcess = null;
 
-    if (currentRarity === 'rare') {
+    // 3. レア被り判定と再抽選の実行
+    // レアリティが 'rare' の場合のみ、直前の結果と比較して再抽選を行う
+    if (currentRarity === 'rare' && typeof checkDuplicateStatus === 'function') {
         const status = checkDuplicateStatus(String(character.id), lastDrawInfo);
+        
         if (status.targetToAvoid !== null) {
             isRerolled = true;
             isConsecutiveRerollTarget = status.isConsecutiveRerollTarget;
+
+            // 再抽選ロジックの呼び出し（startIndex+2 以降のシードを消費）
             const res = executeReroll(startIndex, charIndex, characterPool, seeds, status.targetToAvoid);
+            
             if (res.character) {
                 character = res.character;
-                seedsConsumed = res.seedsConsumed;
+                seedsConsumed = res.seedsConsumed; // 再抽選にかかった分を含めた総消費数
                 rerollProcess = res.rerollProcess;
+                // デバッグ用に回避したIDを記録
+                if (rerollProcess) rerollProcess.prevId = status.targetToAvoid;
             }
         }
     }
 
+    // 4. 結果の返却
+    // 次のロールは必ず (startIndex + seedsConsumed) から開始される必要がある
     return { 
-        originalChar, finalChar: character, isRerolled, isConsecutiveRerollTarget,
-        rarity: currentRarity, charId: character.id, seedsConsumed, 
+        originalChar, 
+        finalChar: character, 
+        isRerolled, 
+        isConsecutiveRerollTarget,
+        rarity: currentRarity, 
+        charId: character.id, 
+        seedsConsumed, 
         debug: {
-            startIndex, s0: s0_seed, rarityRoll: s0_seed % 10000, rarity: currentRarity,
-            s1: s1_seed, totalChars, charIndex, originalChar,
-            isRerolled, isConsecutiveRerollTarget, rerollProcess, finalChar: character, consumed: seedsConsumed
+            startIndex,
+            s0: s0_seed,
+            rarity: currentRarity,
+            s1: s1_seed,
+            charIndex,
+            originalChar,
+            isRerolled,
+            rerollProcess,
+            consumed: seedsConsumed
         }
     };
 }
@@ -1423,22 +1466,26 @@ function calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds) {
 ====================
 FILE: sim_engine_core.js
 ====================
-/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・物理配置同期強化版） */
+/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・インデックス線形同期強化版） */
 
 /**
- * 単一のガチャセグメント（例：ガチャID:123で5回回す）をシミュレートする
- * トラック遷移（レア被り）を考慮し、最終的なインデックスと直前の状態を返します。
+ * 単一のガチャセグメント（例：ガチャID:1006で11回回す）をシミュレートする
+ * @param {Object} segment - {id, rolls, g} の形式のセグメント情報
+ * @param {number} startIdx - 開始SEEDインデックス
+ * @param {Object} initialStates - 前のセグメントから引き継いだ状態
+ * @param {Array} seeds - 乱数シード配列
+ * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終状態
  */
 function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
     let currentIdx = startIdx;
     const config = gachaMasterData.gachas[segment.id];
     
     // 状態管理オブジェクトの初期化
-    // initialStates が A/B 両方の状態を持っていることを想定
+    // 前のセグメントの結果（initialStates）があれば継承し、なければ新規作成
     let trackStates = initialStates ? { ...initialStates } : {
-        lastA: null,
-        lastB: null,
-        lastAction: null // 最後に実行されたロールの結果
+        lastA: null,      // トラックAの物理的直上
+        lastB: null,      // トラックBの物理的直上
+        lastAction: null  // 全トラックを通じて「直前に実行されたロール」の最終結果
     };
 
     if (!config) return { nextIndex: currentIdx, trackStates: trackStates };
@@ -1446,7 +1493,7 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
     let rollsToPerform = segment.rolls;
     let isGuaranteed = false;
 
-    // 確定枠（11G/15G/7G等）の判定と、通常枠としての計算回数の調整
+    // 確定枠（11G/15G/7G等）がある場合の、通常枠としての計算回数を算出
     if (segment.g) {
         if (segment.rolls === 15) { rollsToPerform = 14; isGuaranteed = true; }
         else if (segment.rolls === 7) { rollsToPerform = 6; isGuaranteed = true; }
@@ -1454,48 +1501,51 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         else { rollsToPerform = Math.max(0, segment.rolls - 1); isGuaranteed = true; }
     }
 
-    // 通常枠のシミュレーション実行
+    // --- 1. 通常枠（または確定枠の前のロール）のシミュレーション ---
     for (let i = 0; i < rollsToPerform; i++) {
         if (currentIdx >= seeds.length) break;
-        
+
         const isTrackB = (currentIdx % 2 !== 0);
         
-        // 物理的な「直上のセル」の情報を取得
-        // そのトラック（A or B）で最後に排出されたキャラが、テーブル上の物理的な直上となる
+        // 物理的な「直上のセル」の情報を取得（レア被り判定の物理チェック用）
         const drawAbove = isTrackB ? trackStates.lastB : trackStates.lastA;
 
         // 判定コンテキストの構築
-        // originalIdAbove: テーブル上の物理的な直上ID（物理チェック用）
-        // finalIdSource: 直前のロール（遷移元）で実際に排出されたID（遷移チェック用）
+        // originalIdAbove: テーブル上の物理的な直上ID（物理的な重なりチェック用）
+        // finalIdSource: 直前のロールで「最終的に確定した」ID（インデックス線形遷移のチェック用）
         const drawContext = {
             originalIdAbove: drawAbove ? String(drawAbove.charId) : null,
             finalIdSource: trackStates.lastAction ? String(trackStates.lastAction.charId) : null
         };
 
-        // ロールの実行（ロジック層の rollWithSeedConsumptionFixed を使用）
+        // ロールの実行
         const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
         if (rr.seedsConsumed === 0) break;
 
-        // 状態の更新
+        // 実行結果を整理
         const result = {
             rarity: rr.rarity,
-            charId: rr.charId,
+            charId: rr.charId, // 再抽選後のIDがここに入る
             originalCharId: rr.originalChar ? String(rr.originalChar.id) : String(rr.charId),
             trackB: isTrackB
         };
 
-        // 物理トラック履歴と最後のアクションを更新
+        // 物理トラック履歴の更新
         if (isTrackB) {
             trackStates.lastB = result;
         } else {
             trackStates.lastA = result;
         }
+        
+        // 「直前に行われたアクション」として、再抽選後を含む結果を保存
+        // これが次のループの drawContext.finalIdSource に受け渡される
         trackStates.lastAction = result;
 
+        // インデックスを線形に加算（再抽選があれば3以上、なければ2加算される）
         currentIdx += rr.seedsConsumed;
     }
 
-    // 確定枠がある場合の最後の1枠の処理
+    // --- 2. 確定枠（11連の最後など）がある場合の処理 ---
     if (isGuaranteed && currentIdx < seeds.length) {
         const isTrackB = (currentIdx % 2 !== 0);
         const gr = rollGuaranteedUber(currentIdx, config, seeds);
@@ -1512,8 +1562,10 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         } else {
             trackStates.lastA = result;
         }
+        
         trackStates.lastAction = result;
 
+        // 確定枠は常に1つのSEEDを消費する
         currentIdx += gr.seedsConsumed;
     }
 
@@ -1521,8 +1573,8 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
 }
 
 /**
- * ルート配列を文字列（sim-config形式）に圧縮・変換する
- * （連続した同一ガチャのロールをまとめる）
+ * ルート配列をシミュレーション用Config形式の文字列に圧縮する
+ * （連続する同一ガチャのロールをまとめるが、確定枠は個別に扱う）
  */
 function compressRoute(route) {
     if (!route || route.length === 0) return "";
@@ -1530,8 +1582,7 @@ function compressRoute(route) {
     let current = null;
 
     for (const step of route) {
-        // 同じガチャID、かつ確定枠フラグが一致する場合は回数を合算
-        // ただし、確定枠(g)の場合は合算せず個別のセグメントとして保持
+        // 同じガチャID、かつ確定枠でない場合は回数を合算可能
         if (current && current.id === step.id && current.g === step.g && !step.g) {
             current.rolls += step.rolls;
         } else {
@@ -1541,27 +1592,29 @@ function compressRoute(route) {
     }
     if (current) segments.push(current);
 
+    // sim_config_helpers.js の関数を使用して文字列化
     return stringifySimConfig(segments);
 }
 
 ====================
 FILE: sim_engine_search.js
 ====================
-/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（ターゲットSEEDインデックス・トラック同期完全版） */
+/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（インデックス線形同期・状態遷移完全整合版） */
 
 /**
  * ビームサーチ本体
- * 各ステップで上位候補を保持しつつ、ターゲットのインデックス（A/Bトラック含む）に正確に一致する経路を探します。
+ * インデックスの線形的な進展とレア被りによるトラック遷移を考慮し、ターゲットへ正確に到達する経路を探索します。
  */
 function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
     const BEAM_WIDTH = 25;
-    const MAX_STEPS = 1500; 
+    const MAX_STEPS = 2000; // 探索の最大ステップ数
     
-    // ターゲットガチャを優先的に評価するためソート
+    // ターゲットガチャを評価の優先順位に反映するためソート
     const sortedConfigs = [...configs].sort((a, b) => (a._fullId == targetGachaId ? -1 : 1));
 
     // 探索候補の初期化
-    // idx: 現在のSEEDインデックス（これが奇数ならB、偶数ならAトラック）
+    // idx: 現在のSEEDインデックス
+    // lastDraw: 前のステップからのトラック状態（lastA, lastB, lastAction）を保持
     let candidates = [{ 
         idx: startIdx, 
         path: [], 
@@ -1578,27 +1631,27 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
         let nextCandidates = [];
 
         for (const current of candidates) {
-            // 【重要】ターゲットインデックスに「ピッタリ」到達したかチェック
-            // インデックスが一致していれば、トラック(A/B)も物理行も一致しています
+            // ターゲットインデックスにピッタリ到達したかチェック
+            // インデックスが一致すれば、SEEDの消費履歴とトラック状態が物理テーブルと完全に同期していることを意味します
             if (current.idx === targetIdx) {
                 return current.path;
             }
 
-            // 次の候補を展開
+            // 次の候補を展開（1回引く、または確定11連を試行）
             const expanded = expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId);
             nextCandidates.push(...expanded);
         }
 
         if (nextCandidates.length === 0) break;
 
-        // スコア順にソート（目標に近い、かつ加点要素が多いものを優先）
+        // スコア順にソート（目標への近さ、レアキャラ発見、ガチャの継続性などを評価）
         nextCandidates.sort((a, b) => b.score - a.score);
 
-        // 同一状態の重複を除去（効率化）
+        // 同一インデックスかつ同一状態の重複を除去して効率化
         const uniqueCandidates = filterUniqueCandidates(nextCandidates);
 
-        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残す（ビーム幅の半分ずつ）
-        // これにより「特定のトラックに偏って探索が詰まる」現象を防ぎます
+        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残すことで、
+        // 片方のトラックで探索が詰まる（デッドエンド）を防止します
         const trackA = uniqueCandidates.filter(c => c.idx % 2 === 0);
         const trackB = uniqueCandidates.filter(c => c.idx % 2 !== 0);
         
@@ -1609,78 +1662,68 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
         candidates = [...bestA, ...bestB].sort((a, b) => b.score - a.score).slice(0, BEAM_WIDTH);
     }
     
-    return null;
+    return null; // 経路が見つからなかった場合
 }
 
 /**
- * 候補展開処理
+ * 現時点からの可能なアクション（通常ロール/確定ロール）を展開
  */
 function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId) {
     const results = [];
-    const dist = targetIdx - current.idx;
+    const distToTarget = targetIdx - current.idx;
     
-    // ターゲットを既に追い越している場合はこれ以上展開しない
-    if (dist < 0) return results;
+    if (distToTarget < 0) return results;
 
     const lastGachaId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
 
     for (const conf of sortedConfigs) {
         const isPlat = conf.name.includes('プラチナ') || conf.name.includes('レジェンド');
-        const isG = conf._fullId.endsWith("g");
+        const isGuaranteedGacha = conf._fullId.endsWith("g");
 
-        // 1. 通常ロール（1回分）を試行
+        // --- 1. 通常ロール（1回分）の試行 ---
         if (!isPlat || current.platUsed < maxPlat) {
-            // 物理的な「直上のセル（2つ前のインデックス）」から排出されるキャラを算出
-            // レア被り判定（logic_duplicate.js）において、テーブル上の物理配置との一致を確認するために必要
-            let originalIdAbove = null;
-            if (current.idx >= 2) {
-                const s0_above = simSeeds[current.idx - 2];
-                const s1_above = simSeeds[current.idx - 1];
-                const rarityAbove = determineRarity(s0_above, conf.rarity_rates);
-                const poolAbove = conf.pool[rarityAbove] || [];
-                if (poolAbove.length > 0) {
-                    originalIdAbove = String(poolAbove[s1_above % poolAbove.length].id);
-                }
-            }
-
-            const drawContext = {
-                originalIdAbove: originalIdAbove,
-                finalIdSource: current.lastDraw ? String(current.lastDraw.charId) : null
-            };
-
-            // ロジック層の共通関数で実際の消費SEED数（rr.seedsConsumed）を算出
-            const res = rollWithSeedConsumptionFixed(current.idx, conf, simSeeds, drawContext);
+            // 単一ロールのシミュレーション
+            // simulateSingleSegment を利用することで、レア被り判定と状態更新を logic_roll_core と同期させる
+            const segResult = simulateSingleSegment(
+                { id: conf.id, rolls: 1, g: false }, 
+                current.idx, 
+                current.lastDraw, 
+                simSeeds
+            );
 
             // 到達先がターゲットを超えない場合に候補として採用
-            if (current.idx + res.seedsConsumed <= targetIdx) {
-                const newDraw = { 
-                    rarity: res.rarity, 
-                    charId: res.charId, 
-                    originalCharId: res.originalChar ? String(res.originalChar.id) : String(res.charId)
-                };
-
+            if (segResult.nextIndex <= targetIdx) {
+                // 今回のロール結果（lastAction）を取得
+                const rollInfo = segResult.trackStates.lastAction;
+                
                 results.push({ 
-                    idx: current.idx + res.seedsConsumed, 
+                    idx: segResult.nextIndex, 
                     path: [...current.path, { id: conf.id, rolls: 1, g: false, fullId: conf._fullId }], 
-                    lastDraw: newDraw, 
-                    score: calculateScore(current.score, res, dist, targetIdx, primaryTargetId, conf.id, lastGachaId, targetGachaId, current.lastDraw), 
+                    lastDraw: segResult.trackStates, 
+                    score: calculateScore(current.score, rollInfo, segResult.nextIndex - current.idx, targetIdx, primaryTargetId, conf.id, lastGachaId, targetGachaId), 
                     platUsed: isPlat ? current.platUsed + 1 : current.platUsed, 
                     guarUsed: current.guarUsed 
                 });
             }
         }
 
-        // 2. 確定ロール（11連等）を試行
-        if (!isPlat && current.guarUsed < maxGuar && isG) {
-            // 確定枠シミュレーション（内部でレア被りを考慮しながら11回分回す）
-            const res = simulateSingleSegment({id: conf.id, rolls: 11, g: true}, current.idx, current.lastDraw, simSeeds);
-            
-            if (res.nextIndex <= targetIdx) {
+        // --- 2. 確定ロール（11連等）の試行 ---
+        // ターゲットガチャが確定設定（g）かつ、リソースに余裕がある場合
+        if (!isPlat && current.guarUsed < maxGuar && isGuaranteedGacha) {
+            // 確定枠シミュレーション
+            const segResult = simulateSingleSegment(
+                { id: conf.id, rolls: 11, g: true }, 
+                current.idx, 
+                current.lastDraw, 
+                simSeeds
+            );
+
+            if (segResult.nextIndex <= targetIdx) {
                 results.push({ 
-                    idx: res.nextIndex, 
+                    idx: segResult.nextIndex, 
                     path: [...current.path, { id: conf.id, rolls: 11, g: true, fullId: conf._fullId }], 
-                    lastDraw: res.trackStates.lastAction, // 確定枠最後のキャラ情報を継承
-                    score: current.score - 800, // 確定枠は貴重なため、極力温存するルートを優先
+                    lastDraw: segResult.trackStates, 
+                    score: current.score - 1000, // 確定枠消費のペナルティ（温存を優先）
                     platUsed: current.platUsed, 
                     guarUsed: current.guarUsed + 1 
                 });
@@ -1691,14 +1734,15 @@ function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simS
 }
 
 /**
- * 同一状態の候補をフィルタリング
+ * 状態の同一性チェックによる重複排除
  */
 function filterUniqueCandidates(candidates) {
     const unique = [];
     const seen = new Set();
     for (const c of candidates) {
-        // インデックス、直前のキャラID、リソース使用状況が同じなら同一状態とみなす
-        const key = `${c.idx}-${c.lastDraw?.charId}-${c.platUsed}-${c.guarUsed}`;
+        // インデックス、直近のキャラID、リソース使用状況をキーにする
+        const charId = c.lastDraw?.lastAction?.charId || 'none';
+        const key = `${c.idx}-${charId}-${c.platUsed}-${c.guarUsed}`;
         if (!seen.has(key)) { 
             seen.add(key); 
             unique.push(c);
@@ -1709,40 +1753,38 @@ function filterUniqueCandidates(candidates) {
 
 /**
  * 探索スコア計算
+ * ガチャの切り替え回数や、目的のキャラの発見、レアリティを評価します。
  */
-function calculateScore(currentScore, res, dist, targetIdx, primaryTargetId, confId, lastGachaId, targetGachaId, lastDraw) {
+function calculateScore(currentScore, rollInfo, consumed, targetIdx, primaryTargetId, confId, lastGachaId, targetGachaId) {
     let s = currentScore;
-
-    // 1. 同一ガチャ継続ボーナス（頻繁なガチャ切り替えを抑止）
+    
+    // ガチャの継続性ボーナス（頻繁な切り替えを抑制）
     if (lastGachaId && confId === lastGachaId) {
-        s += 150;
-    } 
-    // ターゲットガチャ（クリックした列）を優先
-    else if (confId === targetGachaId.replace(/[gfs]$/, '')) {
+        s += 100;
+    } else if (confId === targetGachaId.replace(/[gfs]$/, '')) {
         s += 50;
     }
 
-    // 2. ターゲットキャラ発見ボーナス
-    if (primaryTargetId && String(res.charId) === String(primaryTargetId)) {
-        s += 5000;
+    // ターゲットキャラ発見ボーナス
+    if (primaryTargetId && String(rollInfo.charId) === String(primaryTargetId)) {
+        s += 10000; // 最優先
     }
 
-    // 3. 限定・伝説レアリティ加点
-    const charId = String(res.charId);
-    if (typeof limitedCats !== 'undefined' && limitedCats.includes(parseInt(charId))) {
+    // レアリティ加点
+    const charId = parseInt(rollInfo.charId);
+    if (typeof limitedCats !== 'undefined' && limitedCats.includes(charId)) {
+        s += 500;
+    }
+    
+    if (rollInfo.rarity === 'legend') {
+        s += 2000;
+    } else if (rollInfo.rarity === 'uber') {
         s += 300;
     }
-    if (res.rarity === 'legend') {
-        s += 1000;
-    } else if (res.rarity === 'uber') {
-        s += 200;
-    }
     
-    // 4. 到達度ボーナス（ターゲットに近いほど高得点）
-    const progress = (res.startIndex || 0) / targetIdx;
-    
-    // 消費したSEED分を加算しつつ、進行状況を重視
-    return s + res.seedsConsumed + (progress * 100);
+    // 到達度ボーナス（ターゲットに近いほど高得点）
+    const progress = (rollInfo.startIndex || 0) / targetIdx;
+    return s + consumed + (progress * 200);
 }
 
 ====================
@@ -3644,10 +3686,12 @@ const RowAnalysis = {
 ====================
 FILE: view_cell_renderer.js
 ====================
-/** @file view_cell_renderer.js @description 個別セルの描画とレアリティ色の制御（SEED更新精度修正版） */
+/** @file view_cell_renderer.js @description 個別セルの描画とレアリティ色の制御（昇格枠追加・インデックス同期版） */
 
 /**
  * テーブル用アドレス（A1, B25等）のフォーマット
+ * @param {number} idx - SEEDインデックス
+ * @returns {string} フォーマット済み文字列
  */
 function formatAddress(idx) {
     if (idx === null || idx === undefined) return '';
@@ -3657,12 +3701,13 @@ function formatAddress(idx) {
 }
 
 /**
- * SEED値やレアリティ判定などの詳細セル群を生成する
+ * SEED値やレアリティ判定などの詳細セル群（左側の5列）を生成する
  */
 function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
     if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
     
+    // 最初の列のガチャ設定を取得してレート計算の基準にする
     const firstGachaIdWithSuffix = tableGachaIds[0] || "";
     const firstGachaId = firstGachaIdWithSuffix.replace(/[gfs]$/, '');
     const config = gachaMasterData.gachas[firstGachaId];
@@ -3671,34 +3716,44 @@ function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     
     const s0 = seeds[seedIndex];
     const rVal = s0 % 10000;
-    const rates = config.rarity_rates || {};
+    const rates = config.rarity_rates || { rare: 6970, super: 2500, uber: 500, legend: 30 };
     
     let rType = (rVal < rates.rare) ? 'rare' : 
                 (rVal < rates.rare + rates.super) ? 'super' : 
                 (rVal < rates.rare + rates.super + rates.uber) ? 'uber' : 
                 (rVal < rates.rare + rates.super + rates.uber + rates.legend) ? 'legend' : 'rare';
                 
-    return `<td class="${calcColClass}">${s0}</td><td class="${calcColClass}">${rType}</td><td class="${calcColClass}">-</td><td class="${calcColClass}">-</td><td class="${calcColClass}">-</td>`;
+    return `
+        <td class="${calcColClass}">${s0}</td>
+        <td class="${calcColClass}">${rType}</td>
+        <td class="${calcColClass}">${rVal}</td>
+        <td class="${calcColClass}">-</td>
+        <td class="${calcColClass}">-</td>
+    `;
 }
 
 /**
  * 通常のガチャ結果セル（1マス分）を生成する
  */
 function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode) {
-    const cell = tableData[seedIndex]?.cells?.[colIndex];
-    if (!cell || !cell.roll) return `<td>-</td>`;
+    const rowData = tableData[seedIndex];
+    const cell = rowData?.cells?.[colIndex];
     
-    const r = cell.roll;
-    const charName = (r.finalChar && r.finalChar.name) ? r.finalChar.name : "データ不足";
+    if (!cell || !cell.roll) return `<td class="gacha-cell">-</td>`;
     
-    let style = '';
-    const gachaConfig = gachaMasterData.gachas[id];
-    const isSpecialGacha = gachaConfig && (gachaConfig.name.includes("プラチナ") || gachaConfig.name.includes("レジェンド"));
-
-    const charId = r.finalChar.id;
+    const rr = cell.roll;
+    const charName = (rr.finalChar && rr.finalChar.name) ? rr.finalChar.name : "データ不足";
+    const charId = rr.finalChar.id;
     const charIdStr = String(charId);
 
-    // --- 期間限定キャラ判定 ---
+    // --- 1. 背景色の判定ロジック ---
+    let style = '';
+    const sv = seeds[seedIndex] % 10000;
+
+    // A. ユーザーが「Find」で優先指定したキャラ（最優先：緑）
+    const isPrioritized = userPrioritizedTargets.includes(charId) || userPrioritizedTargets.includes(charIdStr);
+    
+    // B. 限定キャラ判定
     let isLimited = false;
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
         if (limitedCats.includes(parseInt(charId)) || limitedCats.includes(charIdStr)) {
@@ -3706,59 +3761,67 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         }
     }
 
-    // --- Findターゲット等のハイライト判定 ---
-    // userPrioritizedTargets に含まれるキャラを緑色でハイライト
-    const isPrioritized = userPrioritizedTargets.includes(charId) || userPrioritizedTargets.includes(charIdStr);
-
     if (isPrioritized) {
-        style = 'background-color: #6EFF72; font-weight: bold;'; // ユーザー指定の緑色ハイライト
-    } else if (isSimulationMode && highlightMap.get(seedIndex) === id) {
-        if (isLimited || r.rarity === 'uber' || r.rarity === 'legend') {
-            style = 'background:#32CD32;';
+        style = 'background-color: #6EFF72; font-weight: bold;'; 
+    } 
+    // C. シミュレーションモードのルートハイライト
+    else if (isSimulationMode && highlightMap.get(seedIndex) === id) {
+        if (isLimited || rr.rarity === 'uber' || rr.rarity === 'legend') {
+            style = 'background:#32CD32;'; // 濃い緑（重要なキャラ）
         } else {
-            style = 'background:#98FB98;';
+            style = 'background:#98FB98;'; // 薄い緑（ルート上）
         }
+    } 
+    // D. 個別キャラの状態色
+    else if (isLimited) {
+        style = 'background-color: #66FFFF;'; // 限定キャラ：水色
+    } 
+    // E. SEEDの下4桁（sv）によるレアリティ閾値の色分け
+    else {
+        if (sv >= 9970) style = 'background-color: #DDA0DD;';      // 伝説レア枠
+        else if (sv >= 9940) style = 'background-color: #de59de;'; // 伝説への昇格枠
+        else if (sv >= 9500) style = 'background-color: #FF4C4C;'; // 超激レア枠
+        else if (sv >= 9070) style = 'background-color: #fda34e;'; // 【追加】超ネコ/極ネコ用昇格枠
+        else if (sv >= 6970) style = 'background-color: #ffff33;'; // 激レア枠
+    }
+
+    // --- 2. クリックイベントの生成 ---
+    const escapedName = charName.replace(/'/g, "\\'");
+    let clickHandler = "";
+
+    if (isSimulationMode) {
+        // SIMモード：探索エンジンを呼び出し、ターゲットまでのルートを計算
+        clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}')"`;
     } else {
-        if (isLimited) {
-            style = 'background-color: #66FFFF;';
-        } else if (isSpecialGacha) {
-            style = '';
-        } else {
-            const sv = seeds[seedIndex] % 10000;
-            if(sv >= 9970) style = 'background-color: #DDA0DD;';
-            else if(sv >= 9940) style = 'background-color: #de59de;';
-            else if(sv >= 9500) style = 'background-color: #FF4C4C;';
-            else if(sv >= 6970) style = 'background-color: #ffff33;';
+        // 通常モード：このキャラを引いた直後のSEEDインデックスへジャンプ
+        // 線形性を保つため、現在の index + seedsConsumed の位置にあるSEED値を渡す
+        const nextSeedValue = seeds[seedIndex + rr.seedsConsumed];
+        if (nextSeedValue !== undefined) {
+            clickHandler = `onclick="updateSeedAndRefresh(${nextSeedValue})"`;
         }
     }
 
-    const escapedName = charName.replace(/'/g, "\\'");
-    
-    // 非Simモード時のSEED更新：そのロールで最後に消費されたSEED値（seeds[seedIndex + r.seedsConsumed - 1]）をセット
-    const finalUsedSeed = seeds[seedIndex + r.seedsConsumed - 1];
-    const clickHandler = isSimulationMode ? 
-        `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}')"` :
-        `onclick="updateSeedAndRefresh(${finalUsedSeed})"`;
-    
+    // --- 3. セル内コンテンツの構築 ---
     let content = "";
-    if (r.isRerolled) {
-        // レア被り回避時の処理
-        const nextIdx = seedIndex + r.seedsConsumed;
-        let destAddr = (r.isConsecutiveRerollTarget ? 'R' : '') + formatAddress(nextIdx);
-        const oName = (r.originalChar && r.originalChar.name) ? r.originalChar.name : "不明";
-        
+    if (rr.isRerolled) {
+        // レア被り回避（再抽選）が発生している場合
+        const nextIdx = seedIndex + rr.seedsConsumed;
+        let destAddr = (rr.isConsecutiveRerollTarget ? 'R' : '') + formatAddress(nextIdx);
+        const oName = (rr.originalChar && rr.originalChar.name) ? rr.originalChar.name : "不明";
+
         if (!isSimulationMode) {
-            // 回避元のキャラ：最初に消費されたSEED（その1回分）で更新
-            const originalFinalSeed = seeds[seedIndex];
-            let oHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${originalFinalSeed})">${oName}</span>`;
-            
-            // 回避先（最終結果）：一連の処理で最後に消費されたSEEDで更新
-            let fHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${finalUsedSeed})">${destAddr}${charName}</span>`;
+            // 被り元のキャラ（1回分消費した時点のSEED）
+            const originalJumpSeed = seeds[seedIndex + 2];
+            let oHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${originalJumpSeed})">${oName}</span>`;
+            // 最終結果（全工程消費した後のSEED）
+            const finalJumpSeed = seeds[seedIndex + rr.seedsConsumed];
+            let fHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${finalJumpSeed})">${destAddr}${charName}</span>`;
             content = `${oHtml}<br>${fHtml}`;
         } else {
             content = `${oName}<br>${destAddr}${charName}`;
         }
     } else {
+        // 通常の排出
         content = charName;
     }
     
@@ -5779,29 +5842,32 @@ FILE: view_table_highlight.js
 /** @file view_table_highlight.js @description シミュレーションモードのルートハイライト計算（確定枠・トラック遷移・物理配置完全同期版） */
 
 /**
- * シミュレーション設定に基づき、テーブル上でハイライトすべきセルのマップを作成する
+ * シミュレーション設定（ルート）に基づき、テーブル上でハイライトすべきセルのマップを作成する
+ * @param {number} initialSeed - 開始SEED
+ * @param {Array} seeds - 乱数シード配列
+ * @param {number} numRolls - 表示行数
+ * @returns {Object} highlightMap(通常枠用), guarHighlightMap(確定枠用), lastSeedValue(最終SEED)
  */
 function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
     const highlightMap = new Map();
     const guarHighlightMap = new Map();
     let lastSeedValue = null;
 
+    // シミュレーションモードでない、またはルートが空の場合は空のマップを返す
     if (!isSimulationMode) return { highlightMap, guarHighlightMap, lastSeedValue };
 
     const simConfigEl = document.getElementById('sim-config');
     if (!simConfigEl || !simConfigEl.value.trim()) return { highlightMap, guarHighlightMap, lastSeedValue };
 
-    // Sim設定文字列をパース
+    // Sim設定文字列（例: 1006-5-942-11g）をパースしてセグメント配列を取得
     const simConfigs = parseSimConfig(simConfigEl.value.trim());
     let rngForText = new Xorshift32(initialSeed);
     let currentSeedIndex = 0;
 
-    // テーブルのシミュレーション（view_table_data.js）および探索エンジンと完全に同期するため、
-    // トラックごとの物理的な「直上」の状態を独立して保持します。
+    // 物理的な「直上のセル」の状態をトラック別に保持
     let lastDrawA = null;
     let lastDrawB = null;
-    
-    // 直前に「実際に引いた」ロールの状態（トラック遷移の起点となる情報）
+    // 遷移元（直前に実際に引いたロール）の状態
     let lastRollState = null;
 
     for (const sim of simConfigs) {
@@ -5811,7 +5877,7 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
         let normalRolls = sim.rolls;
         let isGuaranteedStep = false;
 
-        // 確定枠設定（11G/15G/7G等）の判定
+        // 確定枠設定（11G/15G/7G等）の判定と、通常枠として計算する回数の調整
         if (sim.g) {
             if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
             else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
@@ -5819,35 +5885,27 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
             else { normalRolls = Math.max(0, sim.rolls - 1); isGuaranteedStep = true; }
         }
 
-        // 通常ロール（確定枠に達するまでのロールを含む）の処理
+        // --- 1. 通常ロール部分のシミュレーション ---
         for (let k = 0; k < normalRolls; k++) {
-            // 表示範囲外（生成行数×2）を超えた場合は計算のみ継続し、ハイライト登録は行わない
-            const canHighlight = currentSeedIndex < numRolls * 2;
+            if (currentSeedIndex >= seeds.length) break;
+
             const isTrackB = (currentSeedIndex % 2 !== 0);
+            const canHighlight = currentSeedIndex < numRolls * 2;
 
-            // 1. 物理的な「直上のセル」のキャラIDを特定（レア被り判定に必須）
-            // テーブル描画ロジックと一致させるため、現在のセルの物理的直上（index - 2）を参照
-            let originalIdAbove = null;
-            if (currentSeedIndex >= 2) {
-                const s0_above = seeds[currentSeedIndex - 2];
-                const s1_above = seeds[currentSeedIndex - 1];
-                const rates = config.rarity_rates || { rare: 6970, super: 2500, uber: 500, legend: 30 };
-                const rarityAbove = determineRarity(s0_above, rates);
-                const poolAbove = config.pool[rarityAbove] || [];
-                if (poolAbove.length > 0) {
-                    originalIdAbove = String(poolAbove[s1_above % poolAbove.length].id);
-                }
-            }
+            // 物理的な「直上のセル」のキャラIDを特定（logic_duplicate.js でのレア被り判定に必要）
+            const drawAbove = isTrackB ? lastDrawB : lastDrawA;
 
-            // 2. 判定コンテキストの構築
-            // originalIdAbove: 物理チェック用 / finalIdSource: 遷移元チェック用
+            // 判定コンテキストの構築
             const drawContext = {
-                originalIdAbove: originalIdAbove,
+                // 物理的な直上のID（テーブル上での縦の並び）
+                originalIdAbove: drawAbove ? String(drawAbove.charId) : null,
+                // 実際に直前に引いたID（インデックスの線形的な繋がり）
                 finalIdSource: lastRollState ? String(lastRollState.charId) : null
             };
 
+            // ハイライトマップへの登録（表示範囲内のみ）
             if (canHighlight) {
-                // 確定枠セグメントの最初の位置なら確定枠用ハイライト、それ以外は通常ハイライト
+                // 確定枠セグメントの最初の1個目は、ユーザーへの視認性のために確定枠用マップ（guarHighlightMap）に登録
                 if (isGuaranteedStep && k === 0) {
                     guarHighlightMap.set(currentSeedIndex, sim.id);
                 } else {
@@ -5855,32 +5913,35 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
                 }
             }
 
-            // 3. ロールの実行と状態更新
+            // ロールの実行（logic_roll_core.js を使用）
             const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, drawContext);
             if (rr.seedsConsumed === 0) break;
 
             const resultState = {
                 rarity: rr.rarity,
-                charId: String(rr.charId),
+                charId: String(rr.charId), // 再抽選後であれば、その後のIDを保持
                 originalCharId: rr.originalChar ? String(rr.originalChar.id) : String(rr.charId),
                 trackB: isTrackB
             };
 
-            // 各トラックの物理履歴と、直近の遷移元状態を更新
+            // 各トラックの物理履歴と、全体の直近アクション状態を更新
             if (isTrackB) lastDrawB = resultState;
             else lastDrawA = resultState;
             lastRollState = resultState;
 
+            // インデックスの線形移動
             const consumed = rr.seedsConsumed;
             currentSeedIndex += consumed;
-            
-            // Txtモード表示用の乱数状態を同期
+
+            // Txtモード等での整合性のため、乱数生成器も同期させる
             for (let x = 0; x < consumed; x++) rngForText.next();
         }
 
-        // 確定枠（超激レア）の実行
+        // --- 2. 確定枠（最後の1回）の処理 ---
         if (isGuaranteedStep && currentSeedIndex < seeds.length) {
             const isTrackB = (currentSeedIndex % 2 !== 0);
+            
+            // 確定枠の実行
             const gr = rollGuaranteedUber(currentSeedIndex, config, seeds);
             
             const resultState = { 
@@ -5890,16 +5951,18 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
                 trackB: isTrackB
             };
 
+            // 状態の更新
             if (isTrackB) lastDrawB = resultState;
             else lastDrawA = resultState;
             lastRollState = resultState;
 
+            // 確定枠は1シード消費
             currentSeedIndex += gr.seedsConsumed;
             for (let x = 0; x < gr.seedsConsumed; x++) rngForText.next();
         }
     }
 
-    // 最終的なSEED値を保持（Txtモード等での継続計算用）
+    // 次のロール開始に使用できるシード値を保持
     lastSeedValue = rngForText.seed;
 
     return { highlightMap, guarHighlightMap, lastSeedValue };
