@@ -1,13 +1,13 @@
 /** @file view_table_dom.js @description テーブルのDOM構造構築 */
 
 /**
- * [cite_start]テーブルDOM構築のメイン [cite: 974-985]
+ * テーブルDOM構築のメイン
  */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
     const totalTrackSpan = calculateTotalTrackSpan();
     const fullTableColSpan = 2 + totalTrackSpan * 2;
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-
+    
     let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
             <th class="col-no" style="position: sticky; left: 0; z-index: 30; background: #f8f9fa; border-right: 1px solid #ddd;"></th>
@@ -35,15 +35,23 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
         html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, false)}</tr>`;
     }
 
+    // 下部操作エリア
     html += `<tr><td colspan="${fullTableColSpan}" style="padding: 10px; text-align: center;">
-        <button onclick="addMoreRolls()">+100行</button>
-        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
+        <div style="margin-bottom: 10px;">
+            <button onclick="addMoreRolls()">+100行</button>
+            <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
+        </div>
+        
+        <div id="seed-calc-explanation" class="${showSeedColumns ? '' : 'hidden'}" style="text-align: left; margin-top: 20px;">
+            ${typeof generateSeedExplanationHtml === 'function' ? generateSeedExplanationHtml() : ''}
+        </div>
     </td></tr></tbody></table>`;
+    
     return html;
 }
 
 /**
- * [cite_start]トラックあたりの総Colspanを計算 [cite: 978-979]
+ * トラックあたりの総Colspanを計算
  */
 function calculateTotalTrackSpan() {
     const calcColSpan = showSeedColumns ? 5 : 0;
@@ -58,7 +66,7 @@ function calculateTotalTrackSpan() {
 }
 
 /**
- * [cite_start]ヘッダー部分の操作ボタンエリア生成 [cite: 974-976]
+ * ヘッダー部分の操作ボタンエリア生成
  */
 function buildHeaderButtonArea() {
     return `
