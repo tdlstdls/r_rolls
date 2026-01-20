@@ -1,4 +1,4 @@
-/** @file view_table_renderer.js @description 行・セルの描画処理（G列SEED更新精度修正版） */
+/** @file view_table_renderer.js @description 行・セルの描画処理（解説文：最下部注意点統合版） */
 
 /**
  * 行レンダリング (A/Bサイド別)
@@ -110,37 +110,69 @@ function generateSeedExplanationHtml() {
     return `
         <div class="seed-explanation-container">
             <h4 style="margin-top: 0; color: #17a2b8; border-bottom: 2px solid #17a2b8; display: inline-block;">📖 SEED計算と排出の仕組み</h4>
-            <div style="font-size: 0.9em; line-height: 1.6; color: #555;">
+            <div class="explanation-content">
                 <p>左側のSEED詳細列を表示している際、以下のルールに基づいてキャラクターが決定されます：</p>
                 <ul style="padding-left: 20px;">
                     <li><strong>1. レア度判定 (s0):</strong> <br>
-                        その番地のSEED値を <strong>10000</strong> で割った剰余（余り）を使用します。
-                        <br>例: 剰余が 0～6969 ならレア、9500～9969 なら超激レアとなります。
+                        そのシードのSEED値を <strong>10000</strong> で割った剰余を使用します。
                     </li>
                     <li><strong>2. キャラ判定 (s1):</strong> <br>
-                        レア度決定後、<strong>「その次の番地 (Index + 1)」</strong>のSEED値を使用します。
-                        <br>その値を、該当するレアリティのキャラクター総数で割った剰余によって、どのキャラが出るか決まります。
+                        レア度決定後、<strong>「その次のシード (Index + 1)」</strong>のSEED値を使用し、レアリティ内のキャラ数で割った剰余で決定します。
                     </li>
-                    <li style="margin-top: 10px;"><strong>3. 【参考表示】レア被り再抽選 (s2～):</strong> <br>
+                    <li style="margin-top: 15px;"><strong>3. レア被り再抽選 (s2～):</strong> <br>
                         レアリティがレアで、かつ「前回引いたキャラ」と「今回判定されたキャラ」が同じ場合、さらに「その次のシード (Index + 2～)」で違うキャラが出るまで再抽選を繰り返し行います。<br>
-                        再抽選を行う際は、当該ガチャマスターのキャラクタープールから、通常抽選（及び前回までの再抽選）で使用したスロットを除いた一時的なキャラプールを作成し、当該一時的なキャラプールの総数で除した剰余を当てはめてキャラを算出します。<br>
-                        使用したシード数が奇数の場合は、次ロールでトラック(A/B)が切り替わります。<br>
-                        なお、下記4.のとおり、確定11連などの「確定枠」でも使用シード数が１つで奇数となるためトラックの切り替わりが発生します。<br>
-                        <div style="background: #fff; border: 1px solid #ddd; padding: 8px; margin: 5px 0; font-size: 0.9em;">
-                            <strong>※【参考表示】について</strong><br>
-                            連続するロールの前後で別のガチャを引くことにより、レア被りを誘発したり、回避したりすることもできるため、ご自身の計画でガチャを引くと次にどのセルに遷移するかは「ユーザーご自身で」ご確認ください。<br>
-                            このテーブルでは、ユーザーが選択するルートは考慮されず、機械的に次のような仕様でレア被り時の遷移先セル番地及び再抽選キャラを表示しています。<br>
-                            （１）同一トラック・同一ガチャの１つ上のセルと比較して、キャラが一致し、レアリティがレアの場合、レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。<br>
-                            （２）上記のレア被りにより遷移した、遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」を付して表示します。
+                        再抽選を行う際は、一時的なキャラプール（当該レアの総数-1）を使用して算出します。使用したシード数が奇数の場合はトラック(A/B)が切り替わります。
+                        
+                        <div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+                            <strong style="color: #d9534f; font-size: 1.1em;">▼ 連鎖するレア被り（R表示）の例</strong>
+                            <ol style="margin-top: 10px; padding-left: 25px;">
+                                <li><strong>地点A1</strong>: 通常は「ねこ占い師」だが、直前と被ったため再抽選。結果 <strong>「ねこ魔女」</strong> に決定。</li>
+                                <li><strong>移動先B2</strong>: 奇数消費によりB2へ移動。しかしB2の本来の通常キャラがたまたま <strong>「ねこ魔女」</strong> だった。</li>
+                                <li><strong>判定</strong>: 移動先でも「直前に確定した最終キャラ」と被ったため、B2でも即座に再抽選が実行されます。</li>
+                                <li><strong>表示</strong>: この場合、連鎖を意味する <strong>「R」</strong> が付与され、さらにトラックがA4へ戻る現象が発生します（RA4）。</li>
+                            </ol>
                         </div>
                     </li>
-                    <li style="margin-top: 10px;"><strong>4. 確定枠の挙動:</strong> <br>
-                        確定枠（G列）ではレア度判定を行わず、その番地のSEED値を直接「超激レアキャラ数」で割った剰余でキャラを決定します。
-                        確定枠は常に1つのSEEDを消費（奇数消費）するため、必ずトラックが切り替わります。
+
+                    <li style="margin-top: 15px;"><strong>4. 確定枠の挙動:</strong> <br>
+                        確定枠（G列）ではレア度判定を行わず、直接超激レアを決定します。常に1つのSEEDを消費するため、必ずトラックが切り替わります。
                     </li>
                 </ul>
-                <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 0.85em; margin-top: 10px;">
-                    <strong>ヒント:</strong> テーブル上の「NO.」列の色が <strong>黄色</strong> や <strong>オレンジ</strong> の場所は、レア被りが発生しやすいシード値の並び（スロットの一致や逆順）を事前に示唆しています。
+
+                <div style="background: #e7f3fe; border-left: 5px solid #2196f3; padding: 18px; margin-top: 25px; border-radius: 4px;">
+                    <strong style="color: #0d47a1; font-size: 1.1em;">💡 回避/誘発テクニック：トラック移行をコントロールする</strong>
+                    <p style="margin-top: 10px;">
+                        レア被りによるトラック移行を意図的に避けたり、あるいは逆に移行させたい場合は以下の方法が有効です。
+                    </p>
+                    <ul style="padding-left: 20px;">
+                        <li><strong>回避：別のガチャを1回挟む</strong><br>
+                            「キャラ判定(s1)」はレアキャラの総数で決まります。レア被りしそうな場所の直前で、レアキャラ総数が異なる別のガチャを1回だけ引くことで、(s1)の計算結果が変わり、レア被りを回避して同一トラックを維持できます。
+                        </li>
+                        <li><strong>誘発：あえて同じキャラが出るガチャを選ぶ</strong><br>
+                            逆に、反対側のトラック（B側）に目的のキャラがいる場合は、あえてレア被りが発生するガチャを引くことで、意図的にトラックを切り替えて目的のルートへ合流させることができます。
+                        </li>
+                        <li><strong>回避：プラチナチケットの活用</strong><br>
+                            プラチナチケットは「レア被り」という概念がありません。被りが発生する地点でプラチナチケットを使用すれば、再抽選を発生させずに同一トラックを維持して進むことが可能です。
+                        </li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fffbe6; border: 1px solid #ffe58f; padding: 18px; margin-top: 25px; border-radius: 6px; color: #856404; line-height: 1.6;">
+                    <strong style="font-size: 1.1em;">⚠️ 【参考表示】および注意点について</strong>
+                    <p style="margin-top: 10px;">
+                        連続するロールの前後で別のガチャを引くことにより、レア被りを誘発したり、回避したりすることもできるため、ご自身の計画でガチャを引くと次にどのセルに遷移するかは<strong>「ユーザーご自身で」</strong>ご確認ください。
+                    </p>
+                    <p>
+                        このテーブルでは、ユーザーが選択するルートは考慮されず、機械的に次のような仕様でレア被り時の遷移先セル番地及び再抽選キャラを表示しています：
+                    </p>
+                    <ul style="padding-left: 20px; margin: 10px 0;">
+                        <li>（１）同一トラック・同一ガチャの１つ上のセルと比較して、キャラが一致し、レアリティがレアの場合、レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。</li>
+                        <li>（２）上記のレア被りにより遷移した遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」が表示されます。</li>
+                    </ul>
+                    <hr style="border: 0; border-top: 1px solid #ffe58f; margin: 10px 0;">
+                    <p style="font-size: 0.95em;">
+                        <strong>※注意:</strong> このテーブルの「遷移先アドレス」は、常に同じガチャを引き続けた場合の理論値です。途中でガチャを切り替えた場合の正確な挙動は、シミュレーションモードを活用してご確認ください。
+                    </p>
                 </div>
             </div>
         </div>
