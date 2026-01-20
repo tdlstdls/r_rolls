@@ -9,7 +9,7 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
 
     // No列の背景色を決定
     const rowInfo = rowData.rowInfo || {};
-    let noColBgColor = '#f8f9fa'; 
+    let noColBgColor = '#f8f9fa';
     if (rowInfo.isNormalReroll) {
         noColBgColor = '#FFFF00';
     } else if (rowInfo.isCrossReroll) {
@@ -18,15 +18,15 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         noColBgColor = '#FFDAB9';
     }
 
-    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;'
-        : ''}">${rowIndex + 1}</td>`;
+    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;' : ''}">${rowIndex + 1}</td>`;
 
     // 詳細計算セルの描画
     if (typeof generateDetailedCalcCells === 'function') {
         sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
     } else {
         const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-        sideHtml += `<td class="${calcColClass}">-</td>`.repeat(5);
+        // 修正：5列から1列に変更
+        sideHtml += `<td class="${calcColClass}">-</td>`;
     }
 
     // 各ガチャ列のセルを描画
@@ -59,7 +59,6 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
  */
 function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guarHighlightMap) {
     let cellStyle = 'white-space: normal; min-width: 80px; word-break: break-all; vertical-align: middle; border: 1px solid #ddd; font-size: 11px; padding: 0;';
-    
     if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) {
         cellStyle += `background-color: #66b2ff;`;
     } else {
@@ -70,7 +69,6 @@ function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guar
     const gAlt = data.alternativeGuaranteed || (data.result ? data.result.alternativeGuaranteed : null);
     
     let gContent = '<div style="padding: 4px;">---</div>';
-
     if (gMain && (gMain.name || (gMain.finalChar && gMain.finalChar.name))) {
         const buildGHtml = (res, isAltRoute) => {
             if (!res) return "";
@@ -80,12 +78,18 @@ function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guar
             const charName = res.name || (res.finalChar ? res.finalChar.name : "データ不足");
             const escapedName = charName.replace(/'/g, "\\'");
             const finalSeedInProcess = seeds[res.nextRollStartSeedIndex - 1];
-            let clickAction = isSimulationMode ?
-                `onclick="if(!event.ctrlKey) onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
-                (res.nextRollStartSeedIndex >= 0 ? `onclick="if(!event.ctrlKey) updateSeedAndRefresh(${finalSeedInProcess})"` : "");
-            const debugAttrs = showSeedColumns ? 
-                `onpointerdown="window.start11GTimer(${seedIndex}, ${colIndex}, ${isAltRoute})" onpointerup="window.clear11GTimer()" onpointerleave="window.clear11GTimer()"` : "";
-            return `<div ${clickAction} ${debugAttrs} style="cursor:pointer; padding:4px; ${verifiedStyle} ${isAltRoute ? 'border-bottom:1px dashed #ccc;' : ''}">${addr})<span class="char-link" style="font-weight:bold; color:#0056b3;">${charName}</span></div>`;
+            
+            // 修正：SEED表示モード（showSeedColumns）がONの時、確定枠も算出過程ポップアップを表示するように変更
+            let clickAction = "";
+            if (showSeedColumns) {
+                 clickAction = `onclick="if(!event.ctrlKey) showRollProcessPopup(${seedIndex}, '${id}', ${colIndex}, true, ${isAltRoute})"`;
+            } else if (isSimulationMode) {
+                clickAction = `onclick="if(!event.ctrlKey) onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"`;
+            } else {
+                clickAction = (res.nextRollStartSeedIndex >= 0 ? `onclick="if(!event.ctrlKey) updateSeedAndRefresh(${finalSeedInProcess})"` : "");
+            }
+
+            return `<div ${clickAction} style="cursor:pointer; padding:4px; ${verifiedStyle} ${isAltRoute ? 'border-bottom:1px dashed #ccc;' : ''}">${addr})<span class="char-link" style="font-weight:bold; color:#0056b3;">${charName}</span></div>`;
         };
         gContent = gAlt ? buildGHtml(gAlt, true) + buildGHtml(gMain, false) : buildGHtml(gMain, false);
     }
@@ -111,7 +115,7 @@ function generateSeedExplanationHtml() {
         <div class="seed-explanation-container">
             <h4 style="margin-top: 0; color: #17a2b8; border-bottom: 2px solid #17a2b8; display: inline-block;">📖 SEED計算と排出の仕組み</h4>
             <div class="explanation-content">
-                <p>左側のSEED詳細列を表示している際、以下のルールに基づいてキャラクターが決定されます：</p>
+                <p>左側のSEED詳細列を表示している際、キャラクター名をクリックすることで詳細な算出過程を確認できます：</p>
                 <ul style="padding-left: 20px;">
                     <li><strong>1. レア度判定 (s0):</strong> <br>
                         そのシードのSEED値を <strong>10000</strong> で割った剰余を使用します。
@@ -167,7 +171,7 @@ function generateSeedExplanationHtml() {
                     </p>
                     <ul style="padding-left: 20px; margin: 10px 0;">
                         <li>（１）同一トラック・同一ガチャの１つ上のセルと比較して、キャラが一致し、レアリティがレアの場合、レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。</li>
-                        <li>（２）上記のレア被りにより遷移した遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」が表示されます。</li>
+                        <li>（２）上記のレアベリにより遷移した遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レアベリと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」が表示されます。</li>
                     </ul>
                     <hr style="border: 0; border-top: 1px solid #ffe58f; margin: 10px 0;">
                     <p style="font-size: 0.95em;">

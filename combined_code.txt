@@ -2110,28 +2110,62 @@ th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; b
 }
 
 /* =========================================
-   スケジュールエディタ用スタイル
+   SEED計算説明エリア（フォントサイズ調整版）
    ========================================= */
-#schedule-editor-table input[type="text"],
-#schedule-editor-table input[type="number"] {
-    font-size: 11px;
-    padding: 2px;
-    border: 1px solid #ccc;
-    border-radius: 2px;
+.seed-explanation-container {
+    margin: 25px auto;
+    padding: 25px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-left: 6px solid #17a2b8;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    max-width: 100%;
     box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
-#schedule-editor-table td {
-    padding: 4px 2px;
-    vertical-align: middle;
+.seed-explanation-container h4 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.4em; /* タイトルを大きく */
 }
 
-#schedule-editor-table .remove-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
+.explanation-content {
+    font-size: 1.15em; /* 全体のフォントサイズを大きく調整（旧0.95em） */
+    line-height: 1.7;
+    color: #222;
+}
+
+.seed-explanation-container ul, 
+.seed-explanation-container ol {
+    margin: 10px 0;
+}
+
+.seed-explanation-container ul li {
+    margin-bottom: 12px;
+}
+
+/* リンクやヒントの強調 */
+.seed-explanation-container strong {
+    color: #111;
+}
+
+/* モバイル対応の調整 */
+@media (max-width: 768px) {
+    .seed-explanation-container {
+        padding: 15px;
+        margin: 15px 4px;
+        border-left-width: 4px;
+    }
+    .explanation-content {
+        font-size: 1.05em; /* モバイルでも読みやすいサイズを維持 */
+    }
+    .seed-explanation-container h4 {
+        font-size: 1.25em;
+    }
 }
 
 ====================
@@ -2276,6 +2310,16 @@ function toggleSeedColumns() {
     
     // ボタンのラベル表示を更新
     updateToggleButtons();
+
+    // 【追加】計算方法の説明文エリアの表示切り替え
+    const explanationArea = document.getElementById('seed-calc-explanation');
+    if (explanationArea) {
+        if (showSeedColumns) {
+            explanationArea.classList.remove('hidden');
+        } else {
+            explanationArea.classList.add('hidden');
+        }
+    }
 }
 
 /**
@@ -2293,7 +2337,7 @@ function updateToggleButtons() {
  */
 function toggleMasterInfo() {
     isMasterInfoVisible = !isMasterInfoVisible;
-    
+
     // マスター表示ボタンの見た目（activeクラス）を更新
     const btn = document.getElementById('toggle-master-info-btn');
     if (btn) {
@@ -5650,13 +5694,13 @@ FILE: view_table_dom.js
 /** @file view_table_dom.js @description テーブルのDOM構造構築 */
 
 /**
- * [cite_start]テーブルDOM構築のメイン [cite: 974-985]
+ * テーブルDOM構築のメイン
  */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
     const totalTrackSpan = calculateTotalTrackSpan();
     const fullTableColSpan = 2 + totalTrackSpan * 2;
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-
+    
     let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
             <th class="col-no" style="position: sticky; left: 0; z-index: 30; background: #f8f9fa; border-right: 1px solid #ddd;"></th>
@@ -5684,15 +5728,23 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
         html += `${renderTableRowSide(i, seedIndexB, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, false)}</tr>`;
     }
 
+    // 下部操作エリア
     html += `<tr><td colspan="${fullTableColSpan}" style="padding: 10px; text-align: center;">
-        <button onclick="addMoreRolls()">+100行</button>
-        <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
+        <div style="margin-bottom: 10px;">
+            <button onclick="addMoreRolls()">+100行</button>
+            <button id="toggle-seed-btn" class="secondary" onclick="toggleSeedColumns()">${showSeedColumns ? 'SEED非表示' : 'SEED表示'}</button>
+        </div>
+        
+        <div id="seed-calc-explanation" class="${showSeedColumns ? '' : 'hidden'}" style="text-align: left; margin-top: 20px;">
+            ${typeof generateSeedExplanationHtml === 'function' ? generateSeedExplanationHtml() : ''}
+        </div>
     </td></tr></tbody></table>`;
+    
     return html;
 }
 
 /**
- * [cite_start]トラックあたりの総Colspanを計算 [cite: 978-979]
+ * トラックあたりの総Colspanを計算
  */
 function calculateTotalTrackSpan() {
     const calcColSpan = showSeedColumns ? 5 : 0;
@@ -5707,7 +5759,7 @@ function calculateTotalTrackSpan() {
 }
 
 /**
- * [cite_start]ヘッダー部分の操作ボタンエリア生成 [cite: 974-976]
+ * ヘッダー部分の操作ボタンエリア生成
  */
 function buildHeaderButtonArea() {
     return `
@@ -5985,29 +6037,30 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
 ====================
 FILE: view_table_renderer.js
 ====================
-/** @file view_table_renderer.js @description 行・セルの描画処理（G列SEED更新精度修正版） */
+/** @file view_table_renderer.js @description 行・セルの描画処理（解説文：最下部注意点統合版） */
 
 /**
  * 行レンダリング (A/Bサイド別)
  */
 function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap, isLeftSide) {
     const rowData = tableData[seedIndex];
-    if (!rowData) return ''; // データがなければ空の行を返す
+    if (!rowData) return ''; 
 
     // No列の背景色を決定
     const rowInfo = rowData.rowInfo || {};
-    let noColBgColor = '#f8f9fa'; // デフォルト色
+    let noColBgColor = '#f8f9fa'; 
     if (rowInfo.isNormalReroll) {
-        noColBgColor = '#FFFF00'; // 黄色
+        noColBgColor = '#FFFF00';
     } else if (rowInfo.isCrossReroll) {
-        noColBgColor = '#FFA500'; // オレンジ
+        noColBgColor = '#FFA500';
     } else if (rowInfo.isActualReroll) {
-        noColBgColor = '#FFDAB9'; // 淡いオレンジ (PeachPuff)
+        noColBgColor = '#FFDAB9';
     }
 
-    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;' : ''}">${rowIndex + 1}</td>`;
+    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;'
+        : ''}">${rowIndex + 1}</td>`;
 
-    // 詳細計算セルの描画 (view_cell_renderer.js で tableData の新構造に対応する必要がある)
+    // 詳細計算セルの描画
     if (typeof generateDetailedCalcCells === 'function') {
         sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
     } else {
@@ -6019,10 +6072,9 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
     tableGachaIds.forEach((idWithSuffix, colIndex) => {
         const id = idWithSuffix.replace(/[gfs]$/, '');
         const suffix = idWithSuffix.match(/[gfs]$/)?.[0] || '';
-        // ★データ取得元を変更
         const data = rowData.cells ? rowData.cells[colIndex] : null;
 
-        // 通常セルの描画 (view_cell_renderer.js で tableData の新構造に対応する必要がある)
+        // 通常セルの描画
         if (typeof generateCell === 'function') {
             sideHtml += generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, isSimulationMode);
         } else {
@@ -6031,7 +6083,6 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
 
         // 確定枠セルの描画
         if (suffix) {
-            // data の参照は既に新しい構造に対応済み
             if (data && (data.guaranteed || (data.result && data.result.guaranteed))) {
                 sideHtml += renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guarHighlightMap);
             } else {
@@ -6049,7 +6100,7 @@ function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guar
     let cellStyle = 'white-space: normal; min-width: 80px; word-break: break-all; vertical-align: middle; border: 1px solid #ddd; font-size: 11px; padding: 0;';
     
     if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) {
-        cellStyle += `background-color: ${COLOR_ROUTE_UBER || '#66b2ff'};`;
+        cellStyle += `background-color: #66b2ff;`;
     } else {
         cellStyle += `background-color: #eef7ff;`;
     }
@@ -6065,24 +6116,16 @@ function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guar
             const addr = formatTableAddress(res.nextRollStartSeedIndex);
             const verifiedStyle = (!res.isVerified && showSeedColumns && !isAltRoute) ? "border-left: 3px solid #ff4444;" : "";
             const gType = (suffix === 'g') ? '11g' : (suffix === 'f' ? '15g' : '7g');
-            
             const charName = res.name || (res.finalChar ? res.finalChar.name : "データ不足");
             const escapedName = charName.replace(/'/g, "\\'");
-            
-            // 非Simモード時：確定枠までの全ロールを終えた「最終消費SEED（res.nextRollStartSeedIndex - 1）」で更新
-            // これにより、新しいテーブルの1行目が正確に次のロール開始SEED（res.nextRollStartSeedIndex）となります
             const finalSeedInProcess = seeds[res.nextRollStartSeedIndex - 1];
-            
             let clickAction = isSimulationMode ?
                 `onclick="if(!event.ctrlKey) onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
                 (res.nextRollStartSeedIndex >= 0 ? `onclick="if(!event.ctrlKey) updateSeedAndRefresh(${finalSeedInProcess})"` : "");
-            
             const debugAttrs = showSeedColumns ? 
                 `onpointerdown="window.start11GTimer(${seedIndex}, ${colIndex}, ${isAltRoute})" onpointerup="window.clear11GTimer()" onpointerleave="window.clear11GTimer()"` : "";
-            
             return `<div ${clickAction} ${debugAttrs} style="cursor:pointer; padding:4px; ${verifiedStyle} ${isAltRoute ? 'border-bottom:1px dashed #ccc;' : ''}">${addr})<span class="char-link" style="font-weight:bold; color:#0056b3;">${charName}</span></div>`;
         };
-
         gContent = gAlt ? buildGHtml(gAlt, true) + buildGHtml(gMain, false) : buildGHtml(gMain, false);
     }
     
@@ -6097,6 +6140,82 @@ function formatTableAddress(index) {
     const row = Math.floor(index / 2) + 1;
     const track = (index % 2 === 0) ? "A" : "B";
     return `${track}${row}`;
+}
+
+/**
+ * 計算方法の詳細説明HTMLを生成
+ */
+function generateSeedExplanationHtml() {
+    return `
+        <div class="seed-explanation-container">
+            <h4 style="margin-top: 0; color: #17a2b8; border-bottom: 2px solid #17a2b8; display: inline-block;">📖 SEED計算と排出の仕組み</h4>
+            <div class="explanation-content">
+                <p>左側のSEED詳細列を表示している際、以下のルールに基づいてキャラクターが決定されます：</p>
+                <ul style="padding-left: 20px;">
+                    <li><strong>1. レア度判定 (s0):</strong> <br>
+                        そのシードのSEED値を <strong>10000</strong> で割った剰余を使用します。
+                    </li>
+                    <li><strong>2. キャラ判定 (s1):</strong> <br>
+                        レア度決定後、<strong>「その次のシード (Index + 1)」</strong>のSEED値を使用し、レアリティ内のキャラ数で割った剰余で決定します。
+                    </li>
+                    <li style="margin-top: 15px;"><strong>3. 【参考表示】レア被り再抽選 (s2～):</strong> <br>
+                        レアリティがレアで、かつ「前回引いたキャラ」と「今回判定されたキャラ」が同じ場合、さらに「その次のシード (Index + 2～)」で違うキャラが出るまで再抽選を繰り返し行います。<br>
+                        再抽選を行う際は、一時的なキャラプール（当該レアの総数-1）を使用して算出します。使用したシード数が奇数の場合はトラック(A/B)が切り替わります。
+                        
+                        <div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+                            <strong style="color: #d9534f; font-size: 1.1em;">▼ 連鎖するレア被り（R表示）の例</strong>
+                            <ol style="margin-top: 10px; padding-left: 25px;">
+                                <li><strong>地点A1</strong>: 通常は「ねこ占い師」だが、直前と被ったため再抽選。結果 <strong>「ネコ魔女」</strong> に決定。</li>
+                                <li><strong>移動先B2</strong>: 奇数消費によりB2へ移動。しかしB2の本来の通常キャラがたまたま <strong>「ネコ魔女」</strong> だった。</li>
+                                <li><strong>判定</strong>: 移動先でも「直前に確定した最終キャラ」と被ったため、B2でも即座に再抽選が実行されます。</li>
+                                <li><strong>表示</strong>: この場合、連鎖を意味する <strong>「R」</strong> が付与され、さらにトラックがA4へ戻る現象が発生します（RA4）。</li>
+                            </ol>
+                        </div>
+                    </li>
+
+                    <li style="margin-top: 15px;"><strong>4. 確定枠の挙動:</strong> <br>
+                        確定枠（G列）ではレア度判定を行わず、直接超激レアを決定します。常に1つのSEEDを消費するため、必ずトラックが切り替わります。
+                    </li>
+                </ul>
+
+                <div style="background: #e7f3fe; border-left: 5px solid #2196f3; padding: 18px; margin-top: 25px; border-radius: 4px;">
+                    <strong style="color: #0d47a1; font-size: 1.1em;">💡 回避/誘発テクニック：トラック移行をコントロールする</strong>
+                    <p style="margin-top: 10px;">
+                        レア被りによるトラック移行を意図的に避けたり、あるいは逆に移行させたい場合は以下の方法が有効です。
+                    </p>
+                    <ul style="padding-left: 20px;">
+                        <li><strong>回避：別のガチャを1回挟む</strong><br>
+                            「キャラ判定(s1)」は波動バスターズやコラボガチャ等では異なるキャラになることがあります。レア被りしそうな場所で、排出されるレアキャラが異なる別のガチャを1回だけ引くことで、(s1)の計算結果が変わり、レア被りを回避して同一トラックを維持できます。
+                        </li>
+                        <li><strong>誘発：あえて同じキャラが出るガチャを選ぶ</strong><br>
+                            逆に、反対側のトラック（B側）に目的のキャラがいる場合は、あえてレア被りが発生するガチャを引くことで、意図的にトラックを切り替えて目的のルートへ合流させることができます。
+                        </li>
+                        <li><strong>回避：プラチナチケットの活用</strong><br>
+                            プラチナチケットは「レア被り」という概念がありません。被りが発生する地点でプラチナチケットを使用すれば、再抽選を発生させずに同一トラックを維持して進むことが可能です。
+                        </li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fffbe6; border: 1px solid #ffe58f; padding: 18px; margin-top: 25px; border-radius: 6px; color: #856404; line-height: 1.6;">
+                    <strong style="font-size: 1.1em;">⚠️ 【参考表示】および注意点について</strong>
+                    <p style="margin-top: 10px;">
+                        連続するロールの前後で別のガチャを引くことにより、レア被りを誘発したり、回避したりすることもできるため、ご自身の計画でガチャを引くと次にどのセルに遷移するかは<strong>「ユーザーご自身で」</strong>ご確認ください。
+                    </p>
+                    <p>
+                        このテーブルでは、ユーザーが選択するルートは考慮されず、機械的に次のような仕様でレア被り時の遷移先セル番地及び再抽選キャラを表示しています：
+                    </p>
+                    <ul style="padding-left: 20px; margin: 10px 0;">
+                        <li>（１）同一トラック・同一ガチャの１つ上のセルと比較して、キャラが一致し、レアリティがレアの場合、レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。</li>
+                        <li>（２）上記のレア被りにより遷移した遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」が表示されます。</li>
+                    </ul>
+                    <hr style="border: 0; border-top: 1px solid #ffe58f; margin: 10px 0;">
+                    <p style="font-size: 0.95em;">
+                        <strong>※注意:</strong> このテーブルの「遷移先アドレス」は、常に同じガチャを引き続けた場合の理論値です。途中でガチャを切り替えた場合の正確な挙動は、シミュレーションモードを活用してご確認ください。（調整中）
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 ====================
