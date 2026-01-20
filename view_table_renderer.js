@@ -119,15 +119,15 @@ function generateSeedExplanationHtml() {
                     <li><strong>2. キャラ判定 (s1):</strong> <br>
                         レア度決定後、<strong>「その次のシード (Index + 1)」</strong>のSEED値を使用し、レアリティ内のキャラ数で割った剰余で決定します。
                     </li>
-                    <li style="margin-top: 15px;"><strong>3. レア被り再抽選 (s2～):</strong> <br>
+                    <li style="margin-top: 15px;"><strong>3. 【参考表示】レア被り再抽選 (s2～):</strong> <br>
                         レアリティがレアで、かつ「前回引いたキャラ」と「今回判定されたキャラ」が同じ場合、さらに「その次のシード (Index + 2～)」で違うキャラが出るまで再抽選を繰り返し行います。<br>
                         再抽選を行う際は、一時的なキャラプール（当該レアの総数-1）を使用して算出します。使用したシード数が奇数の場合はトラック(A/B)が切り替わります。
                         
                         <div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
                             <strong style="color: #d9534f; font-size: 1.1em;">▼ 連鎖するレア被り（R表示）の例</strong>
                             <ol style="margin-top: 10px; padding-left: 25px;">
-                                <li><strong>地点A1</strong>: 通常は「ねこ占い師」だが、直前と被ったため再抽選。結果 <strong>「ねこ魔女」</strong> に決定。</li>
-                                <li><strong>移動先B2</strong>: 奇数消費によりB2へ移動。しかしB2の本来の通常キャラがたまたま <strong>「ねこ魔女」</strong> だった。</li>
+                                <li><strong>地点A1</strong>: 通常は「ねこ占い師」だが、直前と被ったため再抽選。結果 <strong>「ネコ魔女」</strong> に決定。</li>
+                                <li><strong>移動先B2</strong>: 奇数消費によりB2へ移動。しかしB2の本来の通常キャラがたまたま <strong>「ネコ魔女」</strong> だった。</li>
                                 <li><strong>判定</strong>: 移動先でも「直前に確定した最終キャラ」と被ったため、B2でも即座に再抽選が実行されます。</li>
                                 <li><strong>表示</strong>: この場合、連鎖を意味する <strong>「R」</strong> が付与され、さらにトラックがA4へ戻る現象が発生します（RA4）。</li>
                             </ol>
@@ -146,7 +146,7 @@ function generateSeedExplanationHtml() {
                     </p>
                     <ul style="padding-left: 20px;">
                         <li><strong>回避：別のガチャを1回挟む</strong><br>
-                            「キャラ判定(s1)」はレアキャラの総数で決まります。レア被りしそうな場所の直前で、レアキャラ総数が異なる別のガチャを1回だけ引くことで、(s1)の計算結果が変わり、レア被りを回避して同一トラックを維持できます。
+                            「キャラ判定(s1)」は波動バスターズやコラボガチャ等では異なるキャラになることがあります。レア被りしそうな場所で、排出されるレアキャラが異なる別のガチャを1回だけ引くことで、(s1)の計算結果が変わり、レア被りを回避して同一トラックを維持できます。
                         </li>
                         <li><strong>誘発：あえて同じキャラが出るガチャを選ぶ</strong><br>
                             逆に、反対側のトラック（B側）に目的のキャラがいる場合は、あえてレア被りが発生するガチャを引くことで、意図的にトラックを切り替えて目的のルートへ合流させることができます。
@@ -171,7 +171,7 @@ function generateSeedExplanationHtml() {
                     </ul>
                     <hr style="border: 0; border-top: 1px solid #ffe58f; margin: 10px 0;">
                     <p style="font-size: 0.95em;">
-                        <strong>※注意:</strong> このテーブルの「遷移先アドレス」は、常に同じガチャを引き続けた場合の理論値です。途中でガチャを切り替えた場合の正確な挙動は、シミュレーションモードを活用してご確認ください。
+                        <strong>※注意:</strong> このテーブルの「遷移先アドレス」は、常に同じガチャを引き続けた場合の理論値です。途中でガチャを切り替えた場合の正確な挙動は、シミュレーションモードを活用してご確認ください。（調整中）
                     </p>
                 </div>
             </div>
