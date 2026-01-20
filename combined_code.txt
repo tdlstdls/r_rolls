@@ -696,7 +696,7 @@ function executeReroll(startIndex, duplicateSlotIndex, characterPool, seeds, cha
 ====================
 FILE: logic_roll_core.js
 ====================
-/** @file logic_roll_core.js @description ガチャ抽選メイン統合ロジック（インデックス線形制御・状態継承強化版） */
+/** @file logic_roll_core.js @description ガチャ抽選メイン統合ロジック（インデックス線形制御・状態継承・デバッグ情報強化版） */
 
 /**
  * 指定されたインデックスからガチャを1回実行する
@@ -704,16 +704,28 @@ FILE: logic_roll_core.js
  * @param {Object} gachaConfig - ガチャのマスタデータ
  * @param {Array} seeds - 乱数シード配列
  * @param {Object} lastDrawInfo - 直前の抽選結果（レア被り判定用）
- * @returns {Object} 抽選結果と消費SEED数
+ * @returns {Object} 抽選結果と詳細なデバッグ情報
  */
 function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo) {
     // 境界チェック：レアリティ判定(s0)とキャラ判定(s1)に最低2つのSEEDが必要
     if (startIndex + 1 >= seeds.length) {
+        const errorChar = { name: "データ不足", id: null };
         return { 
             seedsConsumed: 0, 
-            finalChar: { name: "データ不足", id: null }, 
+            finalChar: errorChar, 
             rarity: null,
-            charId: null
+            charId: null,
+            debug: {
+                startIndex,
+                s0: null,
+                rarity: null,
+                s1: null,
+                charIndex: -1,
+                originalChar: errorChar,
+                finalChar: errorChar,
+                isRerolled: false,
+                consumed: 0
+            }
         };
     }
 
@@ -725,20 +737,35 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
     const characterPool = gachaConfig.pool[currentRarity] || [];
 
     if (characterPool.length === 0) {
+        const errorChar = { name: "該当なし", id: null };
         return { 
             seedsConsumed: 2, 
-            finalChar: { name: "該当なし", id: null }, 
+            finalChar: errorChar, 
             rarity: currentRarity,
-            charId: null 
+            charId: null,
+            debug: {
+                startIndex,
+                s0: s0_seed,
+                rarity: currentRarity,
+                s1: s1_seed,
+                charIndex: -1,
+                originalChar: errorChar,
+                finalChar: errorChar,
+                isRerolled: false,
+                consumed: 2
+            }
         };
     }
 
     // 2. キャラクターの決定（最初の候補）
     const totalChars = characterPool.length;
     const charIndex = s1_seed % totalChars;
-    const originalChar = characterPool[charIndex];
+    const originalChar = { 
+        id: characterPool[charIndex].id, 
+        name: characterPool[charIndex].name 
+    };
 
-    let character = originalChar;
+    let character = { ...originalChar };
     let seedsConsumed = 2; // 基本消費量(s0, s1)
     let isRerolled = false;
     let isConsecutiveRerollTarget = false;
@@ -757,18 +784,23 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
             const res = executeReroll(startIndex, charIndex, characterPool, seeds, status.targetToAvoid);
             
             if (res.character) {
-                character = res.character;
+                character = { 
+                    id: res.character.id, 
+                    name: res.character.name 
+                };
                 seedsConsumed = res.seedsConsumed; // 再抽選にかかった分を含めた総消費数
                 rerollProcess = res.rerollProcess;
+                
                 // デバッグ用に回避したIDを記録
-                if (rerollProcess) rerollProcess.prevId = status.targetToAvoid;
+                if (rerollProcess) {
+                    rerollProcess.prevId = status.targetToAvoid;
+                }
             }
         }
     }
 
     // 4. 結果の返却
-    // 次のロールは必ず (startIndex + seedsConsumed) から開始される必要がある
-    return { 
+    const result = { 
         originalChar, 
         finalChar: character, 
         isRerolled, 
@@ -778,35 +810,71 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
         seedsConsumed, 
         debug: {
             startIndex,
-            s0: s0_seed,
+            s0: s0_seed,           // レアリティ判定に使用したSEED値
+            seedValue: s0_seed,    // デバッグ表示用の別名
             rarity: currentRarity,
-            s1: s1_seed,
-            charIndex,
-            originalChar,
+            s1: s1_seed,           // キャラ判定に使用した最初のSEED値
+            charIndex,             // スロット番号
+            originalChar,          // 回避前のキャラ
+            finalChar: character,  // 最終的に確定したキャラ (view_table_debug.jsが参照)
             isRerolled,
             rerollProcess,
             consumed: seedsConsumed
         }
     };
+
+    return result;
 }
 
 ====================
 FILE: logic_sequential.js
 ====================
-/** @file logic_sequential.js @description 連続抽選シミュレーション */
+/** @file logic_sequential.js @description 連続抽選シミュレーションおよび確定枠までのログ生成 */
+
+/**
+ * 連続した通常抽選と、その後の確定枠抽選をシミュレートする
+ * @param {number} startSeedIndex - 開始SEEDインデックス
+ * @param {Object} gachaConfig - ガチャのマスタデータ
+ * @param {Array} allSeeds - 乱数シード配列
+ * @param {Object} initialLastDraw - 直前の抽選状態
+ * @param {number} normalRollsCount - 確定枠に到達するまでの通常枠数 (通常は10)
+ * @param {boolean} forceNoRerollFirst - 初回のレア被り回避を無効化するか（回避ルート計算用）
+ * @returns {Object} 最終結果、道中の全抽選結果、および詳細デバッグログ
+ */
 function calculateSequentialGuaranteed(startSeedIndex, gachaConfig, allSeeds, initialLastDraw, normalRollsCount = 10, forceNoRerollFirst = false) {
     let seedCursor = startSeedIndex;
+    // 回避ルート（Avoided）の場合は直前状態をリセットして開始
     let currentLastDraw = forceNoRerollFirst ? null : initialLastDraw;
+    
     const debugLog = [];
     const normalRollsResults = [];
 
+    // 1. 通常枠の連続シミュレーション (1回目 ～ 10回目等)
     for (let i = 0; i < normalRollsCount; i++) {
+        // 現在のカーソル位置から1回ロールを実行
         const rr = rollWithSeedConsumptionFixed(seedCursor, gachaConfig, allSeeds, currentLastDraw);
-        if (rr.seedsConsumed === 0) break;
+        
+        // シード不足等の異常終了チェック
+        if (rr.seedsConsumed === 0) {
+            debugLog.push({ 
+                step: `Roll ${i + 1} (Error)`, 
+                startIndex: seedCursor, 
+                finalChar: { name: "データ不足", id: null } 
+            });
+            break;
+        }
 
-        debugLog.push({ step: `Roll ${i + 1}${i === 0 && forceNoRerollFirst ? ' (Avoided)' : ''}`, ...rr.debug });
+        // デバッグログの構築
+        // rr.debug には logic_roll_core.js で追加した finalChar 等が含まれています
+        debugLog.push({ 
+            step: `Roll ${i + 1}${i === 0 && forceNoRerollFirst ? ' (Avoided)' : ''}`, 
+            ...rr.debug 
+        });
+
+        // 簡易結果リストへの保存
         normalRollsResults.push(rr);
         
+        // 次のロールへの状態更新
         seedCursor += rr.seedsConsumed;
         currentLastDraw = { 
             originalIdAbove: rr.charId, 
@@ -816,12 +884,26 @@ function calculateSequentialGuaranteed(startSeedIndex, gachaConfig, allSeeds, in
         };
     }
 
+    // 2. 確定枠のシミュレーション (11回目)
+    // 確定枠は seedCursor の位置にあるシードをそのまま使用する
     const gr = rollGuaranteedUber(seedCursor, gachaConfig, allSeeds);
-    debugLog.push({ step: `Guaranteed Uber`, ...gr.debug });
+    
+    // 確定枠のログを追加
+    // gr.debug には logic_uber.js で追加した finalChar 等が含まれています
+    debugLog.push({ 
+        step: `Guaranteed Uber`, 
+        ...gr.debug 
+    });
 
+    // 3. 全行程の結果をまとめて返却
+    // 次回の抽選開始インデックスは「確定枠で使用したインデックス + 1」となる
     return { 
-        name: gr.finalChar.name, charId: gr.charId, nextRollStartSeedIndex: seedCursor + 1, 
-        normalRollsResults, debugLog, isAvoidedRoute: forceNoRerollFirst 
+        name: gr.finalChar.name, 
+        charId: gr.charId, 
+        nextRollStartSeedIndex: seedCursor + 1, 
+        normalRollsResults, 
+        debugLog, 
+        isAvoidedRoute: forceNoRerollFirst 
     };
 }
 
@@ -829,24 +911,78 @@ function calculateSequentialGuaranteed(startSeedIndex, gachaConfig, allSeeds, in
 FILE: logic_uber.js
 ====================
 /** @file logic_uber.js @description 確定枠抽選ロジック */
+
+/**
+ * 確定枠（Uber確定）の抽選を実行し、デバッグ用の詳細情報を返却する
+ * @param {number} startIndex - 抽選に使用するSEEDインデックス
+ * @param {Object} gachaConfig - ガチャのマスタデータ
+ * @param {Array} seeds - 乱数シード配列
+ * @returns {Object} 抽選結果とデバッグ情報
+ */
 function rollGuaranteedUber(startIndex, gachaConfig, seeds) {
+    // 境界チェック：指定されたインデックスがシード配列の範囲内か確認
     if (startIndex >= seeds.length) {
-        return { seedsConsumed: 1, finalChar: { name: "データ不足", id: null } };
+        const errorChar = { name: "データ不足", id: null };
+        return { 
+            seedsConsumed: 1, 
+            finalChar: errorChar,
+            charId: null,
+            debug: { 
+                startIndex, 
+                seedValue: null, 
+                totalChars: 0, 
+                charIndex: -1, 
+                finalChar: errorChar, // デバッグログ表示用に含める
+                rarity: 'uber'
+            }
+        };
     }
+
+    // 超激レアキャラクタープールの取得
     const pool = gachaConfig.pool['uber'] || [];
     if (pool.length === 0) {
-        return { seedsConsumed: 1, finalChar: { name: "該当なし", id: null } };
+        const errorChar = { name: "該当なし", id: null };
+        return { 
+            seedsConsumed: 1, 
+            finalChar: errorChar,
+            charId: null,
+            debug: { 
+                startIndex, 
+                seedValue: seeds[startIndex], 
+                totalChars: 0, 
+                charIndex: -1, 
+                finalChar: errorChar, // デバッグログ表示用に含める
+                rarity: 'uber'
+            }
+        };
     }
     
+    // 抽選処理
     const seedValue = seeds[startIndex];
-    const charIndex = seedValue % pool.length;
+    const totalChars = pool.length;
+    const charIndex = seedValue % totalChars;
     const character = pool[charIndex];
 
+    // キャラクター情報の整形
+    // オブジェクトの参照渡しによる予期せぬ書き換えを防ぐため、新しいオブジェクトとして生成
+    const resultChar = { 
+        id: character.id, 
+        name: character.name 
+    };
+
+    // 抽選結果と、詳細な計算過程（debug）を返却
     return { 
         seedsConsumed: 1, 
-        finalChar: character, 
-        charId: character.id,
-        debug: { startIndex, seedValue, totalChars: pool.length, charIndex, finalChar: character }
+        finalChar: resultChar, 
+        charId: resultChar.id,
+        debug: { 
+            startIndex, 
+            seedValue, 
+            totalChars, 
+            charIndex, 
+            finalChar: resultChar, // view_table_debug.js の log.finalChar がここを参照します
+            rarity: 'uber'
+        }
     };
 }
 
@@ -2171,11 +2307,10 @@ th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; b
 ====================
 FILE: ui_cell_event.js
 ====================
-/** @file ui_cell_event.js @description ガチャセルクリック時のイベントハンドラ（ターゲット同期・エラー案内・トラック一致強化版） */
+/** @file ui_cell_event.js @description ガチャセルクリック時のイベントハンドラ（算出過程ポップアップ・確定枠線形シミュレーション完全版） */
 
 /**
  * テーブル上のガチャセル、または確定枠（G列）をクリックした際のハンドラ
- * ターゲットのインデックス（A/Bおよび行番号）を保持したまま探索エンジンを呼び出します。
  */
 function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = null, fromFind = false, targetCharId = null) {
     // 1. シミュレーションモードがOFFの場合は、ONに切り替えてから実行
@@ -2186,7 +2321,7 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
             notifEl.style.display = 'block';
             notifEl.style.color = '#007bff';
             notifEl.textContent = 'Simモードに切り替えてルートを探索します...';
-            setTimeout(() => { if (notifEl.textContent.includes('Simモード')) notifEl.style.display = 'none'; }, 2000);
+            setTimeout(() => { if (notifEl.textContent && notifEl.textContent.includes('Simモード')) notifEl.style.display = 'none'; }, 2000);
         }
 
         // モード切替後の再描画と状態遷移を待ってから再試行
@@ -2196,21 +2331,18 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
         return;
     }
 
-    // 以前の警告・通知メッセージをクリア
+    // メッセージエリアのクリア
     const errorEl = document.getElementById('sim-error-msg');
     const notifEl = document.getElementById('sim-notif-msg');
     if (errorEl) { errorEl.textContent = ''; errorEl.style.display = 'none'; }
     if (notifEl) { notifEl.textContent = ''; notifEl.style.display = 'none'; }
 
-    // 現在表示されているガチャIDのリストを取得（探索範囲をテーブル表示中のものに限定）
     const visibleIds = tableGachaIds.map(id => id);
     const configInput = document.getElementById('sim-config');
     const currentConfig = configInput ? configInput.value : "";
 
     if (typeof calculateRouteToCell === 'function') {
         let routeResult = null;
-
-        // 2. 確定枠（11g/15g/7g等）をクリックした場合の最終アクション設定
         if (guaranteedType) {
             const rollsCount = parseInt(guaranteedType.replace('g', ''), 10);
             const finalAction = { 
@@ -2219,75 +2351,224 @@ function onGachaCellClick(targetSeedIndex, gachaId, charName, guaranteedType = n
                 g: true,
                 fullId: gachaId + 'g'
             };
-            // 確定枠の場合、targetSeedIndex は「確定ガチャを開始する地点」として渡し、
-            // エンジン側でその地点までの最短経路 + 最後の確定ロールを結合させます
             routeResult = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, finalAction, targetCharId);
-        } 
-        // 3. 通常枠をクリックした場合
-        else {
-            // 通常セルの場合は finalActionOverride を null にし、エンジン内で最終ステップを自動補完させます
+        } else {
             routeResult = calculateRouteToCell(targetSeedIndex, gachaId, visibleIds, currentConfig, null, targetCharId);
         }
 
-        // 4. ルートが見つかった場合の処理
         if (routeResult) {
             if (configInput) {
                 configInput.value = routeResult;
-                
-                // URLパラメータを更新し、テーブルを再描画してハイライトを反映
                 if (typeof updateUrlParams === 'function') updateUrlParams();
                 resetAndGenerateTable();
                 
-                // 到達成功の通知（番地をフォーマットして表示）
                 if (notifEl) {
                     const row = Math.floor(targetSeedIndex / 2) + 1;
                     const side = (targetSeedIndex % 2 === 0) ? 'A' : 'B';
                     notifEl.style.display = 'block';
-                    notifEl.style.color = '#28a745'; // 成功色（緑）
+                    notifEl.style.color = '#28a745';
                     notifEl.textContent = `${side}${row}セルへのルートを更新しました`;
-                    setTimeout(() => { notifEl.style.display = 'none'; }, 3000);
+                    setTimeout(() => { if(notifEl) notifEl.style.display = 'none'; }, 3000);
                 }
             }
-        } 
-        // 5. ルートが見つからなかった場合の案内
-        else {
+        } else {
             if (errorEl) {
                 errorEl.style.display = 'block';
-                errorEl.style.color = '#d9534f'; // 警告色（赤）
+                errorEl.style.color = '#d9534f';
                 errorEl.textContent = '見つかりませんでした';
-                
-                // 1.5秒間表示して注意を促す
                 setTimeout(() => {
-                    errorEl.style.display = 'none';
-                    errorEl.textContent = '';
+                    if(errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
                 }, 1500);
             }
-            console.warn(`Route not found for Target Index: ${targetSeedIndex} (Gacha: ${gachaId})`);
         }
-    } else {
-        console.error("calculateRouteToCell function is not defined. check sim_engine_config.js loading.");
     }
 }
 
 /**
- * 確定枠（11G）セルの詳細デバッグログ表示用のタイマー管理
- * 長押し（0.6秒）で詳細な計算過程を表示します。
+ * SEED表示モード時に詳細な算出過程をポップアップ表示する
  */
-window.start11GTimer = function(seedIdx, colIdx, isAlt) {
-    window.clear11GTimer();
-    window.g11Timer = setTimeout(() => {
-        if (typeof showDebugLog === 'function') {
-            showDebugLog(seedIdx, colIdx, isAlt);
-        }
-    }, 600);
-};
+function showRollProcessPopup(seedIndex, gachaId, colIndex, isGuaranteed = false, isAlt = false) {
+    if (!currentTableData) return;
+    const rowData = currentTableData[seedIndex];
+    const cellData = rowData?.cells?.[colIndex];
+    if (!cellData) return;
 
-window.clear11GTimer = function() {
-    if (window.g11Timer) {
-        clearTimeout(window.g11Timer);
-        window.g11Timer = null;
+    const gachaConfig = gachaMasterData.gachas[gachaId];
+    if (!gachaConfig) return;
+
+    let html = `<div style="font-family: monospace; line-height: 1.6; max-height: 85vh; overflow-y: auto; padding: 15px; background: #fff;">`;
+    const addr = formatAddress(seedIndex);
+
+    if (isGuaranteed) {
+        // --- 確定枠の計算過程（線形連続シミュレーション） ---
+        const gResult = isAlt ? cellData.alternativeGuaranteed : cellData.guaranteed;
+        if (!gResult || !gResult.debugLog) return;
+
+        html += `<h3 style="margin-top:0; color:#0056b3; border-bottom: 2px solid #0056b3;">確定枠算出過程 (${addr}</h3>`;
+        html += `<p><strong>最終結果(11連目):</strong> <span style="color:#d9534f; font-weight:bold;">${gResult.name}</span></p>`;
+        
+        html += `<table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:10px;" border="1">
+                    <tr style="background:#f2f2f2;">
+                        <th style="padding:4px;">工程</th>
+                        <th style="padding:4px;">開始Idx</th>
+                        <th style="padding:4px;">使用SEED(s0)</th>
+                        <th style="padding:4px;">排出キャラ [ID, SLOT]</th>
+                        <th style="padding:4px;">消費</th>
+                    </tr>`;
+        
+        gResult.debugLog.forEach((log) => {
+            let resDisplay = "-";
+            let consumption = (log.consumed !== undefined) ? log.consumed : (log.seedsConsumed !== undefined ? log.seedsConsumed : 1);
+            
+            if (log.step.includes("Roll")) {
+                const charName = log.finalChar?.name || log.name || "不明";
+                const charId = log.finalChar?.id || log.charId || "?";
+                // SLOT値の取得。再抽選がある場合は最終試行のスロット、なければ初期スロット
+                const slot = (log.isRerolled && log.rerollProcess && log.rerollProcess.attempts.length > 0) ? 
+                             log.rerollProcess.attempts[log.rerollProcess.attempts.length-1].finalSlot : (log.charIndex !== undefined ? log.charIndex : "?");
+                
+                resDisplay = `${charName}<br>[ID:${charId}, SLOT:${slot}]`;
+                if (log.isRerolled) resDisplay += `<br><span style="color:red; font-size:9px;">(被り回避発生)</span>`;
+            } else if (log.step.includes("Guaranteed")) {
+                const charId = log.finalChar?.id || log.charId || "?";
+                const slot = log.charIndex !== undefined ? log.charIndex : (log.seedValue % log.totalChars);
+                resDisplay = `<span style="color:#d9534f; font-weight:bold;">${log.finalChar?.name || log.name}</span><br>[ID:${charId}, SLOT:${slot}]`;
+                consumption = 1;
+            }
+
+            html += `<tr>
+                        <td style="padding:6px; text-align:center;">${log.step}</td>
+                        <td style="padding:6px; text-align:center; background:#f9f9f9;">${log.startIndex}</td>
+                        <td style="padding:6px;">${log.s0 || log.seedValue}</td>
+                        <td style="padding:6px;">${resDisplay}</td>
+                        <td style="padding:6px; text-align:center;">${consumption}</td>
+                    </tr>`;
+        });
+        
+        const nextIdx = gResult.nextRollStartSeedIndex;
+        const nextAddr = formatTableAddress(nextIdx);
+        html += `<tr style="background:#e7f3fe; font-weight:bold;">
+                    <td colspan="3" style="padding:8px; text-align:right;">確定ガチャ終了後の遷移先:</td>
+                    <td colspan="2" style="padding:8px; text-align:center; color:#0056b3;">${nextAddr} (Index: ${nextIdx})</td>
+                 </tr>`;
+        html += `</table>`;
+    } else {
+        // --- 通常セルの計算過程 ---
+        const rr = cellData.roll;
+        const debug = rr.debug;
+        const charName = rr.finalChar.name;
+        const charId = rr.finalChar.id;
+        const poolSize = gachaConfig.pool[rr.rarity]?.length || 0;
+        const finalSlot = rr.isRerolled ? debug.rerollProcess.attempts[debug.rerollProcess.attempts.length-1].finalSlot : debug.charIndex;
+
+        html += `<h3 style="margin-top:0; color:#28a745; border-bottom: 2px solid #28a745;">通常枠算出過程 (${addr}</h3>`;
+        html += `<p><strong>最終結果:</strong> <span style="color:#d9534f; font-weight:bold;">${charName} [ID:${charId}, SLOT:${finalSlot}]</span></p>`;
+
+        // 1. レア度判定
+        html += `<div style="background:#f8f9fa; padding:10px; border-radius:4px; border-left:4px solid #ccc; margin-bottom:10px;">`;
+        html += `<strong>1. レア度判定 (s0)</strong><br>`;
+        html += `Index: ${debug.startIndex} | SEED: ${debug.s0}<br>`;
+        html += `計算: ${debug.s0} % 10000 = <span style="font-weight:bold;">${debug.s0 % 10000}</span><br>`;
+        html += `結果: <span style="color:#007bff; font-weight:bold;">${rr.rarity}</span>`;
+        html += `</div>`;
+
+        // 2. レア被り判定 (順序入れ替え)
+        html += `<div style="background:#f8f9fa; padding:10px; border-radius:4px; border-left:4px solid #ffc107; margin-bottom:10px;">`;
+        html += `<strong>2. レア被り判定</strong><br>`;
+        if (rr.rarity === 'rare') {
+            const isMatch = debug.rerollProcess && debug.rerollProcess.isRerolled !== false;
+            const prevId = (debug.rerollProcess && debug.rerollProcess.prevId) ? debug.rerollProcess.prevId : 'なし';
+            html += `条件: レアリティが「rare」であること … <span style="color:green;">OK</span><br>`;
+            html += `直前キャラID: ${prevId}<br>`;
+            html += `今回候補ID: ${debug.originalChar.id} (${debug.originalChar.name})<br>`;
+            html += `判定: ${isMatch ? '<span style="color:red; font-weight:bold;">一致（再抽選実行）</span>' : '<span style="color:green;">不一致（通常確定）</span>'}`;
+        } else {
+            html += `条件: レアリティが「rare」であること … <span style="color:blue;">NO</span><br>`;
+            html += `結果: レアリティがレア以外のため、被り判定をスキップします。`;
+        }
+        html += `</div>`;
+
+        // 3. キャラ判定 (s1) (順序入れ替え)
+        html += `<div style="background:#f8f9fa; padding:10px; border-radius:4px; border-left:4px solid #ccc; margin-bottom:10px;">`;
+        html += `<strong>3. キャラ判定 (s1)</strong><br>`;
+        html += `Index: ${debug.startIndex + 1} | SEED: ${debug.s1}<br>`;
+        html += `計算: ${debug.s1} % ${poolSize} = <span style="font-weight:bold;">${debug.charIndex}</span><br>`;
+        html += `候補: ${debug.originalChar.name} [ID:${debug.originalChar.id}, SLOT:${debug.charIndex}]`;
+        html += `</div>`;
+
+        // 4. 再抽選プロセス
+        if (rr.isRerolled && debug.rerollProcess) {
+            html += `<div style="background:#fff0f0; padding:10px; border-radius:4px; border-left:4px solid #d9534f;">`;
+            html += `<strong style="color:#d9534f;">4. 再抽選詳細 (s2～)</strong><br>`;
+            debug.rerollProcess.attempts.forEach((att, i) => {
+                html += `<div style="margin-top:5px; padding-top:5px; border-top:1px dashed #ccc;">`;
+                html += `試行 ${i+1}: Index ${att.rerollSeedIndex} | SEED ${att.rerollSeed}<br>`;
+                html += `計算: ${att.rerollSeed} % (プール-1:${att.tempPoolSize}) = スロット ${att.tempSlot}<br>`;
+                html += `結果: <span style="font-weight:bold;">${charName} [ID:${att.foundCharId}, SLOT:${att.finalSlot}]</span>`;
+                html += `</div>`;
+            });
+            html += `</div>`;
+        }
+        
+        html += `<p style="font-size:0.8em; color:#666; margin-top:10px;">※消費シード数: ${rr.seedsConsumed} | 次回開始Index: ${debug.startIndex + rr.seedsConsumed}</p>`;
     }
-};
+
+    html += `<button onclick="closeModal()" style="width:100%; padding:12px; margin-top:20px; background:#4a4a4a; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">閉じる</button>`;
+    html += `</div>`;
+
+    if (typeof showModal === 'function') showModal(html);
+}
+
+/**
+ * チェックボックス変更時の視覚効果
+ */
+function updateCheckboxWrapper(index) {
+    const wrapper = document.getElementById(`seg-wrapper-${index}`);
+    const checkbox = document.getElementById(`chk-seg-${index}`);
+    if (wrapper && checkbox) {
+        if (checkbox.checked) wrapper.classList.add('is-checked');
+        else wrapper.classList.remove('is-checked');
+    }
+}
+
+/**
+ * キャラクター名の装飾
+ */
+function decorateCharNameHtml(charId, rarity, baseName) {
+    let name = baseName || "不明";
+    const cid = Number(charId);
+    let style = "font-weight:bold;";
+    let prefix = "";
+    let suffix = "";
+
+    let isTarget = (typeof targetCharIds !== 'undefined' && targetCharIds.includes(cid));
+
+    if (rarity === 'legend') {
+        style += "color:#e91e63; background: #fce4ec; padding: 0 2px; border-radius: 2px;";
+        prefix = "【伝説レア】";
+    } else if (rarity === 'uber') {
+        style += "color:#e67e22;";
+        prefix = "[超激レア]";
+    } else {
+        style += "color:#333;";
+    }
+
+    if (typeof isLimitedCat === 'function' && isLimitedCat(cid)) {
+        suffix = " <span style='font-size:10px; color:#3498db;'>(限定)</span>";
+    }
+
+    if (isTarget) {
+        prefix = "<span style='color:#f1c40f;'>★</span>" + prefix;
+    }
+
+    return `<span style="${style}">${prefix}${name}${suffix}</span>`;
+}
+
+/**
+ * 以前の確定枠デバッグ用関数の互換性維持
+ */
+window.start11GTimer = function(seedIdx, colIdx, isAlt) { /* 算出過程ポップアップに統合済み */ };
+window.clear11GTimer = function() { /* 算出過程ポップアップに統合済み */ };
 
 ====================
 FILE: ui_display_logic.js
@@ -3768,7 +4049,7 @@ const RowAnalysis = {
 ====================
 FILE: view_cell_renderer.js
 ====================
-/** @file view_cell_renderer.js @description 個別セルの描画とレアリティ色の制御（昇格枠追加・インデックス同期版） */
+/** @file view_cell_renderer.js @description 個別セルの描画とレアリティ色の制御（SEED [index] 1列集約版） */
 
 /**
  * テーブル用アドレス（A1, B25等）のフォーマット
@@ -3783,35 +4064,18 @@ function formatAddress(idx) {
 }
 
 /**
- * SEED値やレアリティ判定などの詳細セル群（左側の5列）を生成する
+ * SEED値などの詳細セル（左側の列）を生成する
+ * 修正：5列から 1列（SEED [index]）に変更
  */
 function generateDetailedCalcCells(seedIndex, seeds, tableData) {
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-    if (!showSeedColumns) return `<td class="${calcColClass}"></td>`.repeat(5);
+    if (!showSeedColumns) return `<td class="${calcColClass}"></td>`;
     
-    // 最初の列のガチャ設定を取得してレート計算の基準にする
-    const firstGachaIdWithSuffix = tableGachaIds[0] || "";
-    const firstGachaId = firstGachaIdWithSuffix.replace(/[gfs]$/, '');
-    const config = gachaMasterData.gachas[firstGachaId];
-    
-    if (!config || seedIndex + 1 >= seeds.length) return `<td class="${calcColClass}">-</td>`.repeat(5);
-    
+    if (seedIndex >= seeds.length) return `<td class="${calcColClass}">-</td>`;
+
     const s0 = seeds[seedIndex];
-    const rVal = s0 % 10000;
-    const rates = config.rarity_rates || { rare: 6970, super: 2500, uber: 500, legend: 30 };
-    
-    let rType = (rVal < rates.rare) ? 'rare' : 
-                (rVal < rates.rare + rates.super) ? 'super' : 
-                (rVal < rates.rare + rates.super + rates.uber) ? 'uber' : 
-                (rVal < rates.rare + rates.super + rates.uber + rates.legend) ? 'legend' : 'rare';
-                
-    return `
-        <td class="${calcColClass}">${s0}</td>
-        <td class="${calcColClass}">${rType}</td>
-        <td class="${calcColClass}">${rVal}</td>
-        <td class="${calcColClass}">-</td>
-        <td class="${calcColClass}">-</td>
-    `;
+    // SEED値 [index] の形式で表示（半角スペース入り）
+    return `<td class="${calcColClass}">${s0} [${seedIndex}]</td>`;
 }
 
 /**
@@ -3832,9 +4096,10 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     let style = '';
     const sv = seeds[seedIndex] % 10000;
 
-    // A. ユーザーが「Find」で優先指定したキャラ（最優先：緑）
-    const isPrioritized = userPrioritizedTargets.includes(charId) || userPrioritizedTargets.includes(charIdStr);
-    
+    // A. ユーザーが「Find」で優先指定したキャラ
+    const isPrioritized = (typeof userPrioritizedTargets !== 'undefined') && 
+                          (userPrioritizedTargets.includes(charId) || userPrioritizedTargets.includes(charIdStr));
+
     // B. 限定キャラ判定
     let isLimited = false;
     if (typeof limitedCats !== 'undefined' && Array.isArray(limitedCats)) {
@@ -3849,34 +4114,36 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     // C. シミュレーションモードのルートハイライト
     else if (isSimulationMode && highlightMap.get(seedIndex) === id) {
         if (isLimited || rr.rarity === 'uber' || rr.rarity === 'legend') {
-            style = 'background:#32CD32;'; // 濃い緑（重要なキャラ）
+            style = 'background:#32CD32;';
         } else {
-            style = 'background:#98FB98;'; // 薄い緑（ルート上）
+            style = 'background:#98FB98;';
         }
     } 
-    // D. 個別キャラの状態色
+    // D. 限定キャラの状態色
     else if (isLimited) {
-        style = 'background-color: #66FFFF;'; // 限定キャラ：水色
+        style = 'background-color: #66FFFF;';
     } 
-    // E. SEEDの下4桁（sv）によるレアリティ閾値の色分け
+    // E. レアリティ色分け
     else {
-        if (sv >= 9970) style = 'background-color: #DDA0DD;';      // 伝説レア枠
-        else if (sv >= 9940) style = 'background-color: #de59de;'; // 伝説への昇格枠
-        else if (sv >= 9500) style = 'background-color: #FF4C4C;'; // 超激レア枠
-        else if (sv >= 9070) style = 'background-color: #fda34e;'; // 【追加】超ネコ/極ネコ用昇格枠
-        else if (sv >= 6970) style = 'background-color: #ffff33;'; // 激レア枠
+        if (sv >= 9970) style = 'background-color: #DDA0DD;';
+        else if (sv >= 9940) style = 'background-color: #de59de;';
+        else if (sv >= 9500) style = 'background-color: #FF4C4C;';
+        else if (sv >= 9070) style = 'background-color: #fda34e;';
+        else if (sv >= 6970) style = 'background-color: #ffff33;';
     }
 
     // --- 2. クリックイベントの生成 ---
     const escapedName = charName.replace(/'/g, "\\'");
     let clickHandler = "";
 
-    if (isSimulationMode) {
-        // SIMモード：探索エンジンを呼び出し、ターゲットまでのルートを計算
+    if (showSeedColumns) {
+        // SEED表示モードON：算出過程をポップアップ表示
+        clickHandler = `onclick="showRollProcessPopup(${seedIndex}, '${id}', ${colIndex})"`;
+    } else if (isSimulationMode) {
+        // SIMモード：探索エンジン
         clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}')"`;
     } else {
-        // 通常モード：このキャラを引いた直後のSEEDインデックスへジャンプ
-        // 線形性を保つため、現在の index + seedsConsumed の位置にあるSEED値を渡す
+        // 通常モード：SEEDジャンプ
         const nextSeedValue = seeds[seedIndex + rr.seedsConsumed];
         if (nextSeedValue !== undefined) {
             clickHandler = `onclick="updateSeedAndRefresh(${nextSeedValue})"`;
@@ -3886,16 +4153,16 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     // --- 3. セル内コンテンツの構築 ---
     let content = "";
     if (rr.isRerolled) {
-        // レア被り回避（再抽選）が発生している場合
         const nextIdx = seedIndex + rr.seedsConsumed;
         let destAddr = (rr.isConsecutiveRerollTarget ? 'R' : '') + formatAddress(nextIdx);
         const oName = (rr.originalChar && rr.originalChar.name) ? rr.originalChar.name : "不明";
 
-        if (!isSimulationMode) {
-            // 被り元のキャラ（1回分消費した時点のSEED）
+        if (showSeedColumns) {
+            // SEED表示モード時は、リンク化せず単純なテキスト表示にする
+            content = `${oName}<br>${destAddr}${charName}`;
+        } else if (!isSimulationMode) {
             const originalJumpSeed = seeds[seedIndex + 2];
             let oHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${originalJumpSeed})">${oName}</span>`;
-            // 最終結果（全工程消費した後のSEED）
             const finalJumpSeed = seeds[seedIndex + rr.seedsConsumed];
             let fHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${finalJumpSeed})">${destAddr}${charName}</span>`;
             content = `${oHtml}<br>${fHtml}`;
@@ -3903,7 +4170,6 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             content = `${oName}<br>${destAddr}${charName}`;
         }
     } else {
-        // 通常の排出
         content = charName;
     }
     
@@ -5619,88 +5885,124 @@ function executeTableSimulation(numRolls, columnConfigs, seeds) {
 ====================
 FILE: view_table_debug.js
 ====================
-/** @file view_table_debug.js @description デバッグログ表示機能 */
-
-let gLongPressTimer = null;
+/** @file view_table_debug.js @description 確定枠算出過程の詳細表示（デバッグログ）を担当 */
 
 /**
- * [cite_start]デバッグモーダルの初期化 [cite: 1026-1029]
+ * 確定11連などの計算過程をモーダルで表示する
  */
-function initDebugModal() {
-    if (document.getElementById('debug-modal')) return;
-    const modal = document.createElement('div');
-    modal.id = 'debug-modal';
-    modal.style = "display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); overflow:auto;";
-    modal.innerHTML = `
-        <div style="background:#fff; margin:5% auto; padding:20px; width:95%; max-width:800px; border-radius:8px; font-family:monospace; position:relative; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
-            <span onclick="this.parentElement.parentElement.style.display='none'" style="position:absolute; right:15px; top:5px; cursor:pointer; font-size:30px; font-weight:bold;">&times;</span>
-            <h3 id="debug-title" style="margin-top:0;">11G Calculation Debug Log</h3>
-            <div id="debug-content" style="overflow-x:auto;"></div>
-        </div>`;
-    document.body.appendChild(modal);
+function showDebugLog(seedIdx, colIdx, isAlt = false) {
+    const rowData = tableData[seedIdx];
+    const cell = rowData?.cells?.[colIdx];
+    if (!cell || !cell.sequential) return;
+
+    const seq = cell.sequential;
+    const config = gachaMasterData.gachas[tableGachaIds[colIdx].replace(/[gfs]$/, '')];
+
+    let html = `<div style="font-family:monospace; font-size:11px; max-width:600px;">
+        <h3 style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:5px;">確定枠算出過程 [${isAlt ? 'Alt Route' : 'Main Route'}]</h3>
+        <p>開始SEED: ${seq.debugLog[0]?.startIndex || '不明'}</p>
+        <div style="max-height:400px; overflow-y:auto; background:#f9f9f9; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead style="background:#eee; position:sticky; top:0;">
+                    <tr>
+                        <th style="padding:4px; border:1px solid #ccc;">回</th>
+                        <th style="padding:4px; border:1px solid #ccc;">INDEX</th>
+                        <th style="padding:4px; border:1px solid #ccc;">判定値</th>
+                        <th style="padding:4px; border:1px solid #ccc;">キャラ[ID, SLOT]</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    seq.debugLog.forEach((log, i) => {
+        const isGuaranteed = log.step.includes('Guaranteed');
+        const bgColor = isGuaranteed ? '#fff3cd' : '#fff';
+        
+        // キャラクター情報の取得を強化
+        let charName = "不明";
+        let charId = "?";
+        let slotInfo = log.charIndex !== undefined ? log.charIndex : "?";
+
+        if (log.finalChar) {
+            charName = log.finalChar.name || "不明";
+            charId = log.finalChar.id || "?";
+        }
+
+        // マスターデータからの名前補完（IDがわかっている場合）
+        if (charName === "不明" && charId !== "?") {
+            const masterCat = gachaMasterData.cats[charId];
+            if (masterCat) charName = masterCat.name;
+        }
+
+        const stepLabel = isGuaranteed ? "確定" : (i + 1);
+        const seedValue = log.seedValue !== undefined ? log.seedValue : (log.s0 || "-");
+        const rarityDisp = log.rarity ? `(${log.rarity})` : "";
+
+        html += `<tr style="background:${bgColor};">
+            <td style="padding:4px; border:1px solid #ccc; text-align:center;">${stepLabel}</td>
+            <td style="padding:4px; border:1px solid #ccc; text-align:center;">${log.startIndex}</td>
+            <td style="padding:4px; border:1px solid #ccc; text-align:center;">${seedValue}${rarityDisp}</td>
+            <td style="padding:4px; border:1px solid #ccc;">
+                ${charName} <span style="color:#666; font-size:10px;">[ID:${charId}, SLOT:${slotInfo}]</span>
+            </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>
+        <div style="margin-top:10px; padding:8px; background:#e2f3ff; border-radius:4px; font-weight:bold;">
+            最終排出: ${seq.name} (ID: ${seq.charId})
+        </div>
+        <button onclick="closeModal()" style="width:100%; margin-top:10px; padding:8px;">閉じる</button>
+    </div>`;
+
+    showModal(html);
 }
 
 /**
- * [cite_start]長押しタイマー開始 [cite: 1030]
+ * 連続算出結果（sequential）のサマリーテキストを生成する
+ * ツールチップ表示等で使用
  */
-window.start11GTimer = function(seedIdx, colIdx, isAlt) {
-    if (!showSeedColumns) return;
-    window.clear11GTimer();
-    gLongPressTimer = setTimeout(() => { 
-        showDebugLog(seedIdx, colIdx, isAlt); 
-        gLongPressTimer = null; 
-    }, 800);
-};
-
-/**
- * [cite_start]長押しタイマークリア [cite: 1031]
- */
-window.clear11GTimer = function() {
-    if (gLongPressTimer) { 
-        clearTimeout(gLongPressTimer); 
-        gLongPressTimer = null; 
-    }
-};
-
-/**
- * [cite_start]詳細デバッグログの表示 [cite: 1032-1036]
- */
-window.showDebugLog = function(seedIndex, colIndex, isAlt) {
-    if (!showSeedColumns || !currentTableData) return;
-    const cellData = currentTableData[seedIndex][colIndex];
-    const data = isAlt ? cellData.alternativeGuaranteed : cellData.guaranteed;
-    if (!data || !data.debugLog) return;
+function getSequentialSummary(seq) {
+    if (!seq || !seq.normalRollsResults) return "";
     
-    document.getElementById('debug-title').innerText = isAlt ? "回避ルート詳細ログ" : "通常ルート詳細ログ";
-    
-    let logHtml = `<table border="1" style="width:100%; border-collapse:collapse; background:#fff; font-size:11px;">
-        <tr style="background:#eee; position:sticky; top:0;">
-            <th>Step</th><th>SEED</th><th>排出キャラ</th><th>判定詳細</th>
-        </tr>`;
-        
-    data.debugLog.forEach(log => {
-        let rerollTxt = "-";
-        if (log.isRerolled) rerollTxt = `<span style="color:red;">被り回避</span><br>前回ID:${log.rerollProcess.prevId}を回避`;
-        logHtml += `<tr><td>${log.step}</td><td>${log.s1 || log.seedValue}</td><td>${log.finalChar.name} (ID:${log.finalChar.id})</td><td>${rerollTxt}</td></tr>`;
+    let summary = "1-10回目内容:\n";
+    seq.normalRollsResults.forEach((r, i) => {
+        const name = r.finalChar?.name || "データ不足";
+        summary += `${i+1}: ${name}\n`;
     });
-    
-    document.getElementById('debug-content').innerHTML = logHtml + "</table>";
-    document.getElementById('debug-modal').style.display = 'block';
-};
+    summary += `\n確定枠: ${seq.name}`;
+    return summary;
+}
+
+/**
+ * モーダル内でのスクロール追跡などの補助機能が必要な場合はここに追加
+ */
+window.addEventListener('resize', () => {
+    const modal = document.getElementById('common-modal');
+    if (modal && modal.style.display === 'block') {
+        // 必要に応じてリサイズ処理
+    }
+});
 
 ====================
 FILE: view_table_dom.js
 ====================
-/** @file view_table_dom.js @description テーブルのDOM構造構築 */
+/** @file view_table_dom.js @description テーブルのDOM構造構築（SEED 1列集約・全機能保全版） */
 
 /**
  * テーブルDOM構築のメイン
+ * @param {number} numRolls - 描画する行数
+ * @param {Array} columnConfigs - 列の設定
+ * @param {Array} tableData - 計算済みテーブルデータ
+ * @param {Array} seeds - シード値配列
+ * @param {Map} highlightMap - 通常セルのハイライト状態
+ * @param {Map} guarHighlightMap - 確定枠のハイライト状態
  */
 function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, guarHighlightMap) {
     const totalTrackSpan = calculateTotalTrackSpan();
+    // 全体の列数：(No列 + トラックAの全列) + (No列 + トラックBの全列)
     const fullTableColSpan = 2 + totalTrackSpan * 2;
     const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-    
+
     let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
             <th class="col-no" style="position: sticky; left: 0; z-index: 30; background: #f8f9fa; border-right: 1px solid #ddd;"></th>
@@ -5709,15 +6011,19 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
             <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; font-weight: bold;">B</th>
         </tr>
         <tr class="sticky-row">
-            <th class="col-no" style="position: sticky; top: 0; left: 0; z-index: 40; background: #f8f9fa; border-right: 1px solid #ddd;">NO.</th><th class="${calcColClass}" colspan="5">SEED</th>
+            <th class="col-no" style="position: sticky; top: 0; left: 0; z-index: 40; background: #f8f9fa; border-right: 1px solid #ddd;">NO.</th>
+            <th class="${calcColClass}">SEED</th>
             ${generateNameHeaderHTML()}
-            <th class="col-no" style="border-left: 1px solid #ddd;">NO.</th><th class="${calcColClass}" colspan="5">SEED</th>
+            <th class="col-no" style="border-left: 1px solid #ddd;">NO.</th>
+            <th class="${calcColClass}">SEED</th>
             ${generateNameHeaderHTML()}
         </tr>
         <tr class="control-row">
-            <th class="col-no" style="position: sticky; left: 0; z-index: 30; background: #f8f9fa; border-right: 1px solid #ddd;"></th><th class="${calcColClass}" colspan="5"></th>
+            <th class="col-no" style="position: sticky; left: 0; z-index: 30; background: #f8f9fa; border-right: 1px solid #ddd;"></th>
+            <th class="${calcColClass}"></th>
             ${generateControlHeaderHTML(true)}
-            <th class="col-no" style="border-left: 1px solid #ddd;"></th><th class="${calcColClass}" colspan="5"></th>
+            <th class="col-no" style="border-left: 1px solid #ddd;"></th>
+            <th class="${calcColClass}"></th>
             ${generateControlHeaderHTML(false)}
         </tr>
     </thead><tbody>`;
@@ -5745,9 +6051,10 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
 
 /**
  * トラックあたりの総Colspanを計算
+ * 修正：SEED表示列を 5列から 1列として計算するように修正
  */
 function calculateTotalTrackSpan() {
-    const calcColSpan = showSeedColumns ? 5 : 0;
+    const calcColSpan = showSeedColumns ? 1 : 0;
     let gachaColSpan = 0;
     tableGachaIds.forEach(idWithSuffix => {
         let id = idWithSuffix.replace(/[gfs]$/, '');
@@ -5770,6 +6077,38 @@ function buildHeaderButtonArea() {
             <span id="add-id-trigger" style="cursor:pointer; text-decoration:underline; color:#007bff; font-size: 11px; font-weight:bold;" onclick="showIdInput()">IDで追加</span>
             <button class="remove-btn" onclick="resetToFirstGacha()" title="解除" style="font-size: 11px; padding: 1px 5px; margin-left: 2px;">×</button>
         </div>`;
+}
+
+/**
+ * ガチャID入力フォームの表示
+ */
+function showIdInput() {
+    const trigger = document.getElementById('add-id-trigger');
+    if (!trigger) return;
+    trigger.innerHTML = `<input type="text" id="direct-id-input" placeholder="ID" style="width:40px; font-size:10px;" onkeydown="if(event.key==='Enter') applyDirectId()">`;
+    const input = document.getElementById('direct-id-input');
+    input.focus();
+    input.onblur = () => { setTimeout(() => { trigger.innerText = 'IDで追加'; }, 200); };
+}
+
+/**
+ * 入力されたIDをガチャ列として追加
+ */
+function applyDirectId() {
+    const input = document.getElementById('direct-id-input');
+    if (!input) return;
+    const val = input.value.trim();
+    if (val) {
+        // gachaMasterDataに存在するかチェック
+        const baseId = val.replace(/[gfs]$/, '');
+        if (gachaMasterData.gachas[baseId]) {
+            tableGachaIds.push(val);
+            if (typeof updateUrlParams === 'function') updateUrlParams();
+            resetAndGenerateTable();
+        } else {
+            alert("無効なガチャIDです。");
+        }
+    }
 }
 
 ====================
@@ -6048,7 +6387,7 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
 
     // No列の背景色を決定
     const rowInfo = rowData.rowInfo || {};
-    let noColBgColor = '#f8f9fa'; 
+    let noColBgColor = '#f8f9fa';
     if (rowInfo.isNormalReroll) {
         noColBgColor = '#FFFF00';
     } else if (rowInfo.isCrossReroll) {
@@ -6057,15 +6396,15 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
         noColBgColor = '#FFDAB9';
     }
 
-    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;'
-        : ''}">${rowIndex + 1}</td>`;
+    let sideHtml = `<td class="col-no" style="background: ${noColBgColor}; ${isLeftSide ? 'position: sticky; left: 0; z-index: 5; border-right: 1px solid #ddd;' : ''}">${rowIndex + 1}</td>`;
 
     // 詳細計算セルの描画
     if (typeof generateDetailedCalcCells === 'function') {
         sideHtml += generateDetailedCalcCells(seedIndex, seeds, tableData);
     } else {
         const calcColClass = `calc-column ${showSeedColumns ? '' : 'hidden'}`;
-        sideHtml += `<td class="${calcColClass}">-</td>`.repeat(5);
+        // 修正：5列から1列に変更
+        sideHtml += `<td class="${calcColClass}">-</td>`;
     }
 
     // 各ガチャ列のセルを描画
@@ -6098,7 +6437,6 @@ function renderTableRowSide(rowIndex, seedIndex, columnConfigs, tableData, seeds
  */
 function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guarHighlightMap) {
     let cellStyle = 'white-space: normal; min-width: 80px; word-break: break-all; vertical-align: middle; border: 1px solid #ddd; font-size: 11px; padding: 0;';
-    
     if (isSimulationMode && guarHighlightMap.get(seedIndex) === id) {
         cellStyle += `background-color: #66b2ff;`;
     } else {
@@ -6109,7 +6447,6 @@ function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guar
     const gAlt = data.alternativeGuaranteed || (data.result ? data.result.alternativeGuaranteed : null);
     
     let gContent = '<div style="padding: 4px;">---</div>';
-
     if (gMain && (gMain.name || (gMain.finalChar && gMain.finalChar.name))) {
         const buildGHtml = (res, isAltRoute) => {
             if (!res) return "";
@@ -6119,12 +6456,18 @@ function renderGuaranteedCell(seedIndex, id, suffix, data, seeds, colIndex, guar
             const charName = res.name || (res.finalChar ? res.finalChar.name : "データ不足");
             const escapedName = charName.replace(/'/g, "\\'");
             const finalSeedInProcess = seeds[res.nextRollStartSeedIndex - 1];
-            let clickAction = isSimulationMode ?
-                `onclick="if(!event.ctrlKey) onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"` :
-                (res.nextRollStartSeedIndex >= 0 ? `onclick="if(!event.ctrlKey) updateSeedAndRefresh(${finalSeedInProcess})"` : "");
-            const debugAttrs = showSeedColumns ? 
-                `onpointerdown="window.start11GTimer(${seedIndex}, ${colIndex}, ${isAltRoute})" onpointerup="window.clear11GTimer()" onpointerleave="window.clear11GTimer()"` : "";
-            return `<div ${clickAction} ${debugAttrs} style="cursor:pointer; padding:4px; ${verifiedStyle} ${isAltRoute ? 'border-bottom:1px dashed #ccc;' : ''}">${addr})<span class="char-link" style="font-weight:bold; color:#0056b3;">${charName}</span></div>`;
+            
+            // 修正：SEED表示モード（showSeedColumns）がONの時、確定枠も算出過程ポップアップを表示するように変更
+            let clickAction = "";
+            if (showSeedColumns) {
+                 clickAction = `onclick="if(!event.ctrlKey) showRollProcessPopup(${seedIndex}, '${id}', ${colIndex}, true, ${isAltRoute})"`;
+            } else if (isSimulationMode) {
+                clickAction = `onclick="if(!event.ctrlKey) onGachaCellClick(${seedIndex}, '${id}', '${escapedName}', '${gType}')"`;
+            } else {
+                clickAction = (res.nextRollStartSeedIndex >= 0 ? `onclick="if(!event.ctrlKey) updateSeedAndRefresh(${finalSeedInProcess})"` : "");
+            }
+
+            return `<div ${clickAction} style="cursor:pointer; padding:4px; ${verifiedStyle} ${isAltRoute ? 'border-bottom:1px dashed #ccc;' : ''}">${addr})<span class="char-link" style="font-weight:bold; color:#0056b3;">${charName}</span></div>`;
         };
         gContent = gAlt ? buildGHtml(gAlt, true) + buildGHtml(gMain, false) : buildGHtml(gMain, false);
     }
@@ -6150,7 +6493,7 @@ function generateSeedExplanationHtml() {
         <div class="seed-explanation-container">
             <h4 style="margin-top: 0; color: #17a2b8; border-bottom: 2px solid #17a2b8; display: inline-block;">📖 SEED計算と排出の仕組み</h4>
             <div class="explanation-content">
-                <p>左側のSEED詳細列を表示している際、以下のルールに基づいてキャラクターが決定されます：</p>
+                <p>左側のSEED詳細列を表示している際、キャラクター名をクリックすることで詳細な算出過程を確認できます：</p>
                 <ul style="padding-left: 20px;">
                     <li><strong>1. レア度判定 (s0):</strong> <br>
                         そのシードのSEED値を <strong>10000</strong> で割った剰余を使用します。
@@ -6206,7 +6549,7 @@ function generateSeedExplanationHtml() {
                     </p>
                     <ul style="padding-left: 20px; margin: 10px 0;">
                         <li>（１）同一トラック・同一ガチャの１つ上のセルと比較して、キャラが一致し、レアリティがレアの場合、レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。</li>
-                        <li>（２）上記のレア被りにより遷移した遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レア被りと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」が表示されます。</li>
+                        <li>（２）上記のレアベリにより遷移した遷移先セルにおいて、レア被りによる遷移元とキャラが一致した場合にも、連続レアベリと判定し、遷移先セル番地及び再抽選キャラを表示します。この場合は遷移先セルアドレスの先頭に「R」が表示されます。</li>
                     </ul>
                     <hr style="border: 0; border-top: 1px solid #ffe58f; margin: 10px 0;">
                     <p style="font-size: 0.95em;">
