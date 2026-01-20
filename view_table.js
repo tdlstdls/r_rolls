@@ -1,4 +1,4 @@
-/** @file view_table.js @description ガチャ結果テーブル全体の描画制御（計算過程・ルート整合性検証対応版） */
+/** @file view_table.js @description ガチャ結果テーブル全体の描画制御（表示・検証データ分離対応版） */
 
 const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
 const COLOR_ROUTE_UBER = '#66b2ff';
@@ -29,14 +29,15 @@ function generateRollsTable() {
 
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
-        
-        // シミュレーション（ルート）のハイライト判定と最終シードの取得
-        const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
+
+        // シミュレーション（ルート）のデータ取得
+        // logicPathMap: Txtモードの不整合チェック用（全経路）
+        // highlightMap / guarHighlightMap: テーブルの背景色用
+        const { highlightMap, guarHighlightMap, logicPathMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
         // --- HTML構築開始 ---
         let finalContainerHtml = '';
-        
         // Find（予報・ターゲット検索）エリアの生成
         if (typeof generateFastForecast === 'function') {
             finalContainerHtml += generateFastForecast(initialSeed, columnConfigs);
@@ -51,10 +52,10 @@ function generateRollsTable() {
         }
 
         // --- Txt（テキストルートビュー）モードの表示 ---
-        // highlightMap を渡すことで、経路の不整合チェックを有効化します
+        // logicPathMap を追加で渡すことで、テーブルのハイライトとは独立して経路チェックを行います
         if (isTxtMode && isSimulationMode) {
             if (typeof generateTxtRouteView === 'function') {
-                const txtViewHtml = generateTxtRouteView(seeds, initialSeed, highlightMap);
+                const txtViewHtml = generateTxtRouteView(seeds, initialSeed, highlightMap, guarHighlightMap, logicPathMap);
                 if (!txtViewHtml.includes("ルートが入力されていません")) {
                     finalContainerHtml += txtViewHtml;
                 }
