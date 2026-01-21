@@ -1,7 +1,14 @@
 ﻿====================
 FILE: data_loader.js
 ====================
-/** @file data_loader.js @description 外部データ（CSV/TSV）の非同期取得とマスタデータの構築を担当 @dependency cats.js, gacha_series.js */
+/**
+ * @file data_loader.js
+ * @description 外部リソース(CSV/TSV)の非同期取得とgachaMasterDataの構築を担当
+ * @input_data GatyaDataSetR1.csv, GatyaData_Option_SetR.tsv, gatya.tsv
+ * @managed_state gachaMasterData (マスタ全体), loadedTsvContent (スケジュール生データ)
+ * @output_data gachaMasterData.cats, gachaMasterData.gachas
+ * @dependency cats.js, gacha_series.js
+ */
 
 /**
  * [gatya.tsv Data Structure Memo]
@@ -345,7 +352,11 @@ function getGachaSelectorOptions(selectedId) {
 ====================
 FILE: gacha_series.js
 ====================
-/** @file gacha_series.js @description 各ガチャシリーズのメタデータ（名称、デフォルトレート、ソート順）の定義 @dependency なし */
+/**
+ * @file gacha_series.js
+ * @description 各ガチャシリーズのメタデータ（名称、レート、ソート順）の定義
+ * @output_data gacha_series (定数配列)
+ */
 
 /**
  * Sortの区分について
@@ -583,12 +594,14 @@ FILE: index.html
 ====================
 FILE: limited_cats.js
 ====================
-/** @file limited_cats.js @description 限定キャラクター（祭限定など）のIDリスト管理 @dependency なし */
+/**
+ * @file limited_cats.js
+ * @description 祭限定・アニバーサリー限定キャラクターのIDリスト
+ * @managed_state limitedCats, AnniversaryLimited
+ */
 
 const limitedCats = [283,286,318,333,378,380,397,435,441,484,529,543,559,585,586,609,612,641,657,690,705,758,779,783,787,810,837];
 const AnniversaryLimited = [435,484,758,783,810,837];
-
-//837は、2026新年超極_新規の予測のため手動で入力したもののためアップデートされた際には削除すること
 
 ====================
 FILE: logic.js
@@ -696,15 +709,26 @@ function executeReroll(startIndex, duplicateSlotIndex, characterPool, seeds, cha
 ====================
 FILE: logic_roll_core.js
 ====================
-/** @file logic_roll_core.js @description ガチャ抽選メイン統合ロジック（インデックス線形制御・状態継承・デバッグ情報強化版） */
+/**
+ * @file logic_roll_core.js
+ * @description ガチャ抽選のメイン統合ロジック。レア度判定から再抽選までを一括制御
+ * @input_data seeds (乱数配列), gachaConfig (マスタ), lastDrawInfo (直前状態)
+ * @output_data rollResult {originalChar, finalChar, isRerolled, seedsConsumed, debug}
+ * @dependency logic_rarity.js, logic_duplicate.js, logic_reroll.js
+ */
 
 /**
- * 指定されたインデックスからガチャを1回実行する
+ * 指定されたインデックスからガチャを1回実行する統合関数
  * @param {number} startIndex - 抽選を開始するSEED配列のインデックス
- * @param {Object} gachaConfig - ガチャのマスタデータ
- * @param {Array} seeds - 乱数シード配列
- * @param {Object} lastDrawInfo - 直前の抽選結果（レア被り判定用）
- * @returns {Object} 抽選結果と詳細なデバッグ情報
+ * @param {Object} gachaConfig - ガチャのマスタデータ（rarity_rates, poolを含む）
+ * @param {Array} seeds - 乱数生成済みのSEED配列
+ * @param {Object|null} lastDrawInfo - 直前の抽選結果（レア被り判定用）。{originalIdAbove, finalIdSource} を含む
+ * @returns {Object} 抽選結果オブジェクト
+ * - seedsConsumed: 消費されたSEED数（通常は2、再抽選時は3以上）
+ * - finalChar: 最終的に確定したキャラクター情報（id, name）
+ * - rarity: 決定されたレアリティ
+ * - isRerolled: レア被り回避が発生したかどうか
+ * - debug: 計算過程のデバッグ情報（s0, s1, charIndex等）
  */
 function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo) {
     // 境界チェック：レアリティ判定(s0)とキャラ判定(s1)に最低2つのSEEDが必要
@@ -829,7 +853,12 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
 ====================
 FILE: logic_sequential.js
 ====================
-/** @file logic_sequential.js @description 連続抽選シミュレーションおよび確定枠までのログ生成 */
+/**
+ * @file logic_sequential.js
+ * @description 連続抽選（11連等）および確定枠までのSEED消費・状態遷移の管理
+ * @input_data startSeedIndex, allSeeds, normalRollsCount, forceNoRerollFirst
+ * @output_data {name, charId, nextRollStartSeedIndex, normalRollsResults, debugLog}
+ */
 
 /**
  * 連続した通常抽選と、その後の確定枠抽選をシミュレートする
@@ -910,7 +939,11 @@ function calculateSequentialGuaranteed(startSeedIndex, gachaConfig, allSeeds, in
 ====================
 FILE: logic_uber.js
 ====================
-/** @file logic_uber.js @description 確定枠抽選ロジック */
+/**
+ * @file logic_uber.js
+ * @description 確定枠（Uber確定）専用の抽選およびデバッグ情報生成
+ * @output_data {finalChar, seedsConsumed, debug}
+ */
 
 /**
  * 確定枠（Uber確定）の抽選を実行し、デバッグ用の詳細情報を返却する
@@ -1007,7 +1040,11 @@ class Xorshift32 {
 ====================
 FILE: main.js
 ====================
-/** @file main.js @description アプリのエントリーポイント（初期化フロー統合版） */
+/**
+ * @file main.js
+ * @description エントリーポイント。初期化フロー（概要・データロード・URL・UI構築）の制御
+ * @dependency data_loader.js, url_manager.js, ui_mode_logic.js, ui_schedule_handler.js
+ */
 
 /**
  * ==============================================================================
@@ -1602,15 +1639,20 @@ function calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds) {
 ====================
 FILE: sim_engine_core.js
 ====================
-/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・インデックス線形同期強化版） */
+/**
+ * @file sim_engine_core.js
+ * @description 単一セグメント(11連等)のシミュレーションとトラック遷移(lastA/B)の同期
+ * @managed_state trackStates {lastA, lastB, lastAction} (トラック整合性の維持)
+ * @output_data {nextIndex, trackStates}
+ */
 
 /**
- * 単一のガチャセグメント（例：ガチャID:1006で11回回す）をシミュレートする
- * @param {Object} segment - {id, rolls, g} の形式のセグメント情報
- * @param {number} startIdx - 開始SEEDインデックス
- * @param {Object} initialStates - 前のセグメントから引き継いだ状態
- * @param {Array} seeds - 乱数シード配列
- * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終状態
+ * 単一のガチャセグメント（例：11回連続で引く）をシミュレートし、終了時の状態を返す
+ * @param {Object} segment - アクション情報 {id, rolls, g}
+ * @param {number} startIdx - このセグメントの開始SEEDインデックス
+ * @param {Object|null} initialStates - 前のセグメントから引き継ぐ状態 {lastA, lastB, lastAction}
+ * @param {Array} seeds - 乱数配列
+ * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終的なトラック状態
  */
 function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
     let currentIdx = startIdx;
@@ -1735,11 +1777,25 @@ function compressRoute(route) {
 ====================
 FILE: sim_engine_search.js
 ====================
-/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（インデックス線形同期・状態遷移完全整合版） */
+/**
+ * @file sim_engine_search.js
+ * @description ビームサーチによる目的セルへの最短・最適経路探索
+ * @input_data targetIdx, targetGachaId, usableConfigs, maxPlat, maxGuar
+ * @output_data path (最短アクション配列)
+ */
 
 /**
- * ビームサーチ本体
- * インデックスの線形的な進展とレア被りによるトラック遷移を考慮し、ターゲットへ正確に到達する経路を探索します。
+ * ビームサーチを用いて目標インデックスまでのアクション経路を探索する
+ * @param {number} startIdx - 探索を開始する現在のSEEDインデックス
+ * @param {number} targetIdx - 到達目標とするSEEDインデックス
+ * @param {string} targetGachaId - 目標セルで使用するガチャID
+ * @param {Array} configs - 探索中に利用可能なガチャ設定の配列
+ * @param {Array} simSeeds - シミュレーション用乱数配列
+ * @param {Object} initialLastDraw - 開始地点でのトラック状態
+ * @param {string|null} primaryTargetId - 優先して発見したい特定のキャラID
+ * @param {number} maxPlat - 使用を許可するプラチナチケットの最大数
+ * @param {number} maxGuar - 使用を許可する確定11連の最大数
+ * @returns {Array|null} アクションオブジェクトの配列。見つからない場合はnull
  */
 function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
     const BEAM_WIDTH = 25;
@@ -2672,7 +2728,11 @@ function toggleFindInfo() {
 ====================
 FILE: ui_globals.js
 ====================
-/** @file ui_globals.js @description アプリケーション全体で共有されるグローバルな状態変数の定義 @dependency なし */
+/**
+ * @file ui_globals.js
+ * @description アプリ全体で共有されるグローバルなUI状態変数の定義
+ * @managed_state tableGachaIds, isSimulationMode, isTxtMode, userTargetIds, prioritizedFindIds
+ */
 
 // UI状態変数 (Global)
 let tableGachaIds = [];
@@ -3880,7 +3940,12 @@ function getRarityColor(rarity) {
 ====================
 FILE: url_manager.js
 ====================
-/** @file url_manager.js @description URLパラメータとアプリ状態の同期（保存・復元）を担当 @dependency ui_globals.js */
+/**
+ * @file url_manager.js
+ * @description URLパラメータとアプリ状態(SEED、ルート、選択ガチャ)の相互同期
+ * @managed_state seed, sim_config, tableGachaIds, uberAdditionCounts
+ * @input_output window.location.search
+ */
 
 function processUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -5606,7 +5671,12 @@ function saveGanttImage() {
 ====================
 FILE: view_table.js
 ====================
-/** @file view_table.js @description ガチャ結果テーブル全体の描画制御（表示・検証データ分離対応版） */
+/**
+ * @file view_table.js
+ * @description テーブル描画のメインオーケストレータ。計算・ハイライト・DOM構築を統合
+ * @managed_state currentTableData (計算済み全行データ)
+ * @dependency view_table_data.js, view_table_highlight.js, view_table_dom.js
+ */
 
 const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
 const COLOR_ROUTE_UBER = '#66b2ff';
@@ -5725,7 +5795,12 @@ function generateRollsTable() {
 ====================
 FILE: view_table_data.js
 ====================
-/** @file view_table_data.js @description シミュレーションデータ生成（将来のキャラ追加・消費SEED・二系統ID管理） */
+/**
+ * @file view_table_data.js
+ * @description 表示用全セルのシミュレーションデータ生成（add機能含む）
+ * @input_data numRolls, columnConfigs, seeds
+ * @output_data tableData (全セルの計算済みオブジェクト)
+ */
 
 /**
  * 各列のガチャ設定を構築する

@@ -25,19 +25,13 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
     let lastDrawB = null;
     let lastRollState = null;
 
+    const maps = { highlightMap, guarHighlightMap, logicPathMap };
+
     for (const sim of simConfigs) {
         const config = gachaMasterData.gachas[sim.id];
         if (!config) continue;
 
-        let normalRolls = sim.rolls;
-        let isGuaranteedStep = false;
-
-        if (sim.g) {
-            if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
-            else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
-            else if (sim.rolls === 11) { normalRolls = 10; isGuaranteedStep = true; }
-            else { normalRolls = Math.max(0, sim.rolls - 1); isGuaranteedStep = true; }
-        }
+        const { normalRolls, isGuaranteedStep } = calculateRollConfiguration(sim);
 
         // 連続ロールの「開始インデックス」を保持
         const segmentStartIdx = currentSeedIndex;
@@ -48,64 +42,43 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
         }
 
         // --- 1. 通常ロール部分 ---
-        for (let k = 0; k < normalRolls; k++) {
-            if (currentSeedIndex >= seeds.length) break;
-
-            const isTrackB = (currentSeedIndex % 2 !== 0);
-            
-            // 【検証用】通過した全てのインデックスを記録（Txtモードでのエラー防止）
-            logicPathMap.set(currentSeedIndex, sim.id);
-
-            // 【テーブル表示用】通常列（A/B）を緑色にするために登録
-            if (currentSeedIndex < numRolls * 2) {
-                highlightMap.set(currentSeedIndex, sim.id);
-            }
-
-            const drawAbove = isTrackB ? lastDrawB : lastDrawA;
-            const drawContext = {
-                originalIdAbove: drawAbove ? String(drawAbove.charId) : null,
-                finalIdSource: lastRollState ? String(lastRollState.charId) : null
-            };
-
-            const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, drawContext);
-            if (rr.seedsConsumed === 0) break;
-
-            const resultState = {
-                rarity: rr.rarity,
-                charId: String(rr.charId),
-                trackB: isTrackB
-            };
-
-            if (isTrackB) lastDrawB = resultState;
-            else lastDrawA = resultState;
-            lastRollState = resultState;
-
-            const consumed = rr.seedsConsumed;
-            currentSeedIndex += consumed;
-            for (let x = 0; x < consumed; x++) rngForText.next();
-        }
+        const normalResult = processNormalRolls({
+            currentSeedIndex,
+            normalRolls,
+            config,
+            seeds,
+            numRolls,
+            simId: sim.id,
+            lastDrawA,
+            lastDrawB,
+            lastRollState,
+            maps,
+            rngForText
+        });
+        
+        currentSeedIndex = normalResult.newSeedIndex;
+        lastDrawA = normalResult.newLastDrawA;
+        lastDrawB = normalResult.newLastDrawB;
+        lastRollState = normalResult.newLastRollState;
 
         // --- 2. 確定枠（最後の1回） ---
         if (isGuaranteedStep && currentSeedIndex < seeds.length) {
-            const isTrackB = (currentSeedIndex % 2 !== 0);
+            const guaranteedResult = processGuaranteedRoll({
+                currentSeedIndex,
+                config,
+                seeds,
+                simId: sim.id,
+                lastDrawA,
+                lastDrawB,
+                lastRollState,
+                maps,
+                rngForText
+            });
 
-            // 【検証用】確定枠そのものの位置も記録（Txtモードでのエラー防止）
-            // ※ここでは guarHighlightMap には入れない（入れるとテーブルが光ってしまうため）
-            logicPathMap.set(currentSeedIndex, sim.id);
-
-            const gr = rollGuaranteedUber(currentSeedIndex, config, seeds);
-            const resultState = { 
-                rarity: 'uber', 
-                charId: String(gr.charId), 
-                trackB: isTrackB
-            };
-
-            if (isTrackB) lastDrawB = resultState;
-            else lastDrawA = resultState;
-            lastRollState = resultState;
-
-            currentSeedIndex += gr.seedsConsumed;
-            for (let x = 0; x < gr.seedsConsumed; x++) rngForText.next();
+            currentSeedIndex = guaranteedResult.newSeedIndex;
+            lastDrawA = guaranteedResult.newLastDrawA;
+            lastDrawB = guaranteedResult.newLastDrawB;
+            lastRollState = guaranteedResult.newLastRollState;
         }
     }
 
