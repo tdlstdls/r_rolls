@@ -1,4 +1,9 @@
-/** @file logic_sequential.js @description 連続抽選シミュレーションおよび確定枠までのログ生成 */
+/**
+ * @file logic_sequential.js
+ * @description 連続抽選（11連等）および確定枠までのSEED消費・状態遷移の管理
+ * @input_data startSeedIndex, allSeeds, normalRollsCount, forceNoRerollFirst
+ * @output_data {name, charId, nextRollStartSeedIndex, normalRollsResults, debugLog}
+ */
 
 /**
  * 連続した通常抽選と、その後の確定枠抽選をシミュレートする

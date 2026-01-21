@@ -1,4 +1,9 @@
-/** @file view_table_data.js @description シミュレーションデータ生成（将来のキャラ追加・消費SEED・二系統ID管理） */
+/**
+ * @file view_table_data.js
+ * @description 表示用全セルのシミュレーションデータ生成（add機能含む）
+ * @input_data numRolls, columnConfigs, seeds
+ * @output_data tableData (全セルの計算済みオブジェクト)
+ */
 
 /**
  * 各列のガチャ設定を構築する

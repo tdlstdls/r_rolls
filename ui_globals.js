@@ -1,4 +1,8 @@
-/** @file ui_globals.js @description アプリケーション全体で共有されるグローバルな状態変数の定義 @dependency なし */
+/**
+ * @file ui_globals.js
+ * @description アプリ全体で共有されるグローバルなUI状態変数の定義
+ * @managed_state tableGachaIds, isSimulationMode, isTxtMode, userTargetIds, prioritizedFindIds
+ */
 
 // UI状態変数 (Global)
 let tableGachaIds = [];

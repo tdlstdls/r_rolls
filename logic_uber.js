@@ -1,4 +1,8 @@
-/** @file logic_uber.js @description 確定枠抽選ロジック */
+/**
+ * @file logic_uber.js
+ * @description 確定枠（Uber確定）専用の抽選およびデバッグ情報生成
+ * @output_data {finalChar, seedsConsumed, debug}
+ */
 
 /**
  * 確定枠（Uber確定）の抽選を実行し、デバッグ用の詳細情報を返却する

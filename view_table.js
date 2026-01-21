@@ -1,4 +1,9 @@
-/** @file view_table.js @description ガチャ結果テーブル全体の描画制御（表示・検証データ分離対応版） */
+/**
+ * @file view_table.js
+ * @description テーブル描画のメインオーケストレータ。計算・ハイライト・DOM構築を統合
+ * @managed_state currentTableData (計算済み全行データ)
+ * @dependency view_table_data.js, view_table_highlight.js, view_table_dom.js
+ */
 
 const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
 const COLOR_ROUTE_UBER = '#66b2ff';

@@ -1,12 +1,23 @@
-/** @file logic_roll_core.js @description ガチャ抽選メイン統合ロジック（インデックス線形制御・状態継承・デバッグ情報強化版） */
+/**
+ * @file logic_roll_core.js
+ * @description ガチャ抽選のメイン統合ロジック。レア度判定から再抽選までを一括制御
+ * @input_data seeds (乱数配列), gachaConfig (マスタ), lastDrawInfo (直前状態)
+ * @output_data rollResult {originalChar, finalChar, isRerolled, seedsConsumed, debug}
+ * @dependency logic_rarity.js, logic_duplicate.js, logic_reroll.js
+ */
 
 /**
- * 指定されたインデックスからガチャを1回実行する
+ * 指定されたインデックスからガチャを1回実行する統合関数
  * @param {number} startIndex - 抽選を開始するSEED配列のインデックス
- * @param {Object} gachaConfig - ガチャのマスタデータ
- * @param {Array} seeds - 乱数シード配列
- * @param {Object} lastDrawInfo - 直前の抽選結果（レア被り判定用）
- * @returns {Object} 抽選結果と詳細なデバッグ情報
+ * @param {Object} gachaConfig - ガチャのマスタデータ（rarity_rates, poolを含む）
+ * @param {Array} seeds - 乱数生成済みのSEED配列
+ * @param {Object|null} lastDrawInfo - 直前の抽選結果（レア被り判定用）。{originalIdAbove, finalIdSource} を含む
+ * @returns {Object} 抽選結果オブジェクト
+ * - seedsConsumed: 消費されたSEED数（通常は2、再抽選時は3以上）
+ * - finalChar: 最終的に確定したキャラクター情報（id, name）
+ * - rarity: 決定されたレアリティ
+ * - isRerolled: レア被り回避が発生したかどうか
+ * - debug: 計算過程のデバッグ情報（s0, s1, charIndex等）
  */
 function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo) {
     // 境界チェック：レアリティ判定(s0)とキャラ判定(s1)に最低2つのSEEDが必要

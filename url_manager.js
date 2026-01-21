@@ -1,4 +1,9 @@
-/** @file url_manager.js @description URLパラメータとアプリ状態の同期（保存・復元）を担当 @dependency ui_globals.js */
+/**
+ * @file url_manager.js
+ * @description URLパラメータとアプリ状態(SEED、ルート、選択ガチャ)の相互同期
+ * @managed_state seed, sim_config, tableGachaIds, uberAdditionCounts
+ * @input_output window.location.search
+ */
 
 function processUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);

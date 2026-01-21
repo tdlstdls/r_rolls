@@ -1,8 +1,22 @@
-/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（インデックス線形同期・状態遷移完全整合版） */
+/**
+ * @file sim_engine_search.js
+ * @description ビームサーチによる目的セルへの最短・最適経路探索
+ * @input_data targetIdx, targetGachaId, usableConfigs, maxPlat, maxGuar
+ * @output_data path (最短アクション配列)
+ */
 
 /**
- * ビームサーチ本体
- * インデックスの線形的な進展とレア被りによるトラック遷移を考慮し、ターゲットへ正確に到達する経路を探索します。
+ * ビームサーチを用いて目標インデックスまでのアクション経路を探索する
+ * @param {number} startIdx - 探索を開始する現在のSEEDインデックス
+ * @param {number} targetIdx - 到達目標とするSEEDインデックス
+ * @param {string} targetGachaId - 目標セルで使用するガチャID
+ * @param {Array} configs - 探索中に利用可能なガチャ設定の配列
+ * @param {Array} simSeeds - シミュレーション用乱数配列
+ * @param {Object} initialLastDraw - 開始地点でのトラック状態
+ * @param {string|null} primaryTargetId - 優先して発見したい特定のキャラID
+ * @param {number} maxPlat - 使用を許可するプラチナチケットの最大数
+ * @param {number} maxGuar - 使用を許可する確定11連の最大数
+ * @returns {Array|null} アクションオブジェクトの配列。見つからない場合はnull
  */
 function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
     const BEAM_WIDTH = 25;
