@@ -209,6 +209,7 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
         }
         return '不明'; // `cats` 配列が見つからない場合のフォールバック
     };
+    const formatNameWithId = (name, id) => `${name}[${id ?? '-'}]`;
 
     const rarityMod = 10000;
     const seedRarity = seeds[idx];
@@ -233,7 +234,7 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
 
         html += `【確定抽選】<br>`;
         html += `SEEDインデックス: <span class="idx-val">${idx}</span> | SEED値: <span class="seed-val">${seedRarity}</span><br>`;
-        html += `除数 (キャラ数): <span>${count}</span> | 剰余: <span>${charRem}</span> ${charName}[${charId}]<br>`;
+        html += `除数 (キャラ数): <span>${count}</span> | 剰余: <span>${charRem}</span> ${formatNameWithId(charName, charId)}<br>`;
 
     } else {
         const rarityKey = poolKeyMap[rr.rarity] || rr.rarity;
@@ -248,11 +249,11 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
         if (rr.isRerolled) {
             // 1回目の抽選（被り発生）
             const idx1 = idx + 1;
-            const seed1 = seeds[idx1];
-            const rem1 = seed1 % count;
-            const firstRollCharId = pool.length > rem1 ? pool[rem1] : null;
-            const firstRollCharName = firstRollCharId !== null ? findCatNameById(firstRollCharId) : '不明';
-            html += `1回目 - SEEDインデックス: <span class="idx-val">${idx1}</span> | SEED値: <span class="seed-val">${seed1}</span> | 剰余: <span>${rem1}</span> (被り発生) ${firstRollCharName}[${firstRollCharId}]<br>`;
+            const seed1 = (rr.debug && rr.debug.s1) ? rr.debug.s1 : seeds[idx1];
+            const rem1 = (rr.debug && rr.debug.charIndex !== undefined) ? rr.debug.charIndex : (seed1 % count);
+            const firstRollCharName = rr.originalChar ? rr.originalChar.name : '不明';
+            const firstRollCharId = rr.originalChar ? rr.originalChar.id : null;
+            html += `1回目 - SEEDインデックス: <span class="idx-val">${idx1}</span> | SEED値: <span class="seed-val">${seed1}</span> | 剰余: <span>${rem1}</span> (被り発生) ${formatNameWithId(firstRollCharName, firstRollCharId)}<br>`;
             
             // 再抽選
             const idx2 = idx + 2;
@@ -261,7 +262,7 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
             const rem2 = seed2 % rerollDivisor;
             const finalCharName = rr.finalChar ? rr.finalChar.name : '不明';
             const finalCharId = rr.charId;
-            html += `再抽選 - SEEDインデックス: <span class="idx-val">${idx2}</span> | SEED値: <span class="seed-val">${seed2}</span> | 除数: <span>${rerollDivisor}</span> | 剰余: <span>${rem2}</span> ${finalCharName}[${finalCharId}]<br>`;
+            html += `再抽選 - SEEDインデックス: <span class="idx-val">${idx2}</span> | SEED値: <span class="seed-val">${seed2}</span> | 除数: <span>${rerollDivisor}</span> | 剰余: <span>${rem2}</span> ${formatNameWithId(finalCharName, finalCharId)}<br>`;
         
         } else {
             // 通常抽選
@@ -270,7 +271,7 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
             const remChar = seedChar % count;
             const charName = rr.finalChar ? rr.finalChar.name : '不明';
             const charId = rr.charId;
-            html += `SEEDインデックス: <span class="idx-val">${idxChar}</span> | SEED値: <span class="seed-val">${seedChar}</span> | 除数: <span>${count}</span> | 剰余: <span>${remChar}</span> ${charName}[${charId}]<br>`;
+            html += `SEEDインデックス: <span class="idx-val">${idxChar}</span> | SEED値: <span class="seed-val">${seedChar}</span> | 除数: <span>${count}</span> | 剰余: <span>${remChar}</span> ${formatNameWithId(charName, charId)}<br>`;
         }
     }
     
@@ -332,7 +333,8 @@ function decorateCharNameHtml(charId, rarity, baseName) {
         style += "border-bottom: 2px solid #f1c40f;";
     }
 
-    return `<span style="${style}">${prefix}${name}</span>${suffix}`;
+    // メイン表示でもキャラIDを明示する
+    return `<span style="${style}">${prefix}${name}[${cid}]</span>${suffix}`;
 }
 
 /**
