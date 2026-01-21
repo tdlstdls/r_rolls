@@ -39,7 +39,7 @@ function processNormalRolls(params) {
             finalIdSource: lastRollState ? String(lastRollState.charId) : null
         };
 
-        const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, drawContext);
+        const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, drawContext, 'sim');
         if (rr.seedsConsumed === 0) break;
 
         const resultState = {

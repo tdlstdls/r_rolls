@@ -19,7 +19,7 @@
  * - isRerolled: レア被り回避が発生したかどうか
  * - debug: 計算過程のデバッグ情報（s0, s1, charIndex等）
  */
-function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo) {
+function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawInfo, mode = 'table') {
     // 境界チェック：レアリティ判定(s0)とキャラ判定(s1)に最低2つのSEEDが必要
     if (startIndex + 1 >= seeds.length) {
         const errorChar = { name: "データ不足", id: null };
@@ -87,7 +87,7 @@ function rollWithSeedConsumptionFixed(startIndex, gachaConfig, seeds, lastDrawIn
     // 3. レア被り判定と再抽選の実行
     // レアリティが 'rare' の場合のみ、直前の結果と比較して再抽選を行う
     if (currentRarity === 'rare' && typeof checkDuplicateStatus === 'function') {
-        const status = checkDuplicateStatus(String(character.id), lastDrawInfo);
+        const status = checkDuplicateStatus(String(character.id), lastDrawInfo, mode);
         
         if (status.targetToAvoid !== null) {
             isRerolled = true;

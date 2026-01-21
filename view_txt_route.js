@@ -104,7 +104,7 @@ function generateTxtRouteView(seeds, initialSeed, highlightMap, guarHighlightMap
                 finalIdSource: trackStates.lastAction ? String(trackStates.lastAction.charId) : null
             };
 
-            const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
+            const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext, 'sim');
             if (rr.seedsConsumed === 0) break;
 
             const decoratedName = decorateCharNameHtml(rr.charId, rr.rarity, rr.finalChar.name);

@@ -1,5 +1,5 @@
 /** @file logic_duplicate.js @description レア被り判定ロジック */
-function checkDuplicateStatus(currentCharId, lastDrawInfo) {
+function checkDuplicateStatus(currentCharId, lastDrawInfo, mode = 'table') {
     if (!lastDrawInfo) return { targetToAvoid: null, isConsecutiveRerollTarget: false };
 
     const idAboveOriginal = lastDrawInfo.originalIdAbove ? String(lastDrawInfo.originalIdAbove) : null;
@@ -11,9 +11,11 @@ function checkDuplicateStatus(currentCharId, lastDrawInfo) {
         return { targetToAvoid: idSourceFinal, isConsecutiveRerollTarget: isR };
     }
 
-    // 物理的な直上との一致をチェック
-    if (idAboveOriginal && currentCharId === idAboveOriginal) {
-        return { targetToAvoid: idAboveOriginal, isConsecutiveRerollTarget: false };
+    // テーブルモードでは、物理的な直上との一致もチェックする
+    if (mode === 'table') {
+        if (idAboveOriginal && currentCharId === idAboveOriginal) {
+            return { targetToAvoid: idAboveOriginal, isConsecutiveRerollTarget: false };
+        }
     }
 
     return { targetToAvoid: null, isConsecutiveRerollTarget: false };
