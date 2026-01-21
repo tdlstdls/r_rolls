@@ -5606,7 +5606,7 @@ function saveGanttImage() {
 ====================
 FILE: view_table.js
 ====================
-/** @file view_table.js @description ガチャ結果テーブル全体の描画制御（計算過程・ルート整合性検証対応版） */
+/** @file view_table.js @description ガチャ結果テーブル全体の描画制御（表示・検証データ分離対応版） */
 
 const COLOR_ROUTE_HIGHLIGHT = '#aaddff';
 const COLOR_ROUTE_UBER = '#66b2ff';
@@ -5637,14 +5637,15 @@ function generateRollsTable() {
 
         const columnConfigs = prepareColumnConfigs();
         const tableData = executeTableSimulation(numRolls, columnConfigs, seeds);
-        
-        // シミュレーション（ルート）のハイライト判定と最終シードの取得
-        const { highlightMap, guarHighlightMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
+
+        // シミュレーション（ルート）のデータ取得
+        // logicPathMap: Txtモードの不整合チェック用（全経路）
+        // highlightMap / guarHighlightMap: テーブルの背景色用
+        const { highlightMap, guarHighlightMap, logicPathMap, lastSeedValue } = preparePathHighlightMaps(initialSeed, seeds, numRolls);
         finalSeedForUpdate = lastSeedValue;
 
         // --- HTML構築開始 ---
         let finalContainerHtml = '';
-        
         // Find（予報・ターゲット検索）エリアの生成
         if (typeof generateFastForecast === 'function') {
             finalContainerHtml += generateFastForecast(initialSeed, columnConfigs);
@@ -5659,10 +5660,10 @@ function generateRollsTable() {
         }
 
         // --- Txt（テキストルートビュー）モードの表示 ---
-        // highlightMap を渡すことで、経路の不整合チェックを有効化します
+        // logicPathMap を追加で渡すことで、テーブルのハイライトとは独立して経路チェックを行います
         if (isTxtMode && isSimulationMode) {
             if (typeof generateTxtRouteView === 'function') {
-                const txtViewHtml = generateTxtRouteView(seeds, initialSeed, highlightMap);
+                const txtViewHtml = generateTxtRouteView(seeds, initialSeed, highlightMap, guarHighlightMap, logicPathMap);
                 if (!txtViewHtml.includes("ルートが入力されていません")) {
                     finalContainerHtml += txtViewHtml;
                 }
@@ -6244,35 +6245,31 @@ function generateControlHeaderHTML(isInteractive) {
 ====================
 FILE: view_table_highlight.js
 ====================
-/** @file view_table_highlight.js @description シミュレーションモードのルートハイライト計算（確定枠・トラック遷移・物理配置完全同期版） */
+/** @file view_table_highlight.js @description シミュレーションモードのルートハイライト計算（表示・検証分離版） */
 
 /**
- * シミュレーション設定（ルート）に基づき、テーブル上でハイライトすべきセルのマップを作成する
- * @param {number} initialSeed - 開始SEED
+ * シミュレーション設定（ルート）に基づき、テーブル用ハイライトと経路検証用データを生成する
+ * @param {number} initialSeed - 開始前SEED
  * @param {Array} seeds - 乱数シード配列
  * @param {number} numRolls - 表示行数
- * @returns {Object} highlightMap(通常枠用), guarHighlightMap(確定枠用), lastSeedValue(最終SEED)
+ * @returns {Object} highlightMap, guarHighlightMap, logicPathMap, lastSeedValue
  */
 function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
-    const highlightMap = new Map();
-    const guarHighlightMap = new Map();
+    const highlightMap = new Map();     // テーブルの通常枠（緑）用
+    const guarHighlightMap = new Map(); // テーブルの確定枠（青・開始行のみ）用
+    const logicPathMap = new Map();     // Txtモードの経路整合性チェック（全通過点）用
     let lastSeedValue = null;
 
-    // シミュレーションモードでない、またはルートが空の場合は空のマップを返す
-    if (!isSimulationMode) return { highlightMap, guarHighlightMap, lastSeedValue };
-
+    if (!isSimulationMode) return { highlightMap, guarHighlightMap, logicPathMap, lastSeedValue };
     const simConfigEl = document.getElementById('sim-config');
-    if (!simConfigEl || !simConfigEl.value.trim()) return { highlightMap, guarHighlightMap, lastSeedValue };
+    if (!simConfigEl || !simConfigEl.value.trim()) return { highlightMap, guarHighlightMap, logicPathMap, lastSeedValue };
 
-    // Sim設定文字列（例: 1006-5-942-11g）をパースしてセグメント配列を取得
     const simConfigs = parseSimConfig(simConfigEl.value.trim());
     let rngForText = new Xorshift32(initialSeed);
     let currentSeedIndex = 0;
 
-    // 物理的な「直上のセル」の状態をトラック別に保持
     let lastDrawA = null;
     let lastDrawB = null;
-    // 遷移元（直前に実際に引いたロール）の状態
     let lastRollState = null;
 
     for (const sim of simConfigs) {
@@ -6282,7 +6279,6 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
         let normalRolls = sim.rolls;
         let isGuaranteedStep = false;
 
-        // 確定枠設定（11G/15G/7G等）の判定と、通常枠として計算する回数の調整
         if (sim.g) {
             if (sim.rolls === 15) { normalRolls = 14; isGuaranteedStep = true; }
             else if (sim.rolls === 7) { normalRolls = 6; isGuaranteedStep = true; }
@@ -6290,87 +6286,78 @@ function preparePathHighlightMaps(initialSeed, seeds, numRolls) {
             else { normalRolls = Math.max(0, sim.rolls - 1); isGuaranteedStep = true; }
         }
 
-        // --- 1. 通常ロール部分のシミュレーション ---
+        // 連続ロールの「開始インデックス」を保持
+        const segmentStartIdx = currentSeedIndex;
+
+        // 【テーブル表示用】確定枠がある場合、その「開始行」のG列を青く塗るために登録
+        if (isGuaranteedStep && segmentStartIdx < numRolls * 2) {
+            guarHighlightMap.set(segmentStartIdx, sim.id);
+        }
+
+        // --- 1. 通常ロール部分 ---
         for (let k = 0; k < normalRolls; k++) {
             if (currentSeedIndex >= seeds.length) break;
 
             const isTrackB = (currentSeedIndex % 2 !== 0);
-            const canHighlight = currentSeedIndex < numRolls * 2;
+            
+            // 【検証用】通過した全てのインデックスを記録（Txtモードでのエラー防止）
+            logicPathMap.set(currentSeedIndex, sim.id);
 
-            // 物理的な「直上のセル」のキャラIDを特定（logic_duplicate.js でのレア被り判定に必要）
+            // 【テーブル表示用】通常列（A/B）を緑色にするために登録
+            if (currentSeedIndex < numRolls * 2) {
+                highlightMap.set(currentSeedIndex, sim.id);
+            }
+
             const drawAbove = isTrackB ? lastDrawB : lastDrawA;
-
-            // 判定コンテキストの構築
             const drawContext = {
-                // 物理的な直上のID（テーブル上での縦の並び）
                 originalIdAbove: drawAbove ? String(drawAbove.charId) : null,
-                // 実際に直前に引いたID（インデックスの線形的な繋がり）
                 finalIdSource: lastRollState ? String(lastRollState.charId) : null
             };
 
-            // ハイライトマップへの登録（表示範囲内のみ）
-            if (canHighlight) {
-                // 確定枠セグメントの最初の1個目は、ユーザーへの視認性のために確定枠用マップ（guarHighlightMap）に登録
-                if (isGuaranteedStep && k === 0) {
-                    guarHighlightMap.set(currentSeedIndex, sim.id);
-                } else {
-                    highlightMap.set(currentSeedIndex, sim.id);
-                }
-            }
-
-            // ロールの実行（logic_roll_core.js を使用）
             const rr = rollWithSeedConsumptionFixed(currentSeedIndex, config, seeds, drawContext);
             if (rr.seedsConsumed === 0) break;
 
             const resultState = {
                 rarity: rr.rarity,
-                charId: String(rr.charId), // 再抽選後であれば、その後のIDを保持
-                originalCharId: rr.originalChar ? String(rr.originalChar.id) : String(rr.charId),
+                charId: String(rr.charId),
                 trackB: isTrackB
             };
 
-            // 各トラックの物理履歴と、全体の直近アクション状態を更新
             if (isTrackB) lastDrawB = resultState;
             else lastDrawA = resultState;
             lastRollState = resultState;
 
-            // インデックスの線形移動
             const consumed = rr.seedsConsumed;
             currentSeedIndex += consumed;
-
-            // Txtモード等での整合性のため、乱数生成器も同期させる
             for (let x = 0; x < consumed; x++) rngForText.next();
         }
 
-        // --- 2. 確定枠（最後の1回）の処理 ---
+        // --- 2. 確定枠（最後の1回） ---
         if (isGuaranteedStep && currentSeedIndex < seeds.length) {
             const isTrackB = (currentSeedIndex % 2 !== 0);
-            
-            // 確定枠の実行
+
+            // 【検証用】確定枠そのものの位置も記録（Txtモードでのエラー防止）
+            // ※ここでは guarHighlightMap には入れない（入れるとテーブルが光ってしまうため）
+            logicPathMap.set(currentSeedIndex, sim.id);
+
             const gr = rollGuaranteedUber(currentSeedIndex, config, seeds);
-            
             const resultState = { 
                 rarity: 'uber', 
                 charId: String(gr.charId), 
-                originalCharId: String(gr.charId),
                 trackB: isTrackB
             };
 
-            // 状態の更新
             if (isTrackB) lastDrawB = resultState;
             else lastDrawA = resultState;
             lastRollState = resultState;
 
-            // 確定枠は1シード消費
             currentSeedIndex += gr.seedsConsumed;
             for (let x = 0; x < gr.seedsConsumed; x++) rngForText.next();
         }
     }
 
-    // 次のロール開始に使用できるシード値を保持
     lastSeedValue = rngForText.seed;
-
-    return { highlightMap, guarHighlightMap, lastSeedValue };
+    return { highlightMap, guarHighlightMap, logicPathMap, lastSeedValue };
 }
 
 ====================
@@ -6564,7 +6551,7 @@ function generateSeedExplanationHtml() {
 ====================
 FILE: view_txt_route.js
 ====================
-/** @file view_txt_route.js @description 計算ロジック解説テキスト・詳細計算過程ダンプ・消し込み機能版 */
+/** @file view_txt_route.js @description 計算ロジック解説テキスト・詳細計算過程ダンプ・消し込み機能版（経路検証独立化） */
 
 // 計算過程表示モードの状態保持
 let isDetailedLogMode = false;
@@ -6573,10 +6560,12 @@ let isDetailedLogMode = false;
  * 現在のシミュレーションルートを生成して返す
  * @param {Array} seeds - 乱数シード配列
  * @param {number} initialSeed - 開始前シード値
- * @param {Object} highlightMap - テーブル描画時に計算されたハイライト済みインデックスのマップ
+ * @param {Object} highlightMap - 通常枠のハイライト用（テーブル用）
+ * @param {Object} guarHighlightMap - 確定枠のハイライト用（テーブル用）
+ * @param {Object} logicPathMap - 経路整合性チェック用（全通過点）
  * @returns {string} 生成されたHTML文字列
  */
-function generateTxtRouteView(seeds, initialSeed, highlightMap) {
+function generateTxtRouteView(seeds, initialSeed, highlightMap, guarHighlightMap, logicPathMap) {
     const configInput = document.getElementById('sim-config');
     const configValue = configInput ? configInput.value.trim() : "";
 
@@ -6606,10 +6595,11 @@ function generateTxtRouteView(seeds, initialSeed, highlightMap) {
             <div style="background: #fffbe6; border: 1px solid #ffe58f; padding: 12px; margin-bottom: 15px; border-radius: 4px; font-size: 11px; line-height: 1.6; color: #856404;">
                 <div style="font-weight: bold; font-size: 12px; margin-bottom: 5px; border-bottom: 1px solid #ffe58f; padding-bottom: 3px;">📖 ガチャ抽選ロジックの解説</div>
                 <ol style="margin: 0; padding-left: 18px;">
-                    <li><strong>レア度判定:</strong> 対象番地のSEED値を 10000 で割った剰余（余り）を計算し、設定された確率（レア：0～、激レア：N～、超激レア：M～ 等）と比較してレア度を決定します。</li>
-                    <li><strong>キャラ判定:</strong> レア度決定後、<strong>「その次の番地（Index + 1）」</strong>のSEED値を使用します。その値を当該レアリティのキャラ総数（除数）で割った剰余によって、排出キャラが決定されます。</li>
-                    <li><strong>レア被り再抽選:</strong> もし決定したキャラが、直前の同じトラックのキャラ、または直前のアクションと同じだった場合（レア度に関わらず）、さらに<strong>「その次の番地（Index + 2）」</strong>を使って再抽選を行い、同時にトラックが切り替わります。</li>
-                    <li><strong>確定枠:</strong> 11連確定などの最終枠は、レア度判定をスキップし、その番地のSEED値を直接超激レアの総数で割った剰余でキャラを決定し、トラックを切り替えます。</li>
+                    <li><strong>レア度判定:</strong> 対象番地のSEED値を 10000 で割った剰余（余り）を計算し、設定された確率と比較してレア度を決定します。</li>
+                    <li><strong>キャラ判定:</strong> レア度決定後、<strong>「その次の番地（Index + 1）」</strong>のSEED値を使用し、排出キャラが決定されます。</li>
+                    <li><strong>レア被り再抽選:</strong> もし決定したキャラが、直前の同じトラックのキャラ、または直前のアクションと同じだった場合、さらに<strong>「その次の番地（Index + 2）」</strong>を使って再抽選を行い、同時にトラックが切り替わります。</li>
+                    <li><strong>確定枠:</strong> 11連確定などの最終枠は、その番地のSEED値を直接超激レアの総数で割った剰余でキャラを決定し、トラックを切り替えます。</li>
+        
                 </ol>
                 <div style="margin-top: 5px; font-size: 10px; color: #b7811d;">※ 遷移先アドレスは、レア被りが発生すると通常の +1 ではなく +2 以上消費されるため、番地が飛びます。</div>
             </div>
@@ -6649,10 +6639,15 @@ function generateTxtRouteView(seeds, initialSeed, highlightMap) {
             if (currentIdx >= seeds.length) break;
 
             const isTrackB = (currentIdx % 2 !== 0);
-            const isHighlighted = highlightMap && (highlightMap[currentIdx] !== undefined || highlightMap[String(currentIdx)] !== undefined);
+            
+            // 整合性判定: logicPathMap を参照する
+            // Map形式なので .has() で判定
+            const isPathValid = (logicPathMap && (logicPathMap.has(currentIdx) || logicPathMap.has(String(currentIdx))));
+            
             const addr = formatTxtAddress(currentIdx);
             let errorMsg = "";
-            if (!isHighlighted) {
+      
+            if (!isPathValid) {
                 errorMsg = `<span style="background: #ffcccc; color: #d9534f; padding: 0 4px; border-radius: 2px; font-weight: bold; margin-left: 5px; font-size:10px;">[Error: 経路不整合 (Idx:${currentIdx})]</span>`;
             }
 
@@ -6683,10 +6678,14 @@ function generateTxtRouteView(seeds, initialSeed, highlightMap) {
 
         if (isGuaranteed && currentIdx < seeds.length) {
             const isTrackB = (currentIdx % 2 !== 0);
+   
             const gr = rollGuaranteedUber(currentIdx, config, seeds);
             const guaranteedAddr = segmentStartAddr + "G";
-            const isHighlighted = highlightMap && (highlightMap[currentIdx] !== undefined || highlightMap[String(currentIdx)] !== undefined);
-            let errorMsg = !isHighlighted ? `<span style="background: #ffcccc; color: #d9534f; padding: 0 4px; border-radius: 2px; font-weight: bold; margin-left: 5px; font-size:10px;">[Error: 経路不整合 (Idx:${currentIdx})]</span>` : "";
+            
+            // 確定枠の整合性判定も logicPathMap を参照
+            const isPathValid = (logicPathMap && (logicPathMap.has(currentIdx) || logicPathMap.has(String(currentIdx))));
+            
+            let errorMsg = !isPathValid ? `<span style="background: #ffcccc; color: #d9534f; padding: 0 4px; border-radius: 2px; font-weight: bold; margin-left: 5px; font-size:10px;">[Error: 経路不整合 (Idx:${currentIdx})]</span>` : "";
 
             const decoratedName = decorateCharNameHtml(gr.charId, 'uber', gr.finalChar.name);
             let line = `<div style="margin-bottom: 4px;"><span style="color:#d9534f; font-weight:bold;">(確定)</span>  <span style="color:#888;">${guaranteedAddr}</span>  ${decoratedName} <span style="color:#d9534f; font-weight:bold;">（確定）</span>${errorMsg}`;
@@ -6753,6 +6752,17 @@ function generateTxtRouteView(seeds, initialSeed, highlightMap) {
  * 計算過程のHTMLを生成する
  */
 function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed = false) {
+    // `findCatById` がグローバルに公開されていないため、ここでローカルヘルパーを定義する。
+    // `cats.js` 等からグローバルスコープに `cats` 配列が読み込まれていることを期待する。
+    const findCatNameById = (id) => {
+        if (typeof cats !== 'undefined' && Array.isArray(cats)) {
+            // `c.id == id` を使用して、IDの型（数値/文字列）の違いを許容する
+            const cat = cats.find(c => c.id == id);
+            return cat ? cat.name : '不明';
+        }
+        return '不明'; // `cats` 配列が見つからない場合のフォールバック
+    };
+
     const rarityMod = 10000;
     const seedRarity = seeds[idx];
     const rarityRem = seedRarity % rarityMod;
@@ -6768,37 +6778,52 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
     let html = `<div class="detailed-log">`;
     
     if (isGuaranteed) {
-        const pool = config['uber'] || [];
+        const pool = config.pool['uber'] || [];
         const count = pool.length || 1;
         const charRem = seedRarity % count;
+        const charName = rr.finalChar ? rr.finalChar.name : '不明';
+        const charId = rr.charId;
+
         html += `【確定抽選】<br>`;
         html += `SEEDインデックス: <span class="idx-val">${idx}</span> | SEED値: <span class="seed-val">${seedRarity}</span><br>`;
-        html += `除数 (キャラ数): <span>${count}</span> | 剰余: <span>${charRem}</span><br>`;
+        html += `除数 (キャラ数): <span>${count}</span> | 剰余: <span>${charRem}</span> ${charName}[${charId}]<br>`;
+
     } else {
         const rarityKey = poolKeyMap[rr.rarity] || rr.rarity;
-        const pool = config[rarityKey] || [];
+        const pool = config.pool[rarityKey] || [];
         const count = pool.length || 1;
         
         html += `【レア度判定】<br>`;
         html += `SEEDインデックス: <span class="idx-val">${idx}</span> | SEED値: <span class="seed-val">${seedRarity}</span><br>`;
         html += `除数: <span>${rarityMod}</span> | 剰余: <span>${rarityRem}</span> (レア度: <span>${rr.rarity}</span>)<br>`;
-        
         html += `【キャラ抽選】<br>`;
+
         if (rr.isRerolled) {
+            // 1回目の抽選（被り発生）
             const idx1 = idx + 1;
             const seed1 = seeds[idx1];
             const rem1 = seed1 % count;
-            html += `1回目 - SEEDインデックス: <span class="idx-val">${idx1}</span> | SEED値: <span class="seed-val">${seed1}</span> | 剰余: <span>${rem1}</span> (被り発生)<br>`;
+            const firstRollCharId = pool.length > rem1 ? pool[rem1] : null;
+            const firstRollCharName = firstRollCharId !== null ? findCatNameById(firstRollCharId) : '不明';
+            html += `1回目 - SEEDインデックス: <span class="idx-val">${idx1}</span> | SEED値: <span class="seed-val">${seed1}</span> | 剰余: <span>${rem1}</span> (被り発生) ${firstRollCharName}[${firstRollCharId}]<br>`;
             
+            // 再抽選
             const idx2 = idx + 2;
             const seed2 = seeds[idx2];
-            const rem2 = seed2 % count;
-            html += `再抽選 - SEEDインデックス: <span class="idx-val">${idx2}</span> | SEED値: <span class="seed-val">${seed2}</span> | 除数: <span>${count}</span> | 剰余: <span>${rem2}</span><br>`;
+            const rerollDivisor = Math.max(1, count - 1);
+            const rem2 = seed2 % rerollDivisor;
+            const finalCharName = rr.finalChar ? rr.finalChar.name : '不明';
+            const finalCharId = rr.charId;
+            html += `再抽選 - SEEDインデックス: <span class="idx-val">${idx2}</span> | SEED値: <span class="seed-val">${seed2}</span> | 除数: <span>${rerollDivisor}</span> | 剰余: <span>${rem2}</span> ${finalCharName}[${finalCharId}]<br>`;
+        
         } else {
+            // 通常抽選
             const idxChar = idx + 1;
             const seedChar = seeds[idxChar];
             const remChar = seedChar % count;
-            html += `SEEDインデックス: <span class="idx-val">${idxChar}</span> | SEED値: <span class="seed-val">${seedChar}</span> | 除数: <span>${count}</span> | 剰余: <span>${remChar}</span><br>`;
+            const charName = rr.finalChar ? rr.finalChar.name : '不明';
+            const charId = rr.charId;
+            html += `SEEDインデックス: <span class="idx-val">${idxChar}</span> | SEED値: <span class="seed-val">${seedChar}</span> | 除数: <span>${count}</span> | 剰余: <span>${remChar}</span> ${charName}[${charId}]<br>`;
         }
     }
     
@@ -6806,6 +6831,7 @@ function generateDetailedLogHtml(idx, seeds, config, rr, isTrackB, isGuaranteed 
     html += `</div>`;
     return html;
 }
+
 
 /**
  * 計算過程表示モードを切り替えてテーブルを再描画する
@@ -6838,7 +6864,6 @@ function decorateCharNameHtml(charId, rarity, baseName) {
     let style = "font-weight:bold;";
     let prefix = "";
     let suffix = "";
-
     let isTarget = (typeof targetCharIds !== 'undefined' && targetCharIds.includes(cid));
 
     if (rarity === 'legend') {
