@@ -1665,7 +1665,7 @@ function calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds) {
         let tempLastDraw = null;
 
         for (const segment of existingConfigs) {
-            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
+            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds, 'sim');
             
             // ターゲット（クリック箇所）を追い越す設定は除外 [cite: 283]
             if (res.nextIndex > targetSeedIndex) break;
@@ -1705,7 +1705,7 @@ FILE: sim_engine_core.js
  * @param {Array} seeds - 乱数配列
  * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終的なトラック状態
  */
-function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
+function simulateSingleSegment(segment, startIdx, initialStates, seeds, mode = 'sim') {
     let currentIdx = startIdx;
     const config = gachaMasterData.gachas[segment.id];
     
@@ -1748,7 +1748,7 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         };
 
         // ロールの実行
-        const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
+        const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext, mode);
         if (rr.seedsConsumed === 0) break;
 
         // 実行結果を整理
@@ -1961,7 +1961,8 @@ function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simS
                 { id: conf.id, rolls: 1, g: false }, 
                 current.idx, 
                 current.lastDraw, 
-                simSeeds
+                simSeeds,
+                'sim'
             );
 
             // 到達先がターゲットを少し超える程度まで許容

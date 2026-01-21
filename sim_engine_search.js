@@ -131,7 +131,8 @@ function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simS
                 { id: conf.id, rolls: 1, g: false }, 
                 current.idx, 
                 current.lastDraw, 
-                simSeeds
+                simSeeds,
+                'sim'
             );
 
             // 到達先がターゲットを少し超える程度まで許容

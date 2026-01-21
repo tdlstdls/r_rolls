@@ -93,7 +93,7 @@ function calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds) {
         let tempLastDraw = null;
 
         for (const segment of existingConfigs) {
-            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds);
+            const res = simulateSingleSegment(segment, tempIdx, tempLastDraw, simSeeds, 'sim');
             
             // ターゲット（クリック箇所）を追い越す設定は除外 [cite: 283]
             if (res.nextIndex > targetSeedIndex) break;

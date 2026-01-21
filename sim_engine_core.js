@@ -13,7 +13,7 @@
  * @param {Array} seeds - 乱数配列
  * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終的なトラック状態
  */
-function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
+function simulateSingleSegment(segment, startIdx, initialStates, seeds, mode = 'sim') {
     let currentIdx = startIdx;
     const config = gachaMasterData.gachas[segment.id];
     
@@ -56,7 +56,7 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         };
 
         // ロールの実行
-        const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
+        const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext, mode);
         if (rr.seedsConsumed === 0) break;
 
         // 実行結果を整理
