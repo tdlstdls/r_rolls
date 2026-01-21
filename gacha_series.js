@@ -1,4 +1,8 @@
-/** @file gacha_series.js @description 各ガチャシリーズのメタデータ（名称、デフォルトレート、ソート順）の定義 @dependency なし */
+/**
+ * @file gacha_series.js
+ * @description 各ガチャシリーズのメタデータ（名称、レート、ソート順）の定義
+ * @output_data gacha_series (定数配列)
+ */
 
 /**
  * Sortの区分について

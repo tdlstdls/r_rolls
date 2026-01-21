@@ -1,14 +1,19 @@
-/** @file sim_engine_core.js @description 経路探索用の単一セグメント計算（トラック遷移整合性・インデックス線形同期強化版） */
+/**
+ * @file sim_engine_core.js
+ * @description 単一セグメント(11連等)のシミュレーションとトラック遷移(lastA/B)の同期
+ * @managed_state trackStates {lastA, lastB, lastAction} (トラック整合性の維持)
+ * @output_data {nextIndex, trackStates}
+ */
 
 /**
- * 単一のガチャセグメント（例：ガチャID:1006で11回回す）をシミュレートする
- * @param {Object} segment - {id, rolls, g} の形式のセグメント情報
- * @param {number} startIdx - 開始SEEDインデックス
- * @param {Object} initialStates - 前のセグメントから引き継いだ状態
- * @param {Array} seeds - 乱数シード配列
- * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終状態
+ * 単一のガチャセグメント（例：11回連続で引く）をシミュレートし、終了時の状態を返す
+ * @param {Object} segment - アクション情報 {id, rolls, g}
+ * @param {number} startIdx - このセグメントの開始SEEDインデックス
+ * @param {Object|null} initialStates - 前のセグメントから引き継ぐ状態 {lastA, lastB, lastAction}
+ * @param {Array} seeds - 乱数配列
+ * @returns {Object} {nextIndex, trackStates} 次の開始地点と最終的なトラック状態
  */
-function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
+function simulateSingleSegment(segment, startIdx, initialStates, seeds, mode = 'sim') {
     let currentIdx = startIdx;
     const config = gachaMasterData.gachas[segment.id];
     
@@ -51,7 +56,7 @@ function simulateSingleSegment(segment, startIdx, initialStates, seeds) {
         };
 
         // ロールの実行
-        const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext);
+        const rr = rollWithSeedConsumptionFixed(currentIdx, config, seeds, drawContext, mode);
         if (rr.seedsConsumed === 0) break;
 
         // 実行結果を整理

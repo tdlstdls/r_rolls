@@ -1,4 +1,11 @@
-/** @file data_loader.js @description 外部データ（CSV/TSV）の非同期取得とマスタデータの構築を担当 @dependency cats.js, gacha_series.js */
+/**
+ * @file data_loader.js
+ * @description 外部リソース(CSV/TSV)の非同期取得とgachaMasterDataの構築を担当
+ * @input_data GatyaDataSetR1.csv, GatyaData_Option_SetR.tsv, gatya.tsv
+ * @managed_state gachaMasterData (マスタ全体), loadedTsvContent (スケジュール生データ)
+ * @output_data gachaMasterData.cats, gachaMasterData.gachas
+ * @dependency cats.js, gacha_series.js
+ */
 
 /**
  * [gatya.tsv Data Structure Memo]

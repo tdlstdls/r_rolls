@@ -1,4 +1,8 @@
-/** @file main.js @description アプリのエントリーポイント（初期化フロー統合版） */
+/**
+ * @file main.js
+ * @description エントリーポイント。初期化フロー（概要・データロード・URL・UI構築）の制御
+ * @dependency data_loader.js, url_manager.js, ui_mode_logic.js, ui_schedule_handler.js
+ */
 
 /**
  * ==============================================================================

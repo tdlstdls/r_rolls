@@ -1,5 +1,8 @@
 /** @file ui_mode_logic.js @description アプリの初期化とモード切替（Sim/skd/概要/Txt）の管理 */
 
+/**
+ * アプリ起動時のデフォルトガチャ設定の初期化
+ */
 function initializeDefaultGachas() {
     if (typeof prepareScheduleInfo === 'function') {
         prepareScheduleInfo();
@@ -15,12 +18,15 @@ function initializeDefaultGachas() {
                     if (typeof isPlatinumOrLegend === 'function' && isPlatinumOrLegend(item)) return false;
                     const startDt = parseDateTime(item.rawStart, item.startTime);
                     const endDt = parseDateTime(item.rawEnd, item.endTime);
+              
                     return now >= startDt && now <= endDt;
                 });
+
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
                         let newId = gacha.id.toString();
                         if (gacha.guaranteed) newId += 'g';
+                   
                         tableGachaIds.push(newId);
                         uberAdditionCounts.push(0); 
                     });
@@ -62,32 +68,56 @@ function initializeDefaultGachas() {
     }
 }
 
+/**
+ * モード変更時の共通処理
+ */
 function onModeChange() {
     updateModeButtonState();
     refreshModeView();
 }
 
+/**
+ * Sim（シミュレーション）モードの切り替え
+ */
 function toggleAppMode() {
     isSimulationMode = !isSimulationMode;
+    // SimモードがOFFになったらTxtモードも自動的にOFFにする
+    if (!isSimulationMode) {
+        isTxtMode = false;
+    }
     onModeChange();
 }
 
+/**
+ * Txt（テキストルート表示）モードの切り替え
+ */
 function toggleTxtMode() {
+    // SimモードがONの時のみ動作させる
+    if (!isSimulationMode) {
+        alert("Txt表示を利用するには、まずSimモードをONにしてください。");
+        return;
+    }
     isTxtMode = !isTxtMode;
     onModeChange();
 }
 
+/**
+ * 各モード切替ボタンの見た目（Active状態）と関連ボタンの表示を更新
+ */
 function updateModeButtonState() {
+    // Simボタン
     const btnSim = document.getElementById('mode-toggle-btn');
     if (btnSim) {
         if (isSimulationMode) btnSim.classList.add('active');
         else btnSim.classList.remove('active');
     }
     
+    // Txtボタンとコピーボタン
     const btnTxt = document.getElementById('toggle-txt-btn');
     const btnCopy = document.getElementById('copy-txt-btn');
+    
     if (btnTxt) {
-        if (isTxtMode) {
+        if (isTxtMode && isSimulationMode) {
             btnTxt.classList.add('active');
             if (btnCopy) btnCopy.classList.remove('hidden');
         } else {
@@ -97,18 +127,26 @@ function updateModeButtonState() {
     }
 }
 
+/**
+ * モードに応じたコントロールエリアの表示制御とテーブル再描画
+ */
 function refreshModeView() {
     const simWrapper = document.getElementById('sim-control-wrapper');
     if (simWrapper) {
+        // スケジュールモードや概要モードでない、かつSimモードが有効な場合のみ表示
         if (isSimulationMode && !isScheduleMode && !isDescriptionMode) {
             simWrapper.classList.remove('hidden');
         } else {
             simWrapper.classList.add('hidden');
         }
     }
+    // テーブルの再生成を実行してTxtビューの表示有無を反映させる
     resetAndGenerateTable();
 }
 
+/**
+ * 概要（使い方ガイド）表示の切り替え
+ */
 function toggleDescription() {
     const content = document.getElementById('description-content');
     const toggle = document.getElementById('toggle-description');

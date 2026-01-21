@@ -1,8 +1,22 @@
-/** @file sim_engine_search.js @description ビームサーチによる経路探索アルゴリズム（インデックス線形同期・状態遷移完全整合版） */
+/**
+ * @file sim_engine_search.js
+ * @description ビームサーチによる目的セルへの最短・最適経路探索
+ * @input_data targetIdx, targetGachaId, usableConfigs, maxPlat, maxGuar
+ * @output_data path (最短アクション配列)
+ */
 
 /**
- * ビームサーチ本体
- * インデックスの線形的な進展とレア被りによるトラック遷移を考慮し、ターゲットへ正確に到達する経路を探索します。
+ * ビームサーチを用いて目標インデックスまでのアクション経路を探索する
+ * @param {number} startIdx - 探索を開始する現在のSEEDインデックス
+ * @param {number} targetIdx - 到達目標とするSEEDインデックス
+ * @param {string} targetGachaId - 目標セルで使用するガチャID
+ * @param {Array} configs - 探索中に利用可能なガチャ設定の配列
+ * @param {Array} simSeeds - シミュレーション用乱数配列
+ * @param {Object} initialLastDraw - 開始地点でのトラック状態
+ * @param {string|null} primaryTargetId - 優先して発見したい特定のキャラID
+ * @param {number} maxPlat - 使用を許可するプラチナチケットの最大数
+ * @param {number} maxGuar - 使用を許可する確定11連の最大数
+ * @returns {Array|null} アクションオブジェクトの配列。見つからない場合はnull
  */
 function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
     const BEAM_WIDTH = 25;
@@ -11,9 +25,6 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
     // ターゲットガチャを評価の優先順位に反映するためソート
     const sortedConfigs = [...configs].sort((a, b) => (a._fullId == targetGachaId ? -1 : 1));
 
-    // 探索候補の初期化
-    // idx: 現在のSEEDインデックス
-    // lastDraw: 前のステップからのトラック状態（lastA, lastB, lastAction）を保持
     let candidates = [{ 
         idx: startIdx, 
         path: [], 
@@ -27,30 +38,43 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
 
     while (candidates.length > 0 && loopCount < MAX_STEPS) {
         loopCount++;
+        console.group(`[findPathBeamSearch] Loop ${loopCount}`);
+        console.log(`Current candidates: ${candidates.length}`, candidates.map(c => `idx:${c.idx} score:${c.score.toFixed(0)}`));
+
         let nextCandidates = [];
 
         for (const current of candidates) {
             // ターゲットインデックスにピッタリ到達したかチェック
-            // インデックスが一致すれば、SEEDの消費履歴とトラック状態が物理テーブルと完全に同期していることを意味します
             if (current.idx === targetIdx) {
+                console.log(`%c[findPathBeamSearch] Success: Exact match found at index ${targetIdx}`, 'color: #28a745; font-weight: bold;');
+                console.groupEnd();
                 return current.path;
             }
 
-            // 次の候補を展開（1回引く、または確定11連を試行）
+            // 次の候補を展開
             const expanded = expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId);
             nextCandidates.push(...expanded);
         }
 
-        if (nextCandidates.length === 0) break;
+        if (nextCandidates.length === 0) {
+            console.warn('[findPathBeamSearch] Terminated: No next candidates could be generated.');
+            console.groupEnd();
+            break;
+        }
+        console.log(`Generated ${nextCandidates.length} next candidates.`);
 
-        // スコア順にソート（目標への近さ、レアキャラ発見、ガチャの継続性などを評価）
+        // スコア順にソート
         nextCandidates.sort((a, b) => b.score - a.score);
 
-        // 同一インデックスかつ同一状態の重複を除去して効率化
+        // 同一インデックスかつ同一状態の重複を除去
         const uniqueCandidates = filterUniqueCandidates(nextCandidates);
-
-        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残すことで、
-        // 片方のトラックで探索が詰まる（デッドエンド）を防止します
+        console.log(`Reduced to ${uniqueCandidates.length} unique candidates.`);
+        if (uniqueCandidates.length > 0) {
+            const scoreRange = `min: ${uniqueCandidates[uniqueCandidates.length - 1].score.toFixed(0)}, max: ${uniqueCandidates[0].score.toFixed(0)}`;
+            console.log(`Unique candidate score range: ${scoreRange}`);
+        }
+        
+        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残す
         const trackA = uniqueCandidates.filter(c => c.idx % 2 === 0);
         const trackB = uniqueCandidates.filter(c => c.idx % 2 !== 0);
         
@@ -59,8 +83,27 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
         const bestB = trackB.slice(0, halfBeam);
         
         candidates = [...bestA, ...bestB].sort((a, b) => b.score - a.score).slice(0, BEAM_WIDTH);
+        
+        console.log(`Pruned to ${candidates.length} candidates for next loop (A: ${bestA.length}, B: ${bestB.length})`);
+        console.groupEnd();
     }
     
+    if (loopCount >= MAX_STEPS) {
+        console.warn(`[findPathBeamSearch] Terminated: Reached MAX_STEPS (${MAX_STEPS}).`);
+    }
+
+    // --- ループ終了: 完全一致する経路が見つからなかった場合のフォールバック ---
+    console.log('[findPathBeamSearch] No exact match found. Looking for best overshooting candidate...');
+    const validOvershoots = candidates.filter(c => c.idx >= targetIdx);
+
+    if (validOvershoots.length > 0) {
+        validOvershoots.sort((a, b) => a.idx - b.idx);
+        const bestFit = validOvershoots[0];
+        console.log(`%c[findPathBeamSearch] Fallback success: Found overshooting path. Target=${targetIdx}, Found=${bestFit.idx}`, 'color: #e67e22; font-weight: bold;');
+        return bestFit.path;
+    }
+
+    console.error('[findPathBeamSearch] Fallback failed: No candidate reached or passed the target index.');
     return null; // 経路が見つからなかった場合
 }
 
@@ -69,9 +112,10 @@ function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeed
  */
 function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId) {
     const results = [];
+    const OVERSHOOT_ALLOWANCE = 10;
     const distToTarget = targetIdx - current.idx;
     
-    if (distToTarget < 0) return results;
+    if (distToTarget < -OVERSHOOT_ALLOWANCE) return results;
 
     const lastGachaId = current.path.length > 0 ? current.path[current.path.length - 1].id : null;
 
@@ -87,11 +131,12 @@ function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simS
                 { id: conf.id, rolls: 1, g: false }, 
                 current.idx, 
                 current.lastDraw, 
-                simSeeds
+                simSeeds,
+                'sim'
             );
 
-            // 到達先がターゲットを超えない場合に候補として採用
-            if (segResult.nextIndex <= targetIdx) {
+            // 到達先がターゲットを少し超える程度まで許容
+            if (segResult.nextIndex <= targetIdx + OVERSHOOT_ALLOWANCE) {
                 // 今回のロール結果（lastAction）を取得
                 const rollInfo = segResult.trackStates.lastAction;
                 
@@ -117,7 +162,7 @@ function expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simS
                 simSeeds
             );
 
-            if (segResult.nextIndex <= targetIdx) {
+            if (segResult.nextIndex <= targetIdx + OVERSHOOT_ALLOWANCE) {
                 results.push({ 
                     idx: segResult.nextIndex, 
                     path: [...current.path, { id: conf.id, rolls: 11, g: true, fullId: conf._fullId }], 

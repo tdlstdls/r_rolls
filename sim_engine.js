@@ -5,11 +5,13 @@
  * 指定されたセル（targetSeedIndex）までの最短または最適な経路を計算します。
  */
 function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null, primaryTargetId = null) {
-    const simSeeds = generateSeedsForSim(targetSeedIndex);
-    // 現在のルート設定を考慮した、有効な開始地点を計算
-    const { startIdx, initialLastDraw, baseConfigStr } = calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds);
+    console.log(`%c[calculateRouteToCell] Start: target=${targetSeedIndex}, config="${currentConfigStr}"`, 'color: #007bff; font-weight: bold;');
+
+    const simSeeds = generateSeedsForSim(targetSeedIndex + 500); // 探索の余裕分を増やす
     
-    // 現在テーブルに表示されている（利用可能な）ガチャ設定のリストを作成
+    const { startIdx, initialLastDraw, baseConfigStr } = calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds);
+    console.log(`[calculateRouteToCell] Initial state: startIdx=${startIdx}`, { initialLastDraw, baseConfigStr });
+    
     const usableConfigs = visibleGachaIds.map(idStr => {
         const id = idStr.replace(/[gfs]$/, '');
         const config = gachaMasterData.gachas[id] || null;
@@ -17,29 +19,73 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         return config;
     }).filter(c => c !== null);
     
-    if (usableConfigs.length === 0) return null;
+    if (usableConfigs.length === 0) {
+        console.error("[calculateRouteToCell] No usable gacha configs found.");
+        return null;
+    }
 
-    // UIのMax設定（プラチナチケット・確定枠の使用回数上限）を取得
     const maxPlat = parseInt(document.getElementById('sim-max-plat')?.value || 0, 10);
     const maxGuar = parseInt(document.getElementById('sim-max-guar')?.value || 0, 10);
     
-    // ビームサーチの実行（段階的に制限を緩和して探索）
+    console.log(`[calculateRouteToCell] Calling findPathBeamSearch with: start=${startIdx}, target=${targetSeedIndex}`);
     let route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, 0);
-    if (!route && maxGuar > 0) route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, maxGuar);
-    if (!route && maxPlat > 0) route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar);
-    
-    if (route) {
-        // 探索成功時、目的のセルでのアクションを追加して経路を完結させる
-        if (finalActionOverride) {
-            route.push(finalActionOverride);
-        } else {
-            // 通常セルの場合は1回引くアクション。表示上の整合性のために fullId を保持
-            const baseId = targetGachaId.replace(/[gfs]$/, "");
-            route.push({ id: baseId, rolls: 1, fullId: targetGachaId, g: false });
-        }
-        // 固定済みルートと新ルートを結合し、重複を圧縮して返す
-        return (baseConfigStr ? baseConfigStr + " " : "") + compressRoute(route);
+    if (!route && maxGuar > 0) {
+        console.log('[calculateRouteToCell] Retrying with maxGuar=' + maxGuar);
+        route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, maxGuar);
     }
+    if (!route && maxPlat > 0) {
+        console.log('[calculateRouteToCell] Retrying with maxPlat=' + maxPlat);
+        route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar);
+    }
+    
+    console.log('[calculateRouteToCell] findPathBeamSearch returned:', route ? `Route with ${route.length} segments` : 'null', route);
+
+    if (route) {
+        // findPathBeamSearchが返した完全な経路を元に、最終ステップを安全に差し替える
+        let finalRoute = [...route];
+
+        // 確定枠指定のクリックなど、特別なオーバーライドがない場合
+        if (!finalActionOverride) {
+            const pathToLastStep = [...route];
+            if (pathToLastStep.length > 0) {
+                pathToLastStep.pop(); // 最後のステップを一旦取り除く
+
+                // 最終ステップの手前までの状態を正確に再計算する
+                let lastStateIdx = startIdx;
+                let lastStateDraw = initialLastDraw;
+                for (const segment of pathToLastStep) {
+                    const res = simulateSingleSegment(segment, lastStateIdx, lastStateDraw, simSeeds);
+                    lastStateIdx = res.nextIndex;
+                    lastStateDraw = res.lastDraw;
+                }
+
+                // 正しい最終アクションを準備
+                const finalSegment = {
+                    id: targetGachaId.replace(/[gfs]$/, ""),
+                    rolls: 1,
+                    fullId: targetGachaId,
+                    g: false
+                };
+                
+                // 再計算した状態から最終アクションを実行した経路を最終版とする
+                finalRoute = [...pathToLastStep, finalSegment];
+            } else {
+                 // ルートが空（開始地点がゴール）の場合
+                const baseId = targetGachaId.replace(/[gfs]$/, "");
+                finalRoute = [{ id: baseId, rolls: 1, fullId: targetGachaId, g: false }];
+            }
+        } else {
+             // 確定枠オーバーライドがある場合は、単純に末尾に追加する
+             finalRoute.push(finalActionOverride);
+        }
+        
+        const finalCompressedRoute = (baseConfigStr ? baseConfigStr + " " : "") + compressRoute(finalRoute);
+        console.log('%c[calculateRouteToCell] Success: Final route built.', 'color: #28a745; font-weight: bold;', { finalRoute, finalCompressedRoute });
+
+        return finalCompressedRoute;
+    }
+
+    console.error('[calculateRouteToCell] Failed to find any valid route.');
     return null;
 }
 

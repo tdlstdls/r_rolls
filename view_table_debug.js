@@ -1,68 +1,97 @@
-/** @file view_table_debug.js @description デバッグログ表示機能 */
-
-let gLongPressTimer = null;
+/** @file view_table_debug.js @description 確定枠算出過程の詳細表示（デバッグログ）を担当 */
 
 /**
- * [cite_start]デバッグモーダルの初期化 [cite: 1026-1029]
+ * 確定11連などの計算過程をモーダルで表示する
  */
-function initDebugModal() {
-    if (document.getElementById('debug-modal')) return;
-    const modal = document.createElement('div');
-    modal.id = 'debug-modal';
-    modal.style = "display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); overflow:auto;";
-    modal.innerHTML = `
-        <div style="background:#fff; margin:5% auto; padding:20px; width:95%; max-width:800px; border-radius:8px; font-family:monospace; position:relative; box-shadow:0 4px 15px rgba(0,0,0,0.5);">
-            <span onclick="this.parentElement.parentElement.style.display='none'" style="position:absolute; right:15px; top:5px; cursor:pointer; font-size:30px; font-weight:bold;">&times;</span>
-            <h3 id="debug-title" style="margin-top:0;">11G Calculation Debug Log</h3>
-            <div id="debug-content" style="overflow-x:auto;"></div>
-        </div>`;
-    document.body.appendChild(modal);
+function showDebugLog(seedIdx, colIdx, isAlt = false) {
+    const rowData = tableData[seedIdx];
+    const cell = rowData?.cells?.[colIdx];
+    if (!cell || !cell.sequential) return;
+
+    const seq = cell.sequential;
+    const config = gachaMasterData.gachas[tableGachaIds[colIdx].replace(/[gfs]$/, '')];
+
+    let html = `<div style="font-family:monospace; font-size:11px; max-width:600px;">
+        <h3 style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:5px;">確定枠算出過程 [${isAlt ? 'Alt Route' : 'Main Route'}]</h3>
+        <p>開始SEED: ${seq.debugLog[0]?.startIndex || '不明'}</p>
+        <div style="max-height:400px; overflow-y:auto; background:#f9f9f9; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead style="background:#eee; position:sticky; top:0;">
+                    <tr>
+                        <th style="padding:4px; border:1px solid #ccc;">回</th>
+                        <th style="padding:4px; border:1px solid #ccc;">INDEX</th>
+                        <th style="padding:4px; border:1px solid #ccc;">判定値</th>
+                        <th style="padding:4px; border:1px solid #ccc;">キャラ[ID, SLOT]</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    seq.debugLog.forEach((log, i) => {
+        const isGuaranteed = log.step.includes('Guaranteed');
+        const bgColor = isGuaranteed ? '#fff3cd' : '#fff';
+        
+        // キャラクター情報の取得を強化
+        let charName = "不明";
+        let charId = "?";
+        let slotInfo = log.charIndex !== undefined ? log.charIndex : "?";
+
+        if (log.finalChar) {
+            charName = log.finalChar.name || "不明";
+            charId = log.finalChar.id || "?";
+        }
+
+        // マスターデータからの名前補完（IDがわかっている場合）
+        if (charName === "不明" && charId !== "?") {
+            const masterCat = gachaMasterData.cats[charId];
+            if (masterCat) charName = masterCat.name;
+        }
+
+        const stepLabel = isGuaranteed ? "確定" : (i + 1);
+        const seedValue = log.seedValue !== undefined ? log.seedValue : (log.s0 || "-");
+        const rarityDisp = log.rarity ? `(${log.rarity})` : "";
+
+        html += `<tr style="background:${bgColor};">
+            <td style="padding:4px; border:1px solid #ccc; text-align:center;">${stepLabel}</td>
+            <td style="padding:4px; border:1px solid #ccc; text-align:center;">${log.startIndex}</td>
+            <td style="padding:4px; border:1px solid #ccc; text-align:center;">${seedValue}${rarityDisp}</td>
+            <td style="padding:4px; border:1px solid #ccc;">
+                ${charName} <span style="color:#666; font-size:10px;">[ID:${charId}, SLOT:${slotInfo}]</span>
+            </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>
+        <div style="margin-top:10px; padding:8px; background:#e2f3ff; border-radius:4px; font-weight:bold;">
+            最終排出: ${seq.name} (ID: ${seq.charId})
+        </div>
+        <button onclick="closeModal()" style="width:100%; margin-top:10px; padding:8px;">閉じる</button>
+    </div>`;
+
+    showModal(html);
 }
 
 /**
- * [cite_start]長押しタイマー開始 [cite: 1030]
+ * 連続算出結果（sequential）のサマリーテキストを生成する
+ * ツールチップ表示等で使用
  */
-window.start11GTimer = function(seedIdx, colIdx, isAlt) {
-    if (!showSeedColumns) return;
-    window.clear11GTimer();
-    gLongPressTimer = setTimeout(() => { 
-        showDebugLog(seedIdx, colIdx, isAlt); 
-        gLongPressTimer = null; 
-    }, 800);
-};
-
-/**
- * [cite_start]長押しタイマークリア [cite: 1031]
- */
-window.clear11GTimer = function() {
-    if (gLongPressTimer) { 
-        clearTimeout(gLongPressTimer); 
-        gLongPressTimer = null; 
-    }
-};
-
-/**
- * [cite_start]詳細デバッグログの表示 [cite: 1032-1036]
- */
-window.showDebugLog = function(seedIndex, colIndex, isAlt) {
-    if (!showSeedColumns || !currentTableData) return;
-    const cellData = currentTableData[seedIndex][colIndex];
-    const data = isAlt ? cellData.alternativeGuaranteed : cellData.guaranteed;
-    if (!data || !data.debugLog) return;
+function getSequentialSummary(seq) {
+    if (!seq || !seq.normalRollsResults) return "";
     
-    document.getElementById('debug-title').innerText = isAlt ? "回避ルート詳細ログ" : "通常ルート詳細ログ";
-    
-    let logHtml = `<table border="1" style="width:100%; border-collapse:collapse; background:#fff; font-size:11px;">
-        <tr style="background:#eee; position:sticky; top:0;">
-            <th>Step</th><th>SEED</th><th>排出キャラ</th><th>判定詳細</th>
-        </tr>`;
-        
-    data.debugLog.forEach(log => {
-        let rerollTxt = "-";
-        if (log.isRerolled) rerollTxt = `<span style="color:red;">被り回避</span><br>前回ID:${log.rerollProcess.prevId}を回避`;
-        logHtml += `<tr><td>${log.step}</td><td>${log.s1 || log.seedValue}</td><td>${log.finalChar.name} (ID:${log.finalChar.id})</td><td>${rerollTxt}</td></tr>`;
+    let summary = "1-10回目内容:\n";
+    seq.normalRollsResults.forEach((r, i) => {
+        const name = r.finalChar?.name || "データ不足";
+        summary += `${i+1}: ${name}\n`;
     });
-    
-    document.getElementById('debug-content').innerHTML = logHtml + "</table>";
-    document.getElementById('debug-modal').style.display = 'block';
-};
+    summary += `\n確定枠: ${seq.name}`;
+    return summary;
+}
+
+/**
+ * モーダル内でのスクロール追跡などの補助機能が必要な場合はここに追加
+ */
+window.addEventListener('resize', () => {
+    const modal = document.getElementById('common-modal');
+    if (modal && modal.style.display === 'block') {
+        // 必要に応じてリサイズ処理
+    }
+});
