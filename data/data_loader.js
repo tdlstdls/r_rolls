@@ -40,9 +40,9 @@ async function loadAllData() {
     // 2. マスタデータ (CSV/TSV) の取得と構築
     try {
         const [csvRes, tsvRes, gatyaRes] = await Promise.all([
-            fetch('GatyaDataSetR1.csv'),
-            fetch('GatyaData_Option_SetR.tsv'),
-            fetch('gatya.tsv') // スケジュールデータもここで取得
+            fetch('data/GatyaDataSetR1.csv'),
+            fetch('data/GatyaData_Option_SetR.tsv'),
+            fetch('data/gatya.tsv') // スケジュールデータもここで取得
         ]);
         if (!csvRes.ok) throw new Error("GatyaDataSetR1.csv fetch failed");
         if (!tsvRes.ok) throw new Error("GatyaData_Option_SetR.tsv fetch failed");
