@@ -5,6 +5,7 @@ Get-ChildItem -Include *.html,*.css,*.js -Recurse | ForEach-Object { "==========
 Get-ChildItem -Include *.html,*.css,*.js -Exclude cats.js -Recurse | ForEach-Object { "===================="; "FILE: $($_.Name)"; "===================="; Get-Content $_.FullName -Encoding UTF8; "" } | Out-File combined_code.txt -Encoding UTF8
 
 
+https://github.com/tdlstdls/r_rolls
 
 
 そのままVSCODEに全文を貼り付けて上書きし、ご回答の内容を反映したいので以下のファイルのコード全文（省略なし）を記述してください

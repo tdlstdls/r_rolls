@@ -19,6 +19,7 @@
  * * ・11列目以降 (Idx 10~): ガチャ情報ブロック (15列/ブロック の繰り返し)
  * ブロック開始インデックスを i (10, 25, 40...) とすると:
  * i+0  : ガチャID (Gacha ID)
+ * i+3  : ステップアップフラグ (4=ステップアップ)
  * i+6  : レアレート (Rare Rate)
  * i+8  : 激レアレート (Super Rare Rate)
  * i+10 : 超激レアレート (Uber Rare Rate)
@@ -33,47 +34,92 @@ let loadedTsvContent = null; // スケジュールデータ (gatya.tsv)
 
 // 全データのロードと構築を行うメイン関数
 async function loadAllData() {
-    console.log("Loading data...");
-    // 1. キャラクターデータ (cats.js) の処理
+    console.log("Loading data with remote check...");
     processCatsData();
 
-    // 2. マスタデータ (CSV/TSV) の取得と構築
+    const REMOTE_URL = 'https://bc-event.vercel.app/token/gatya.tsv';
+
     try {
-        const [csvRes, tsvRes, gatyaRes] = await Promise.all([
+        // 1. ローカルファイルと外部ファイルを並列で取得
+        // 外部取得に失敗してもアプリが止まらないよう、.catch() でエラーを処理します
+        const [csvRes, tsvRes, localGatyaRes, remoteGatyaRes] = await Promise.all([
             fetch('data/GatyaDataSetR1.csv'),
             fetch('data/GatyaData_Option_SetR.tsv'),
-            fetch('data/gatya.tsv') // スケジュールデータもここで取得
+            fetch('data/gatya.tsv'),
+            fetch(REMOTE_URL).catch(e => {
+                console.warn("External gatya.tsv fetch failed (CORS or Network error):", e);
+                return { ok: false };
+            })
         ]);
-        if (!csvRes.ok) throw new Error("GatyaDataSetR1.csv fetch failed");
-        if (!tsvRes.ok) throw new Error("GatyaData_Option_SetR.tsv fetch failed");
-        
+
+        if (!csvRes.ok || !tsvRes.ok) throw new Error("Master CSV/TSV fetch failed");
+
         const csvText = await csvRes.text();
         const tsvText = await tsvRes.text();
-        let gatyaTsvText = null;
+
+        // 2. ガチャ日程データの比較と選別
+        let localGatyaText = localGatyaRes.ok ? await localGatyaRes.text() : null;
+        let remoteGatyaText = remoteGatyaRes.ok ? await remoteGatyaRes.text() : null;
         
-        if (gatyaRes.ok) {
-            gatyaTsvText = await gatyaRes.text();
-            loadedTsvContent = gatyaTsvText;
-            console.log("gatya.tsv loaded successfully.");
-        } else {
-            console.warn("gatya.tsv not found.");
+        // どちらを採用するか決定する
+        let selectedGatyaText = localGatyaText;
+
+        if (remoteGatyaText) {
+            const localMax = getLatestStartDate(localGatyaText);
+            const remoteMax = getLatestStartDate(remoteGatyaText);
+
+            console.log(`Date comparison - Local Max: ${localMax}, Remote Max: ${remoteMax}`);
+
+            if (remoteMax > localMax) {
+                console.log("Remote gatya.tsv contains newer schedules. Using remote.");
+                selectedGatyaText = remoteGatyaText;
+            } else {
+                console.log("Local gatya.tsv is up-to-date or newer.");
+            }
         }
 
-        // マスタデータの構築
+        // 採用されたデータをグローバル変数に保持
+        loadedTsvContent = selectedGatyaText;
+
+        // 3. マスタデータの構築
         const gachasMaster = buildGachaMaster(gachaMasterData.cats, csvText, tsvText);
-        // gatya.tsv から正確なレート情報を反映
-        if (gatyaTsvText) {
-            applyTsvRates(gachasMaster, gatyaTsvText);
+        
+        // 選別されたデータからレート情報を反映
+        if (selectedGatyaText) {
+            applyTsvRates(gachasMaster, selectedGatyaText);
         }
 
         gachaMasterData.gachas = gachasMaster;
-        
         console.log("Master Data Built:", Object.keys(gachasMaster).length, "gachas loaded.");
         return true;
+
     } catch (e) {
         console.error("Critical Data Load Error:", e);
         return false;
     }
+}
+
+/**
+ * TSVテキスト内から最新の開始日(YYYYMMDD)を抽出するヘルパー関数
+ * @param {string} tsvText 
+ * @returns {number} 
+ */
+function getLatestStartDate(tsvText) {
+    if (!tsvText) return 0;
+    const lines = tsvText.split('\n');
+    let maxDate = 0;
+    for (const line of lines) {
+        if (line.trim().startsWith('[') || !line.trim()) continue;
+        const cols = line.split('\t');
+        if (cols.length > 0) {
+            const date = parseInt(cols[0]);
+            // 「永続(20300101)」は比較対象から除外し、純粋なスケジュール更新を判定
+            if (!isNaN(date) && date < 20300101) {
+                if (date > maxDate) maxDate = date;
+            }
+        }
+    }
+    return maxDate;
 }
 
 // cats.js のデータを gachaMasterData.cats に変換
@@ -162,7 +208,8 @@ function buildGachaMaster(catsMaster, csvText, tsvText) {
             pool: pool,
             sort: seriesInfo.sort || 999,
             series_id: seriesID,
-            guaranteed: false // デフォルトはfalse
+            guaranteed: false, // デフォルトはfalse
+            stepUp: false      // デフォルトはfalse
         };
     });
 
@@ -187,8 +234,15 @@ function applyTsvRates(gachasMaster, tsvContent) {
             if (isNaN(gachaId) || gachaId < 0) continue;
 
             const isGuaranteed = cols[i + 11] === '1';
-            // 確定フラグがある場合はID末尾に'g'を付けた別エントリとして保持する
-            const storageId = isGuaranteed ? `${gachaId}g` : `${gachaId}`;
+            const isStepUp = cols[i + 3] === '4';
+            
+            // IDを決定する (確定 > ステップアップ > 通常)
+            let storageId = `${gachaId}`;
+            if (isGuaranteed) {
+                storageId = `${gachaId}g`;
+            } else if (isStepUp) {
+                storageId = `${gachaId}f`;
+            }
 
             const rateRare = parseInt(cols[i + 6]) || 0;
             const rateSupa = parseInt(cols[i + 8]) || 0;
@@ -196,7 +250,7 @@ function applyTsvRates(gachasMaster, tsvContent) {
             const rateLegend = parseInt(cols[i + 12]) || 0;
 
             if (gachasMaster[gachaId]) {
-                // 元のデータをコピーして新しい設定を適用
+                // 元のデータをディープコピーして新しい設定を適用
                 gachasMaster[storageId] = JSON.parse(JSON.stringify(gachasMaster[gachaId]));
                 gachasMaster[storageId].id = storageId.toString();
                 gachasMaster[storageId].rarity_rates = {
@@ -205,11 +259,16 @@ function applyTsvRates(gachasMaster, tsvContent) {
                     uber: rateUber,
                     legend: rateLegend
                 };
-                gachasMaster[storageId].guaranteed = isGuaranteed;
                 
-                // 確定名称の付与
+                // フラグと名称を設定
+                gachasMaster[storageId].guaranteed = isGuaranteed;
+                gachasMaster[storageId].stepUp = isStepUp;
+                
                 if (isGuaranteed && !gachasMaster[storageId].name.includes("確定")) {
                     gachasMaster[storageId].name += " [確定]";
+                }
+                if (isStepUp && !gachasMaster[storageId].name.includes("StepUp")) {
+                    gachasMaster[storageId].name += " [StepUp]";
                 }
             }
         }
