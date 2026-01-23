@@ -1,18 +1,12 @@
 /** @file sim_engine_config.js @description 経路探索の統合制御（ターゲットインデックス同期・末尾アクション自動付加版） */
 
 /**
- * 経路探索エントリポイント
- * 指定されたセル（targetSeedIndex）まで正確に到達し、最後にそのセルを1回引くアクションを追加します [cite: 257, 265]。
+ * 経路探索エントリポイント（自動バックトラック・特定量短縮版）
  */
 function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, currentConfigStr, finalActionOverride = null, primaryTargetId = null) {
-    // 1. 必要な乱数シードを生成 [cite: 258]
     const estimatedNeededSeeds = Math.max(targetSeedIndex, 1000) + 500;
     const simSeeds = generateSeedsForSim(estimatedNeededSeeds);
 
-    // 2. 現在の入力値（sim-config）を解析し、開始地点の状態を算出 [cite: 258, 281]
-    const { startIdx, initialLastDraw, baseSegments } = calculateInitialState(currentConfigStr, targetSeedIndex, simSeeds);
-
-    // 3. 利用可能なガチャ設定のリストを作成 [cite: 259]
     const usableConfigs = visibleGachaIds.map(idStr => {
         const id = idStr.replace(/[gfs]$/, '');
         const config = gachaMasterData.gachas[id] || null;
@@ -20,46 +14,49 @@ function calculateRouteToCell(targetSeedIndex, targetGachaId, visibleGachaIds, c
         return config;
     }).filter(c => c !== null);
 
-    if (usableConfigs.length === 0) return null;
-
-    // UIから探索制限（プラチナ/確定使用数）を取得 [cite: 260, 261]
     const maxPlat = parseInt(document.getElementById('sim-max-plat')?.value || 0, 10);
     const maxGuar = parseInt(document.getElementById('sim-max-guar')?.value || 0, 10);
 
-    // 4. ビームサーチの実行 [cite: 262-264, 317]
-    // startIdx から targetSeedIndex に到達するまでの「過程」を探索します
-    let route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, 0);
-    if (!route && maxGuar > 0) {
-        route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, maxGuar);
-    }
-    if (!route && maxPlat > 0) {
-        route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar);
-    }
-    
-    // 5. 経路の構築と最終アクションの付加
-    if (route) {
-        if (finalActionOverride) {
-            // 確定枠（G列）をクリックした場合は、指定された確定アクションを付加 [cite: 265, 485]
-            route.push(finalActionOverride);
-        } else {
-            // 通常セルをクリックした場合は、そのセルのガチャIDで「1回引く」アクションを末尾に追加 [cite: 242-244]
-            // これにより、ルートの終端がクリックしたキャラと一致します
-            const baseId = targetGachaId.replace(/[gfs]$/, "");
-            route.push({ 
-                id: baseId, 
-                rolls: 1, 
-                g: false, 
-                fullId: targetGachaId 
-            });
+    let workingConfig = currentConfigStr;
+    const MAX_RETRIES = 8;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const { startIdx, initialLastDraw, baseSegments } = calculateInitialState(workingConfig, targetSeedIndex, simSeeds);
+
+        // 探索実行（allowOvershoot = false で厳密一致を要求）
+        let route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, 0, 0, false);
+        
+        if (!route && (maxGuar > 0 || maxPlat > 0)) {
+            route = findPathBeamSearch(startIdx, targetSeedIndex, targetGachaId, usableConfigs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar, false);
         }
 
-        // 固定済みルート（既設分）と新規探索ルートを結合 [cite: 266, 286]
-        const fullRoute = [...baseSegments, ...route];
+        if (route) {
+            // ルート発見成功
+            if (finalActionOverride) route.push(finalActionOverride);
+            else route.push({ id: targetGachaId.replace(/[gfs]$/, ""), rolls: 1, g: false, fullId: targetGachaId });
+            
+            return compressRoute([...baseSegments, ...route]);
+        }
 
-        // 重複セグメントを圧縮して文字列で返す [cite: 275, 403]
-        return compressRoute(fullRoute);
+        // --- ルートが見つからない場合のバックトラック処理 ---
+        if (attempt < MAX_RETRIES && workingConfig && workingConfig.trim() !== "") {
+            const segments = parseSimConfig(workingConfig);
+            const totalRolls = segments.reduce((sum, s) => sum + s.rolls, 0);
+            
+            // 「1/10」または「10ロール」のいずれか小さい方（最低1ロール） [修正]
+            const backtrackAmount = Math.max(1, Math.min(Math.floor(totalRolls / 10), 10));
+            
+            console.log(`[Sim] ルートが見つかりません。${backtrackAmount}ロール分戻って再探索します (${attempt + 1}/${MAX_RETRIES})`);
+            
+            for (let i = 0; i < backtrackAmount; i++) {
+                workingConfig = decrementLastRollOrRemoveSegment(workingConfig);
+                if (!workingConfig) break;
+            }
+        } else {
+            break;
+        }
     }
-    
+
     return null;
 }
 

@@ -7,104 +7,52 @@
 
 /**
  * ビームサーチを用いて目標インデックスまでのアクション経路を探索する
- * @param {number} startIdx - 探索を開始する現在のSEEDインデックス
- * @param {number} targetIdx - 到達目標とするSEEDインデックス
- * @param {string} targetGachaId - 目標セルで使用するガチャID
- * @param {Array} configs - 探索中に利用可能なガチャ設定の配列
- * @param {Array} simSeeds - シミュレーション用乱数配列
- * @param {Object} initialLastDraw - 開始地点でのトラック状態
- * @param {string|null} primaryTargetId - 優先して発見したい特定のキャラID
- * @param {number} maxPlat - 使用を許可するプラチナチケットの最大数
- * @param {number} maxGuar - 使用を許可する確定11連の最大数
- * @returns {Array|null} アクションオブジェクトの配列。見つからない場合はnull
+ * [修正] allowOvershoot フラグを追加し、デフォルトでは厳密一致のみを許可します
  */
-function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar) {
+function findPathBeamSearch(startIdx, targetIdx, targetGachaId, configs, simSeeds, initialLastDraw, primaryTargetId, maxPlat, maxGuar, allowOvershoot = false) {
     const BEAM_WIDTH = 25;
-    const MAX_STEPS = 2000; // 探索の最大ステップ数
+    const MAX_STEPS = 2000;
     
-    // ターゲットガチャを評価の優先順位に反映するためソート
     const sortedConfigs = [...configs].sort((a, b) => (a._fullId == targetGachaId ? -1 : 1));
-
-    let candidates = [{ 
-        idx: startIdx, 
-        path: [], 
-        lastDraw: initialLastDraw, 
-        score: 0, 
-        platUsed: 0, 
-        guarUsed: 0 
-    }];
-
+    let candidates = [{ idx: startIdx, path: [], lastDraw: initialLastDraw, score: 0, platUsed: 0, guarUsed: 0 }];
     let loopCount = 0;
 
     while (candidates.length > 0 && loopCount < MAX_STEPS) {
         loopCount++;
-        console.group(`[findPathBeamSearch] Loop ${loopCount}`);
-        console.log(`Current candidates: ${candidates.length}`, candidates.map(c => `idx:${c.idx} score:${c.score.toFixed(0)}`));
-
         let nextCandidates = [];
 
         for (const current of candidates) {
-            // ターゲットインデックスにピッタリ到達したかチェック
+            // ターゲットインデックス（＝トラックの一致を含む）にピッタリ到達したかチェック
             if (current.idx === targetIdx) {
-                console.log(`%c[findPathBeamSearch] Success: Exact match found at index ${targetIdx}`, 'color: #28a745; font-weight: bold;');
-                console.groupEnd();
                 return current.path;
             }
-
-            // 次の候補を展開
             const expanded = expandCandidates(current, targetIdx, targetGachaId, sortedConfigs, simSeeds, maxPlat, maxGuar, primaryTargetId);
             nextCandidates.push(...expanded);
         }
 
-        if (nextCandidates.length === 0) {
-            console.warn('[findPathBeamSearch] Terminated: No next candidates could be generated.');
-            console.groupEnd();
-            break;
-        }
-        console.log(`Generated ${nextCandidates.length} next candidates.`);
+        if (nextCandidates.length === 0) break;
 
-        // スコア順にソート
         nextCandidates.sort((a, b) => b.score - a.score);
-
-        // 同一インデックスかつ同一状態の重複を除去
         const uniqueCandidates = filterUniqueCandidates(nextCandidates);
-        console.log(`Reduced to ${uniqueCandidates.length} unique candidates.`);
-        if (uniqueCandidates.length > 0) {
-            const scoreRange = `min: ${uniqueCandidates[uniqueCandidates.length - 1].score.toFixed(0)}, max: ${uniqueCandidates[0].score.toFixed(0)}`;
-            console.log(`Unique candidate score range: ${scoreRange}`);
-        }
         
-        // トラックA(偶数)とトラックB(奇数)の候補をバランスよく残す
         const trackA = uniqueCandidates.filter(c => c.idx % 2 === 0);
         const trackB = uniqueCandidates.filter(c => c.idx % 2 !== 0);
-        
         const halfBeam = Math.ceil(BEAM_WIDTH / 2);
-        const bestA = trackA.slice(0, halfBeam);
-        const bestB = trackB.slice(0, halfBeam);
         
-        candidates = [...bestA, ...bestB].sort((a, b) => b.score - a.score).slice(0, BEAM_WIDTH);
-        
-        console.log(`Pruned to ${candidates.length} candidates for next loop (A: ${bestA.length}, B: ${bestB.length})`);
-        console.groupEnd();
+        candidates = [...trackA.slice(0, halfBeam), ...trackB.slice(0, halfBeam)]
+                        .sort((a, b) => b.score - a.score).slice(0, BEAM_WIDTH);
     }
     
-    if (loopCount >= MAX_STEPS) {
-        console.warn(`[findPathBeamSearch] Terminated: Reached MAX_STEPS (${MAX_STEPS}).`);
+    // --- 厳密一致が見つからなかった場合 ---
+    if (allowOvershoot) {
+        const validOvershoots = candidates.filter(c => c.idx >= targetIdx);
+        if (validOvershoots.length > 0) {
+            validOvershoots.sort((a, b) => a.idx - b.idx);
+            return validOvershoots[0].path;
+        }
     }
 
-    // --- ループ終了: 完全一致する経路が見つからなかった場合のフォールバック ---
-    console.log('[findPathBeamSearch] No exact match found. Looking for best overshooting candidate...');
-    const validOvershoots = candidates.filter(c => c.idx >= targetIdx);
-
-    if (validOvershoots.length > 0) {
-        validOvershoots.sort((a, b) => a.idx - b.idx);
-        const bestFit = validOvershoots[0];
-        console.log(`%c[findPathBeamSearch] Fallback success: Found overshooting path. Target=${targetIdx}, Found=${bestFit.idx}`, 'color: #e67e22; font-weight: bold;');
-        return bestFit.path;
-    }
-
-    console.error('[findPathBeamSearch] Fallback failed: No candidate reached or passed the target index.');
-    return null; // 経路が見つからなかった場合
+    return null; // 見つからない場合は null を返し、呼び出し元で再試行を誘発させる
 }
 
 /**
