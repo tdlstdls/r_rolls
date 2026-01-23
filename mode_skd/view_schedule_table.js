@@ -65,13 +65,12 @@ function renderScheduleTable(tsvContent, containerId) {
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
         
-        // 確定情報の重複防止と追加
-        if (item.guaranteed && !seriesDisplay.includes("[確定]")) {
+        // 修正点1: ステップアップ（item.stepup）でない場合のみ「[確定]」を付与する
+        if (item.guaranteed && !item.stepup && !seriesDisplay.includes("[確定]")) {
             seriesDisplay += " [確定]";
         }
         
-        // すでに seriesName に含まれているはずなので、ここでの個別追加は不要
-        // もし含まれていない場合に備えるなら:
+        // ステップアップのラベル追加処理
         if (item.stepup && !seriesDisplay.includes("[StepUp]")) {
             seriesDisplay += " [StepUp]";
         }
@@ -111,23 +110,24 @@ function renderScheduleTable(tsvContent, containerId) {
         const legendRateVal = parseInt(item.legend);
         let legendStyle = ( !isPlatLeg && legendRateVal > 30 ) ? 'color:red; font-weight:bold;' : '';
         const endDateTime = parseDateTime(item.rawEnd, item.endTime);
-        let rowClass = (now > endDateTime) ? "row-ended" : (item.guaranteed ? "row-guaranteed" : "");
+
+        // 修正点2: 行のハイライト（row-guaranteed）もステップアップの場合は除外する
+        let rowClass = (now > endDateTime) ? "row-ended" : ((item.guaranteed && !item.stepup) ? "row-guaranteed" : "");
+        
         html += `
             <tr class="${rowClass}">
                 <td>${startStr}</td>
                 <td>${endStr}</td>
                 <td style="text-align:left; vertical-align: middle;">
                     <div style="font-weight:bold; color:#000;">${seriesDisplay} <span style="font-weight:normal; font-size:0.9em; color:#555; user-select: text;">(ID: ${item.id})</span></div>
-     
-                <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
+                    <div style="font-size:0.85em; color:#333; margin-top:2px;">${item.tsvName}</div>
                 </td>
                 <td>${fmtRate(item.rare)}</td>
                 <td>${fmtRate(item.supa)}</td>
                 <td style="${uberStyle}">${fmtRate(item.uber)}</td>
-                
                 <td style="${legendStyle}">${fmtRate(item.legend)}</td>
                 <td style="text-align:center; font-size:1.2em;">
-                    ${item.guaranteed ?
+                    ${(item.guaranteed && !item.stepup) ? // 修正点3: 確定列の赤丸表示もステップアップを除外
                 '<span style="color:red;">●</span>' : '-'}
                 </td>
             </tr>

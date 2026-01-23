@@ -38,11 +38,10 @@ function renderGanttChart(data) {
         if (eDt > maxEndDateTime) maxEndDateTime = eDt;
 
         let displayName = item.seriesName;
-        if (item.guaranteed && !displayName.includes("[確定]")) {
+        // 修正点1: ステップアップでない場合のみ [確定] を付与 (幅計算用)
+        if (item.guaranteed && !item.stepup && !displayName.includes("[確定]")) {
             displayName += " [確定]";
         }
-        // すでに seriesName に含まれているはずなので、ここでの個別追加は不要
-        // もし含まれていない場合に備えるなら:
         if (item.stepup && !displayName.includes("[StepUp]")) {
             displayName += " [StepUp]";
         }
@@ -107,11 +106,10 @@ function renderGanttChart(data) {
         if (widthPx <= 0) return;
 
         let displayName = item.seriesName;
-        if (item.guaranteed && !displayName.includes("[確定]")) {
+        // 修正点2: ステップアップでない場合のみ [確定] を付与 (表示用)
+        if (item.guaranteed && !item.stepup && !displayName.includes("[確定]")) {
             displayName += " [確定]";
         }
-        // すでに seriesName に含まれているはずなので、ここでの個別追加は不要
-        // もし含まれていない場合に備えるなら:
         if (item.stepup && !displayName.includes("[StepUp]")) {
             displayName += " [StepUp]";
         }
@@ -124,8 +122,12 @@ function renderGanttChart(data) {
 
         const durationDays = Math.max(1, Math.round(durationMs / msPerDay));
         let rowClass = 'gantt-row';
-        if (now > endDateTime) rowClass += ' row-ended';
-        else if (item.guaranteed) rowClass += ' row-guaranteed';
+        if (now > endDateTime) {
+            rowClass += ' row-ended';
+        } else if (item.guaranteed && !item.stepup) { 
+            // 修正点3: ステップアップの場合は確定ハイライト（row-guaranteed）を適用しない
+            rowClass += ' row-guaranteed';
+        }
 
         bodyHtml += `
             <div class="${rowClass}" style="width: ${totalWidth}px; min-width: ${totalWidth}px; display: flex; flex-wrap: nowrap; height: 30px;">
