@@ -65,9 +65,15 @@ function renderScheduleTable(tsvContent, containerId) {
     filteredData.forEach((item, index) => {
         let seriesDisplay = item.seriesName ? item.seriesName : "シリーズ不明";
         
-        // 重複防止：seriesNameにすでに [確定] が含まれている場合は追加しない
+        // 確定情報の重複防止と追加
         if (item.guaranteed && !seriesDisplay.includes("[確定]")) {
             seriesDisplay += " [確定]";
+        }
+        
+        // すでに seriesName に含まれているはずなので、ここでの個別追加は不要
+        // もし含まれていない場合に備えるなら:
+        if (item.stepup && !seriesDisplay.includes("[StepUp]")) {
+            seriesDisplay += " [StepUp]";
         }
 
         const startStr = `${formatDateJP(item.rawStart)}<br><span style="font-size:0.85em">${formatTime(item.startTime)}</span>`;

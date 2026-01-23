@@ -5,7 +5,6 @@ function addGachaColumn() {
     const options = getGachaSelectorOptions(null);
     if (options.length > 0) {
         let val = options[0].value;
-        if (activeGuaranteedIds.has(parseInt(val))) val += 'g';
         tableGachaIds.push(val);
         uberAdditionCounts.push(0); 
         if (typeof generateRollsTable === 'function') generateRollsTable();
@@ -38,17 +37,8 @@ function resetToFirstGacha() {
 
 // 列のガチャを変更（プルダウン操作）
 function updateGachaSelection(selectElement, index) {
-    const originalIdWithSuffix = tableGachaIds[index];
-    const newBaseId = selectElement.value;
-    if (activeGuaranteedIds.has(parseInt(newBaseId))) {
-        tableGachaIds[index] = newBaseId + 'g';
-    } else {
-        let suffix = '';
-        if (originalIdWithSuffix.endsWith('f')) suffix = 'f';
-        else if (originalIdWithSuffix.endsWith('s')) suffix = 's';
-        else if (originalIdWithSuffix.endsWith('g')) suffix = 'g';
-        tableGachaIds[index] = newBaseId + suffix;
-    }
+    const newId = selectElement.value;
+    tableGachaIds[index] = newId;
     if (typeof generateRollsTable === 'function') generateRollsTable();
     if (typeof updateMasterInfoView === 'function') updateMasterInfoView();
 }

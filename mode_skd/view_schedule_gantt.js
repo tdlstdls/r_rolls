@@ -41,6 +41,11 @@ function renderGanttChart(data) {
         if (item.guaranteed && !displayName.includes("[確定]")) {
             displayName += " [確定]";
         }
+        // すでに seriesName に含まれているはずなので、ここでの個別追加は不要
+        // もし含まれていない場合に備えるなら:
+        if (item.stepup && !displayName.includes("[StepUp]")) {
+            displayName += " [StepUp]";
+        }
         
         if (typeof calcTextWidth === 'function') {
             const textW = calcTextWidth(displayName);
@@ -104,6 +109,11 @@ function renderGanttChart(data) {
         let displayName = item.seriesName;
         if (item.guaranteed && !displayName.includes("[確定]")) {
             displayName += " [確定]";
+        }
+        // すでに seriesName に含まれているはずなので、ここでの個別追加は不要
+        // もし含まれていない場合に備えるなら:
+        if (item.stepup && !displayName.includes("[StepUp]")) {
+            displayName += " [StepUp]";
         }
 
         let barClass = 'gantt-bar';

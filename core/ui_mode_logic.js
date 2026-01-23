@@ -24,10 +24,8 @@ function initializeDefaultGachas() {
 
                 if (activeGachas.length > 0) {
                     activeGachas.forEach(gacha => {
-                        let newId = gacha.id.toString();
-                        if (gacha.guaranteed) newId += 'g';
-                   
-                        tableGachaIds.push(newId);
+                        // すでに gacha.id に接尾辞が含まれているため、そのまま使用する
+                        tableGachaIds.push(gacha.id.toString());
                         uberAdditionCounts.push(0); 
                     });
                     scheduleFound = true;

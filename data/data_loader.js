@@ -216,7 +216,6 @@ function buildGachaMaster(catsMaster, csvText, tsvText) {
     return gachasMaster;
 }
 
-// gatya.tsv からレート情報と確定情報を抽出してマスタデータに適用する
 function applyTsvRates(gachasMaster, tsvContent) {
     const lines = tsvContent.split('\n');
     lines.forEach(line => {
@@ -224,7 +223,6 @@ function applyTsvRates(gachasMaster, tsvContent) {
         const cols = line.split('\t');
         if (cols.length < 15) return;
 
-        // 9列目(Idx 8)が「1」以外の行は除外
         if (cols[8] !== '1') return;
 
         for (let i = 10; i < cols.length; i += 15) {
@@ -233,15 +231,16 @@ function applyTsvRates(gachasMaster, tsvContent) {
             const gachaId = parseInt(cols[i]);
             if (isNaN(gachaId) || gachaId < 0) continue;
 
+            // フラグ判定
             const isGuaranteed = cols[i + 11] === '1';
-            const isStepUp = cols[i + 3] === '4';
+            const isStepUp = cols[i + 3] === '4'; // ステップアップ判定
             
-            // IDを決定する (確定 > ステップアップ > 通常)
+            // IDの決定: ステップアップなら 'f'、確定なら 'g'、それ以外はそのまま
             let storageId = `${gachaId}`;
-            if (isGuaranteed) {
-                storageId = `${gachaId}g`;
-            } else if (isStepUp) {
-                storageId = `${gachaId}f`;
+            if (isStepUp) {
+                storageId += 'f';
+            } else if (isGuaranteed) {
+                storageId += 'g';
             }
 
             const rateRare = parseInt(cols[i + 6]) || 0;
@@ -250,25 +249,19 @@ function applyTsvRates(gachasMaster, tsvContent) {
             const rateLegend = parseInt(cols[i + 12]) || 0;
 
             if (gachasMaster[gachaId]) {
-                // 元のデータをディープコピーして新しい設定を適用
                 gachasMaster[storageId] = JSON.parse(JSON.stringify(gachasMaster[gachaId]));
                 gachasMaster[storageId].id = storageId.toString();
                 gachasMaster[storageId].rarity_rates = {
-                    rare: rateRare,
-                    super: rateSupa,
-                    uber: rateUber,
-                    legend: rateLegend
+                    rare: rateRare, super: rateSupa, uber: rateUber, legend: rateLegend
                 };
-                
-                // フラグと名称を設定
-                gachasMaster[storageId].guaranteed = isGuaranteed;
-                gachasMaster[storageId].stepUp = isStepUp;
-                
-                if (isGuaranteed && !gachasMaster[storageId].name.includes("確定")) {
-                    gachasMaster[storageId].name += " [確定]";
-                }
-                if (isStepUp && !gachasMaster[storageId].name.includes("StepUp")) {
+                gachasMaster[storageId].guaranteed = isGuaranteed || isStepUp;
+                gachasMaster[storageId].stepup = isStepUp;
+
+                // 名称の付与
+                if (isStepUp && !gachasMaster[storageId].name.includes("[StepUp]")) {
                     gachasMaster[storageId].name += " [StepUp]";
+                } else if (isGuaranteed && !gachasMaster[storageId].name.includes("[確定]")) {
+                    gachasMaster[storageId].name += " [確定]";
                 }
             }
         }

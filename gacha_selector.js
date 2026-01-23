@@ -59,16 +59,9 @@ function getGachaSelectorOptions(selectedId) {
     scheduledItems.forEach(item => {
         if (usedIds.has(item.id.toString())) return;
         
-        // 確定フラグがある場合、名称に [確定] を付与 (既に含まれていれば二重付与しない)
-        let displayName = item.name;
-        if (item.isGuaranteed && !displayName.includes("確定")) {
-            displayName += " [確定]";
-        }
+        const displayName = item.name;
 
-        // 変更前: const baseName = `${displayName} (${item.id})`;
-        // 変更前: let label = item.isSpecial ? ... : ...;
-
-        // 変更後: IDを日付の直後に配置して見切れを防止
+        // IDを日付の直後に配置して見切れを防止
         // view_table.jsのヘッダー表示（スペースで改行）に合わせて、"日付(ID) ガチャ名" の形式にする
         let datePart = item.isSpecial 
             ? `${toShortDate(item.rawStart)}~`

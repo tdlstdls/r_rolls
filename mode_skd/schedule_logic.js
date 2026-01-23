@@ -97,20 +97,35 @@ function parseGachaTSV(tsv) {
         const rateSupa = cols[base + 8]; 
         const rateUber = cols[base + 10]; 
         const guarFlag = cols[base + 11];
+        const stepupFlag = cols[base + 3];
         const rateLegend = cols[base + 12]; 
         const detail = cols[base + 14];
+
         const guaranteed = (guarFlag === '1' || parseInt(guarFlag) > 0);
+        const isStepUp = (stepupFlag === '4');
+
+        // IDに接尾辞を付与
+        let finalId = gachaId;
+        if (isStepUp) {
+            finalId += 'f';
+        } else if (guaranteed) {
+            finalId += 'g';
+        }
 
         let seriesName = "";
         let tsvName = detail || "";
-        if (typeof gachaMasterData !== 'undefined' && gachaMasterData.gachas[gachaId]) {
+
+        // マスタから名前を引く (接尾辞付きIDで検索)
+        if (typeof gachaMasterData !== 'undefined' && gachaMasterData.gachas[finalId]) {
+            seriesName = gachaMasterData.gachas[finalId].name;
+        } else if (typeof gachaMasterData !== 'undefined' && gachaMasterData.gachas[gachaId]) {
             seriesName = gachaMasterData.gachas[gachaId].name;
         } else {
             seriesName = `ID:${gachaId}`;
         }
-
+        
         schedule.push({
-            id: gachaId,
+            id: finalId, // 接尾辞付きIDを格納
             start: startDateStr,
             end: endDateStr,
             rawStart: startDateStr,
@@ -123,23 +138,27 @@ function parseGachaTSV(tsv) {
             supa: rateSupa,
             uber: rateUber,
             legend: rateLegend,
-            guaranteed: guaranteed
+            guaranteed: guaranteed || isStepUp,
+            stepup: isStepUp
         });
     });
 
-    // --- 重複期間の自動短縮ロジック（ID一致なら確定・非確定問わず適用） ---
+    // 重複期間の自動短縮ロジックの修正
     for (let i = 0; i < schedule.length; i++) {
         const itemA = schedule[i];
         const startA = parseInt(itemA.start);
         const endA = parseInt(itemA.end);
 
-        // 同じIDで、自分より「後に開始」し、かつ自分の「終了前」に開始される別枠を探す
-        const itemB = schedule.find(target => 
-            target !== itemA &&
-            target.id === itemA.id && 
-            parseInt(target.start) > startA && 
-            parseInt(target.start) < endA
-        );
+        // 接尾辞を除去したベースIDで比較するように修正
+        const baseIdA = itemA.id.replace(/[gf]/, '');
+
+        const itemB = schedule.find(target => {
+            if (target === itemA) return false;
+            const baseIdB = target.id.replace(/[gf]/, '');
+            return baseIdB === baseIdA && 
+                   parseInt(target.start) > startA && 
+                   parseInt(target.start) < endA;
+        });
 
         if (itemB) {
             // 後続枠の開始タイミングに合わせて、前の枠を終了させる

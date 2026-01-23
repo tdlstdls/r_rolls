@@ -90,24 +90,29 @@ function updateUrlParams() {
 
     if (seed) urlParams.set('seed', seed); else urlParams.delete('seed');
     
-    // sim_config にプレフィックスを付与して保存
     if (simConfig) {
         const prefix = (typeof isSimulationMode !== 'undefined' && isSimulationMode) ? 's-' : 'v-';
-        // スペースを + に変換するのはURLSearchParamsが自動で行うが、
-        // 値としてセットする文字列自体はそのまま渡す
         urlParams.set('sim_config', prefix + simConfig);
     } else {
         urlParams.delete('sim_config');
     }
     
-    // gachasパラメータの生成 (ID + "add" + Add数)
+    // gachasパラメータの生成ロジックを修正
     if (tableGachaIds.length > 0) {
         const joined = tableGachaIds.map((id, index) => {
+            // もし ID に "gg" や "ff" のように重複がある場合は、正規表現などで修正する
+            // ここでは末尾の重複した文字を1つにまとめる、あるいは
+            // 本来の仕様に合わせて整形します
+            let cleanedId = id;
+            if (id.endsWith('gg')) cleanedId = id.slice(0, -1);
+            if (id.endsWith('fg')) cleanedId = id.slice(0, -1);
+            if (id.endsWith('ff')) cleanedId = id.slice(0, -1);
+
             const addVal = uberAdditionCounts[index];
             if (addVal && addVal > 0) {
-                return `${id}add${addVal}`;
+                return `${cleanedId}add${addVal}`;
             }
-            return id;
+            return cleanedId;
         }).join('-');
         urlParams.set('gachas', joined);
     } else {
@@ -115,6 +120,9 @@ function updateUrlParams() {
     }
 
     const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-    try { window.history.pushState({path: newUrl}, '', newUrl);
-    } catch (e) { console.warn("URL update failed", e); }
+    try { 
+        window.history.pushState({path: newUrl}, '', newUrl);
+    } catch (e) { 
+        console.warn("URL update failed", e); 
+    }
 }
