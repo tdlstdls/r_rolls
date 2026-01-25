@@ -110,7 +110,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
             // SEED表示モード時は、リンク化せず単純なテキスト表示にする
             content = `${oName}<br>${destAddr}${charName}`;
         } else if (!isSimulationMode) {
-            const originalJumpSeed = seeds[seedIndex + 2];
+            const originalJumpSeed = seeds[seedIndex + 1];
             let oHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${originalJumpSeed})">${oName}</span>`;
             const finalJumpSeed = seeds[seedIndex + rr.seedsConsumed];
             let fHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${finalJumpSeed})">${destAddr}${charName}</span>`;
@@ -123,4 +123,5 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
     }
     
     return `<td class="gacha-cell" style="${style} cursor:pointer;" ${clickHandler}>${content}</td>`;
+
 }
