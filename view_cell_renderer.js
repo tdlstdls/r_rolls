@@ -93,7 +93,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}')"`;
     } else {
         // 通常モード：SEEDジャンプ
-        const nextSeedValue = seeds[seedIndex + rr.seedsConsumed];
+        const nextSeedValue = seeds[seedIndex + rr.seedsConsumed - 1];
         if (nextSeedValue !== undefined) {
             clickHandler = `onclick="updateSeedAndRefresh(${nextSeedValue})"`;
         }
@@ -112,7 +112,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         } else if (!isSimulationMode) {
             const originalJumpSeed = seeds[seedIndex + 1];
             let oHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${originalJumpSeed})">${oName}</span>`;
-            const finalJumpSeed = seeds[seedIndex + rr.seedsConsumed];
+                                            const finalJumpSeed = seeds[seedIndex + rr.seedsConsumed - 1];
             let fHtml = `<span class="char-link" onclick="event.stopPropagation(); updateSeedAndRefresh(${finalJumpSeed})">${destAddr}${charName}</span>`;
             content = `${oHtml}<br>${fHtml}`;
         } else {
