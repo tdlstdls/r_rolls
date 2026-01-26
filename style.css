@@ -209,3 +209,9 @@ th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; b
         font-size: 1.25em;
     }
 }
+
+/* style.css に追記 */
+.track-header {
+    min-width: 280px; /* Aトラックの操作エリアが1行で収まる程度の幅 */
+    box-sizing: border-box;
+}

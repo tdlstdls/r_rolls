@@ -18,9 +18,9 @@ function buildTableDOM(numRolls, columnConfigs, tableData, seeds, highlightMap, 
     let html = `<table style="table-layout: auto; width: 100%; border-collapse: collapse;"><thead>
         <tr>
             <th class="col-no" style="position: sticky; left: 0; z-index: 30; background: #f8f9fa; border-right: 1px solid #ddd;"></th>
-            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; border-right: 1px solid #ddd;">${buildHeaderButtonArea()}</th>
+            <th class="track-header" colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; border-right: 1px solid #ddd;">${buildHeaderButtonArea()}</th>
             <th class="col-no"></th>
-            <th colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; font-weight: bold;">B</th>
+            <th class="track-header" colspan="${totalTrackSpan}" style="text-align: center; vertical-align: middle; padding: 4px; font-weight: bold;">B</th>
         </tr>
         <tr class="sticky-row">
             <th class="col-no" style="position: sticky; top: 0; left: 0; z-index: 40; background: #f8f9fa; border-right: 1px solid #ddd;">NO.</th>
