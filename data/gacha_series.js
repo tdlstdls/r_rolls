@@ -91,9 +91,6 @@ const gacha_series = [
     {"series_id":71,"name":"アウトレット", "rare":6800, "supa":2500, "uber":700, "legend":0,"sort":705},
     {"series_id":72,"name":"範馬刃牙", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":615},
     {"series_id":73,"name":"ソニック", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":616},
-    {"series_id":75,"name":"仮2026新年超極1(956add8)", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
-    {"series_id":76,"name":"仮2026新年超極2", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
-    {"series_id":77,"name":"仮2026新年超極3", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101},
-    {"series_id":78,"name":"仮2026新年超極4", "rare":6470, "supa":2500, "uber":1000, "legend":30,"sort":101}
+    {"series_id":74,"name":"鬼滅の刃", "rare":7000, "supa":2500, "uber":500, "legend":0,"sort":617},
 
 ];
