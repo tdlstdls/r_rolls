@@ -847,7 +847,7 @@ const cats = [
   { "id": 846, "name": "煉󠄁獄杏寿郎", "rarity": 4 },
   { "id": 847, "name": "ちび鱗滝左近次", "rarity": 3 },
   { "id": 848, "name": "ネコ炭治郎", "rarity": 2 },
-  { "id": 849, "name": "ネコ禰󠄀豆子", "rarity": 2 }
+  { "id": 849, "name": "ネコ禰󠄀豆子", "rarity": 1 }
 
 ]
 
