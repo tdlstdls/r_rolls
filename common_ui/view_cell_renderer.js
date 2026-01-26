@@ -93,11 +93,7 @@ function generateCell(seedIndex, id, colIndex, tableData, seeds, highlightMap, i
         clickHandler = `onclick="onGachaCellClick(${seedIndex}, '${id}', '${escapedName}')"`;
     } else {
         // 通常モード：SEEDジャンプ
-<<<<<<< HEAD
         const nextSeedValue = seeds[seedIndex + rr.seedsConsumed - 1];
-=======
-            const nextSeedValue = seeds[seedIndex + rr.seedsConsumed - 1];
->>>>>>> 56934945cc1992ba1b0bda2b82bdec2a8a6349f0
         if (nextSeedValue !== undefined) {
             clickHandler = `onclick="updateSeedAndRefresh(${nextSeedValue})"`;
         }
