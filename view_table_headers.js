@@ -37,7 +37,7 @@ function generateNameHeaderHTML() {
                         </div>
                      </th>`;
         } else {
-            html += `<th class="gacha-column" style="vertical-align: bottom; padding: 4px; min-width: 120px; border-right: 1px solid #ddd;">
+            html += `<th class="gacha-column" style="vertical-align: bottom; padding: 4px; border-right: 1px solid #ddd;">
                         <div style="text-align: center; line-height: 1.2;">${displayHTML}</div>
                      </th>`;
         }
@@ -83,7 +83,7 @@ function generateControlHeaderHTML(isInteractive) {
         if (isGCol) {
             html += `<th colspan="2" class="gacha-column" style="padding: 2px; border-right: 1px solid #ddd;">${controlArea}</th>`;
         } else {
-            html += `<th class="gacha-column" style="padding: 2px; min-width: 120px; border-right: 1px solid #ddd;">${controlArea}</th>`;
+            html += `<th class="gacha-column" style="padding: 2px; border-right: 1px solid #ddd;">${controlArea}</th>`;
         }
     });
     return html;

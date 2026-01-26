@@ -63,7 +63,7 @@ th { background-color: #f8f9fa; font-weight: bold; border-top: 1px solid #ddd; b
 
 .col-no { background-color: #f8f9fa; width: 30px; }
 .calc-column { background-color: #f0f8ff; font-size: 0.9em; color: #555; }
-.gacha-column { min-width: 120px; }
+.gacha-column { min-width: 85px; }
 .gacha-cell { position: relative; }
 .highlight { position: relative; }
 .highlight-uber { font-weight: bold; color: #c2185b; }
