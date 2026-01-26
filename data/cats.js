@@ -838,14 +838,16 @@ const cats = [
   { "id": 837, "name": "幼騎士ルーノ", "rarity": 4 },
   { "id": 838, "name": "精霊", "rarity": 4 },
   { "id": 839, "name": "精霊", "rarity": 4 },
-  { "id": 840, "name": "竈門炭次郎", "rarity": 4 },
-  { "id": 841, "name": "竈門禰豆子", "rarity": 4 },
+  { "id": 840, "name": "竈門炭治郎", "rarity": 4 },
+  { "id": 841, "name": "竈門禰󠄀豆子", "rarity": 4 },
   { "id": 842, "name": "我妻善逸", "rarity": 4 },
   { "id": 843, "name": "嘴平伊之助", "rarity": 4 },
-  { "id": 844, "name": "富岡義勇", "rarity": 4 },
+  { "id": 844, "name": "冨岡義勇", "rarity": 4 },
   { "id": 845, "name": "胡蝶しのぶ", "rarity": 4 },
-  { "id": 846, "name": "煉獄杏寿郎", "rarity": 4 },
-  { "id": 847, "name": "鱗滝左近次", "rarity": 3 }
+  { "id": 846, "name": "煉󠄁獄杏寿郎", "rarity": 4 },
+  { "id": 847, "name": "ちび鱗滝左近次", "rarity": 3 },
+  { "id": 848, "name": "ネコ炭治郎", "rarity": 2 },
+  { "id": 849, "name": "ネコ禰󠄀豆子", "rarity": 2 }
 
 ]
 
