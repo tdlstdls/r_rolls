@@ -1,7 +1,7 @@
-/** @file view_table_headers.js @description テーブルヘッダー詳細描画 */
+/** @file view_table_headers.js @description テーブルヘッダー詳細描画（ボタン小型化・統一版） */
 
 /**
- * [cite_start]名称ヘッダーの生成 (名称右に11G表示ラベル付与) [cite: 1000-1008]
+ * 名称ヘッダーの生成 (名称右に11G表示ラベル付与)
  */
 function generateNameHeaderHTML() {
     let html = "";
@@ -46,7 +46,7 @@ function generateNameHeaderHTML() {
 }
 
 /**
- * [cite_start]操作ヘッダーの生成 [cite: 1009-1018]
+ * 操作ヘッダーの生成
  */
 function generateControlHeaderHTML(isInteractive) {
     let html = "";
@@ -63,21 +63,30 @@ function generateControlHeaderHTML(isInteractive) {
                 select += `<option value="${opt.value}" ${String(opt.value) === id ? 'selected' : ''}>${opt.label}</option>`;
             });
             select += `</select>`;
-            const pullDownBtn = `<div style="position:relative; width:18px; height:18px; background:#eee; border:1px solid #999; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:10px;">▼${select}</div>`;
             
+            // 各種パーツの小型化調整
+            const btnCommonStyle = "font-size:9px; padding:0 2px; height:16px; line-height:14px; display:inline-flex; align-items:center; justify-content:center;";
+            
+            // プルダウン (▼)
+            const pullDownBtn = `<div style="position:relative; width:16px; height:16px; background:#eee; border:1px solid #999; border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:9px;">▼${select}</div>`;
+            
+            // Gボタン (11Gなど)
             let gLabel = (suffix === 'g') ? '11G' : (suffix === 'f' ? '15G' : (suffix === 's' ? '7G' : 'G'));
-            const gBtn = `<button onclick="toggleGStep(${index})" style="min-width:28px; font-size:10px; padding:1px 3px;">${gLabel}</button>`;
+            const gBtn = `<button onclick="toggleGStep(${index})" style="${btnCommonStyle} min-width:22px;">${gLabel}</button>`;
             
+            // addボタン (スパンからボタン形式に変更)
             const curAdd = uberAdditionCounts[index] || 0;
-            const addLabel = curAdd > 0 ? `add:${curAdd}` : `add`;
-            const addTrigger = `<span id="add-trigger-${index}" style="font-size:10px; color:#007bff; cursor:pointer; text-decoration:underline;" onclick="showAddInput(${index})">${addLabel}</span>`;
+            const addLabel = curAdd > 0 ? `+${curAdd}` : `add`;
+            const addBtn = `<button id="add-trigger-${index}" onclick="showAddInput(${index})" style="${btnCommonStyle} min-width:24px; color:#007bff; border:1px solid #007bff; background:#fff;">${addLabel}</button>`;
             
-            let addSelect = `<span id="add-select-wrapper-${index}" style="display:none;"><select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width:35px; font-size:10px;">`;
+            let addSelect = `<span id="add-select-wrapper-${index}" style="display:none;"><select class="uber-add-select" onchange="updateUberAddition(this, ${index})" style="width:32px; font-size:9px; height:16px;">`;
             for(let k=0; k<=20; k++) addSelect += `<option value="${k}" ${k===curAdd?'selected':''}>${k}</option>`;
             addSelect += `</select></span>`;
             
-            const delBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})" style="font-size:10px; padding:1px 5px;">×</button>`;
-            controlArea = `<div style="display:flex; justify-content:center; align-items:center; gap:5px;">${pullDownBtn}${gBtn}${addTrigger}${addSelect}${delBtn}</div>`;
+            // 削除ボタン
+            const delBtn = `<button class="remove-btn" onclick="removeGachaColumn(${index})" style="${btnCommonStyle} min-width:16px; padding:0 4px;">×</button>`;
+            
+            controlArea = `<div style="display:flex; justify-content:center; align-items:center; gap:3px;">${pullDownBtn}${gBtn}${addBtn}${addSelect}${delBtn}</div>`;
         }
 
         if (isGCol) {
