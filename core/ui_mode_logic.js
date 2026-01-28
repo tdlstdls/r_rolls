@@ -59,11 +59,6 @@ function initializeDefaultGachas() {
             }
         }
     }
-
-    const seedEl = document.getElementById('seed');
-    if (seedEl && (seedEl.value === '12345' || seedEl.value === '')) {
-        toggleSeedInput();
-    }
 }
 
 /**
