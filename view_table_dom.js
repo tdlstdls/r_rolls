@@ -7,11 +7,10 @@ function buildGlobalControlPanel() {
     return `
         <div id="table-global-controls" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 10px; margin-bottom: 10px; padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px;">
             <span style="font-weight: bold; font-size: 12px; color: #333;">ガチャ列操作:</span>
+            <button id="seed-input-trigger" class="secondary" onclick="toggleSeedInput()" style="font-size:11px; padding:2px 8px;">SEED値変更</button>
             <button class="add-gacha-btn" onclick="addGachaColumn()" style="font-size: 11px; padding: 2px 6px;">＋列を追加</button>
             <button class="add-gacha-btn" style="background-color: #17a2b8; font-size: 11px; padding: 2px 6px;" onclick="addGachasFromSchedule()">skdで追加</button>
-            
             <button id="add-id-trigger" class="add-gacha-btn" style="background-color: #6c757d; font-size: 11px; padding: 2px 6px;" onclick="showIdInput()">IDで追加</button>
-            
             <button class="remove-btn" onclick="resetToFirstGacha()" title="解除" style="font-size: 11px; padding: 2px 6px; margin-left: auto;">全て解除×</button>
         </div>`;
 }
