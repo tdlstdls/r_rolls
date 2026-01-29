@@ -1,0 +1,5 @@
+# GeminiやGitHubに無視させたいもの
+bak/
+*.bak
+combined_code.txt
+memo.txt
