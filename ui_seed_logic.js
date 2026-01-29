@@ -1,98 +1,107 @@
 /** @file ui_seed_logic.js @description SEED値の操作・同期ロジック */
 
+/**
+ * ヘッダーの現在のSEED表示を更新する
+ */
+function updateSeedDisplay() {
+    const display = document.getElementById('current-seed-display');
+    const seedInput = document.getElementById('seed');
+    if (display && seedInput) {
+        display.textContent = seedInput.value;
+    }
+}
+
+/**
+ * SEED入力モーダルを表示する
+ */
 function toggleSeedInput() {
-    const container = document.getElementById('seed-input-container');
-    const trigger = document.getElementById('seed-input-trigger');
-    if (!container) return;
-
-    if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        if (trigger) {
-            trigger.classList.remove('hidden');
-            trigger.classList.add('active');
-        }
-        const input = document.getElementById('seed');
-        if (input) input.focus();
-    } else {
-        cancelSeedInput();
+    const currentSeed = document.getElementById('seed')?.value || "12345";
+    
+    // モーダルのHTML。決定ボタンで applyModalSeed() を呼ぶ。
+    const contentHtml = `
+        <h3 style="margin-top:0; font-size:1.1em;">SEEDを入力</h3>
+        <p style="font-size:0.85em; color:#666;">値を変更して「決定」を押してください。</p>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            <input type="number" id="modal-seed-input" value="${currentSeed}" 
+                   style="width:100%; padding:8px; font-size:1.1em; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;"
+                   onkeydown="if(event.key==='Enter') applyModalSeed()">
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button onclick="closeModal()" class="secondary" style="padding:6px 12px; cursor:pointer;">キャンセル</button>
+                <button onclick="applyModalSeed()" style="padding:6px 20px; cursor:pointer; background:#444; color:#fff; border:none; border-radius:4px;">決定</button>
+            </div>
+        </div>
+    `;
+    
+    if (typeof showModal === 'function') {
+        showModal(contentHtml);
+        // 入力欄にフォーカス
+        setTimeout(() => document.getElementById('modal-seed-input')?.focus(), 50);
     }
 }
 
+/**
+ * モーダル内の「決定」ボタンが押された時の処理
+ */
+function applyModalSeed() {
+    const modalInput = document.getElementById('modal-seed-input');
+    const mainSeedInput = document.getElementById('seed');
+    
+    if (modalInput && mainSeedInput) {
+        mainSeedInput.value = modalInput.value;
+        // 値を適用してテーブル再描画
+        applySeedInput();
+        // モーダルを閉じる
+        if (typeof closeModal === 'function') closeModal();
+    }
+}
+
+/**
+ * 値を適用し、URL同期とテーブル再描画、ヘッダー更新を行う
+ */
 function applySeedInput() {
+    // 既存の同期・更新ロジックを呼び出す
     if (typeof updateUrlParams === 'function') updateUrlParams();
-    resetAndGenerateTable();
+    if (typeof resetAndGenerateTable === 'function') resetAndGenerateTable();
+    
+    // ヘッダー表示を最新の入力値に同期
+    updateSeedDisplay();
+
+    // 旧UIコンテナが残っている場合は隠す
     const container = document.getElementById('seed-input-container');
     const trigger = document.getElementById('seed-input-trigger');
     if (container) container.classList.add('hidden');
-    if (trigger) {
-        trigger.classList.remove('hidden');
-        trigger.classList.remove('active');
-    }
+    if (trigger) trigger.classList.remove('active');
 }
 
-function cancelSeedInput() {
-    const container = document.getElementById('seed-input-container');
-    const trigger = document.getElementById('seed-input-trigger');
-    const input = document.getElementById('seed');
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentSeed = urlParams.get('seed') || "12345";
-    if (input) input.value = currentSeed;
-    if (container) container.classList.add('hidden');
-    if (trigger) {
-        trigger.classList.remove('hidden');
-        trigger.classList.remove('active');
-    }
-}
-
+/**
+ * 現在のSEED値をクリップボードにコピー
+ */
 function copySeedToClipboard() {
     const seedInput = document.getElementById('seed');
     if (!seedInput) return;
-    navigator.clipboard.writeText(seedInput.value).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
-}
-
-/** * ルート（Config）と表示テキストをクリップボードへコピー 
- */
-function copyTxtToClipboard() {
-    const configInput = document.getElementById('sim-config');
-    const txtDisplay = document.getElementById('txt-route-display');
-    const notifEl = document.getElementById('sim-notif-msg');
-
-    if (!configInput || !txtDisplay) return;
-
-    // ルート入力値 + 改行 + テキストエリアの表示内容
-    const textToCopy = configInput.value + "\n\n" + txtDisplay.innerText;
-
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        if (notifEl) {
-            notifEl.textContent = 'Copyed!';
-            notifEl.style.display = 'inline';
-            setTimeout(() => {
-                notifEl.style.display = 'none';
-            }, 2000);
-        }
+    
+    navigator.clipboard.writeText(seedInput.value).then(() => {
+        const display = document.getElementById('current-seed-display');
+        const originalText = display.textContent;
+        display.textContent = 'Copied!';
+        display.style.color = '#28a745';
+        setTimeout(() => {
+            display.textContent = originalText;
+            display.style.color = '';
+        }, 1000);
     }).catch(err => {
         console.error('Failed to copy: ', err);
     });
 }
 
+/**
+ * 外部（Sim等）からSEEDが更新された際の反映用
+ */
 function updateSeedAndRefresh(newSeed) {
     const seedInput = document.getElementById('seed');
     if(seedInput && newSeed) {
         seedInput.value = newSeed;
-        currentRolls = 300;
-        if (typeof generateRollsTable === 'function') generateRollsTable();
-        updateMasterInfoView();
-        if (typeof updateUrlParams === 'function') updateUrlParams();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}
-
-function updateSeedFromSim() {
-    if (finalSeedForUpdate) {
-        document.getElementById('seed').value = finalSeedForUpdate;
-        document.getElementById('sim-config').value = '';
-        resetAndGenerateTable(); 
+        updateSeedDisplay();
+        if (typeof resetAndGenerateTable === 'function') resetAndGenerateTable();
     }
 }

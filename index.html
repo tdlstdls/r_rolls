@@ -11,17 +11,19 @@
     <div class="container">
         <div class="header-row">
             <h1>R_Rolls</h1>
-            <div class="header-actions">
-                <span id="seed-input-trigger" class="text-btn" onclick="toggleSeedInput()">SEED</span>
-                <span class="separator">|</span>
-                <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
-                <span class="separator">|</span>
-                <span id="mode-toggle-btn" class="text-btn" onclick="toggleAppMode()">Sim</span>
-                <span class="separator">|</span>
-                <span id="toggle-schedule-btn" class="text-btn" onclick="toggleSchedule()">skd</span>
-                <span class="separator">|</span>
-                <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
-            </div>
+                <div class="header-actions">
+                    <span id="current-seed-display" class="text-btn" onclick="copySeedToClipboard()" style="margin-right: 5px; font-weight: bold; color: #555;">-</span>
+                    <span class="separator">|</span>
+                    <span id="seed-input-trigger" class="text-btn" onclick="toggleSeedInput()">SEED入力</span>
+                    <span class="separator">|</span>
+                    <span id="toggle-find-info-btn" class="text-btn" onclick="toggleFindInfo()">Find</span>
+                    <span class="separator">|</span>
+                    <span id="mode-toggle-btn" class="text-btn" onclick="toggleAppMode()">Sim</span>
+                    <span class="separator">|</span>
+                    <span id="toggle-schedule-btn" class="text-btn" onclick="toggleSchedule()">skd</span>
+                    <span class="separator">|</span>
+                    <span id="toggle-description" class="text-btn" onclick="toggleDescription()">概要</span>
+                </div>
         </div>
 
         <div id="description-content" class="description-box hidden" style="font-size: 0.85em; line-height: 1.6;"></div>
